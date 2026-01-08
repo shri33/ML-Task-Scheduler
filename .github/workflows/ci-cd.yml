@@ -70,7 +70,18 @@ jobs:
         working-directory: ./backend
         run: npm run lint --if-present
 
+      - name: Check for tests
+        working-directory: ./backend
+        id: has_tests
+        run: |
+          if find src -name "*.test.ts" -o -name "*.spec.ts" | grep -q .; then
+            echo "has_tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_tests=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run tests
+        if: steps.has_tests.outputs.has_tests == 'true'
         working-directory: ./backend
         run: npm test -- --coverage
         env:
@@ -79,6 +90,7 @@ jobs:
           JWT_SECRET: test-secret
 
       - name: Upload coverage
+        if: steps.has_tests.outputs.has_tests == 'true'
         uses: codecov/codecov-action@v3
         with:
           files: ./backend/coverage/lcov.info
@@ -109,13 +121,25 @@ jobs:
         working-directory: ./frontend
         run: npm run lint --if-present
 
+      - name: Check for tests
+        working-directory: ./frontend
+        id: has_tests
+        run: |
+          if find src -name "*.test.ts" -o -name "*.test.tsx" -o -name "*.spec.ts" -o -name "*.spec.tsx" | grep -q .; then
+            echo "has_tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_tests=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run unit tests
+        if: steps.has_tests.outputs.has_tests == 'true'
         working-directory: ./frontend
         run: npm test -- --coverage
         env:
           CI: true
 
       - name: Upload coverage
+        if: steps.has_tests.outputs.has_tests == 'true'
         uses: codecov/codecov-action@v3
         with:
           files: ./frontend/coverage/lcov.info
@@ -133,11 +157,23 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-          cache-dependency-path: ml-service/requirements.txt
+        with:Check for tests
+        working-directory: ./ml-service
+        id: has_tests
+        run: |
+          if find . -maxdepth 1 -name "test_*.py" -o -name "*_test.py" | grep -q .; then
+            echo "has_tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_tests=false" >> $GITHUB_OUTPUT
+          fi
 
+      - name: Run tests
+        if: steps.has_tests.outputs.has_tests == 'true'
+        working-directory: ./ml-service
+        run: pytest --cov=. --cov-report=xml
+
+      - name: Upload coverage
+        if: steps.has_tests.outputs.has_tests == 'true'
       - name: Install dependencies
         working-directory: ./ml-service
         run: |
