@@ -1,0 +1,295 @@
+import { useEffect, useState, useCallback } from 'react';
+import { useStore } from '../store';
+import { resourceApi } from '../lib/api';
+import { CreateResourceInput } from '../types';
+import { Plus, Trash2, X, Server } from 'lucide-react';
+import { clsx } from 'clsx';
+import { useToast } from '../contexts/ToastContext';
+import { SearchFilter } from '../components/SearchFilter';
+import { ResourceCardSkeleton } from '../components/Skeletons';
+
+export default function Resources() {
+  const {
+    resources,
+    resourcesLoading,
+    fetchResources,
+    addResource,
+    removeResource,
+    updateResource,
+  } = useStore();
+  const [showForm, setShowForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const toast = useToast();
+
+  useEffect(() => {
+    fetchResources();
+  }, [fetchResources]);
+
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
+
+  const filteredResources = resources.filter((r) =>
+    !searchQuery || r.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleCreateResource = async (data: CreateResourceInput) => {
+    try {
+      const resource = await resourceApi.create(data);
+      addResource(resource);
+      setShowForm(false);
+      toast.success('Resource created', `"${resource.name}" has been added.`);
+    } catch (error) {
+      toast.error('Failed to create resource', 'Please try again.');
+    }
+  };
+
+  const handleDeleteResource = async (id: string, name: string) => {
+    if (!confirm('Are you sure you want to delete this resource?')) return;
+    try {
+      await resourceApi.delete(id);
+      removeResource(id);
+      toast.success('Resource deleted', `"${name}" has been removed.`);
+    } catch (error) {
+      toast.error('Failed to delete resource', 'Please try again.');
+    }
+  };
+
+  const handleUpdateLoad = async (id: string, currentLoad: number, name: string) => {
+    const newLoad = prompt('Enter new load (0-100):', String(currentLoad));
+    if (newLoad === null) return;
+    try {
+      const resource = await resourceApi.updateLoad(id, parseFloat(newLoad));
+      updateResource(resource);
+      toast.info('Load updated', `${name} load set to ${newLoad}%.`);
+    } catch (error) {
+      toast.error('Failed to update load', 'Please try again.');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Resources</h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Manage computing resources for task allocation
+          </p>
+        </div>
+        <button
+          onClick={() => setShowForm(true)}
+          className="btn btn-primary flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Add Resource
+        </button>
+      </div>
+
+      {/* Search */}
+      <SearchFilter
+        placeholder="Search resources by name..."
+        onSearch={handleSearch}
+      />
+
+      {/* Resource Grid */}
+      {resourcesLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <ResourceCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : filteredResources.length === 0 ? (
+        <div className="card text-center py-12">
+          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Server className="h-8 w-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No resources found</h3>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">
+            {searchQuery ? 'Try a different search term.' : 'Add one to get started.'}
+          </p>
+          {!searchQuery && (
+            <button onClick={() => setShowForm(true)} className="btn btn-primary">
+              Add Resource
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredResources.map((resource) => (
+            <div key={resource.id} className="card hover:shadow-lg transition-shadow">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={clsx(
+                      'p-2 rounded-lg',
+                      resource.status === 'AVAILABLE'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                        : resource.status === 'BUSY'
+                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                    )}
+                  >
+                    <Server className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                      {resource.name}
+                    </h3>
+                    <StatusBadge status={resource.status} />
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleDeleteResource(resource.id, resource.name)}
+                  className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-red-600 dark:text-red-400"
+                  title="Delete"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Load Bar */}
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Current Load</span>
+                  <button
+                    onClick={() =>
+                      handleUpdateLoad(resource.id, resource.currentLoad, resource.name)
+                    }
+                    className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                  >
+                    {Math.round(resource.currentLoad)}%
+                  </button>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                  <div
+                    className={clsx(
+                      'h-3 rounded-full transition-all',
+                      resource.currentLoad < 50
+                        ? 'bg-green-500'
+                        : resource.currentLoad < 80
+                        ? 'bg-yellow-500'
+                        : 'bg-red-500'
+                    )}
+                    style={{ width: `${resource.currentLoad}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {resource.capacity}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Capacity</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {resource._count?.tasks || 0}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Active Tasks</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Create Resource Modal */}
+      {showForm && (
+        <ResourceFormModal
+          onClose={() => setShowForm(false)}
+          onSubmit={handleCreateResource}
+        />
+      )}
+    </div>
+  );
+}
+
+function ResourceFormModal({
+  onClose,
+  onSubmit,
+}: {
+  onClose: () => void;
+  onSubmit: (data: CreateResourceInput) => void;
+}) {
+  const [formData, setFormData] = useState<CreateResourceInput>({
+    name: '',
+    capacity: 10,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md animate-scale-in">
+        <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add Resource</h3>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+            <X className="h-5 w-5 text-gray-500" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          <div>
+            <label className="label">Resource Name</label>
+            <input
+              type="text"
+              className="input"
+              placeholder="e.g., Server-A"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              required
+            />
+          </div>
+          <div>
+            <label className="label">Capacity</label>
+            <input
+              type="number"
+              className="input"
+              min="1"
+              value={formData.capacity}
+              onChange={(e) =>
+                setFormData({ ...formData, capacity: parseInt(e.target.value) })
+              }
+              required
+            />
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Maximum number of tasks this resource can handle
+            </p>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn btn-secondary flex-1"
+            >
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary flex-1">
+              Add Resource
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const colors: Record<string, string> = {
+    AVAILABLE: 'text-green-600 dark:text-green-400',
+    BUSY: 'text-yellow-600 dark:text-yellow-400',
+    OFFLINE: 'text-gray-600 dark:text-gray-400',
+  };
+  return (
+    <span className={clsx('text-sm font-medium', colors[status])}>
+      {status}
+    </span>
+  );
+}
