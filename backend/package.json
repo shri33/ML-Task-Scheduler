@@ -29,7 +29,7 @@
     "helmet": "^7.1.0",
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^6.9.7",
+    "nodemailer": "^7.0.12",
     "pdfkit": "^0.14.0",
     "socket.io": "^4.7.2",
     "swagger-jsdoc": "^6.2.8",
