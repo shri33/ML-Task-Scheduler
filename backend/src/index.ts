@@ -5,18 +5,18 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 
-import taskRoutes from './routes/task.routes.js';
-import resourceRoutes from './routes/resource.routes.js';
-import scheduleRoutes from './routes/schedule.routes.js';
-import metricsRoutes from './routes/metrics.routes.js';
-import reportsRoutes from './routes/reports.routes.js';
-import fogRoutes from './routes/fog.routes.js';
-import authRoutes from './routes/auth.routes.js';
-import { errorHandler } from './middleware/errorHandler.js';
-import { apiLimiter, scheduleLimiter } from './middleware/rateLimit.middleware.js';
-import redisService from './lib/redis.js';
-import emailService from './services/email.service.js';
-import { setupSwagger } from './lib/swagger.js';
+import taskRoutes from './routes/task.routes';
+import resourceRoutes from './routes/resource.routes';
+import scheduleRoutes from './routes/schedule.routes';
+import metricsRoutes from './routes/metrics.routes';
+import reportsRoutes from './routes/reports.routes';
+import fogRoutes from './routes/fog.routes';
+import authRoutes from './routes/auth.routes';
+import { errorHandler } from './middleware/errorHandler';
+import { apiLimiter, scheduleLimiter } from './middleware/rateLimit.middleware';
+import redisService from './lib/redis';
+import emailService from './services/email.service';
+import { setupSwagger } from './lib/swagger';
 
 dotenv.config();
 

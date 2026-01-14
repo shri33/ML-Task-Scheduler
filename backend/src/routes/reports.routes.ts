@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import pdfService from '../services/pdf.service.js';
-import prisma from '../lib/prisma.js';
+import pdfService from '../services/pdf.service';
+import prisma from '../lib/prisma';
 
 const router = Router();
 
@@ -106,7 +106,7 @@ router.get('/csv/tasks', async (req: Request, res: Response, next: NextFunction)
     const headers = ['ID', 'Name', 'Type', 'Size', 'Priority', 'Status', 'Due Date', 'Predicted Time', 'Actual Time', 'Resource', 'Created At', 'Completed At'];
     const csvRows = [headers.join(',')];
 
-    tasks.forEach(task => {
+    tasks.forEach((task: any) => {
       const row = [
         task.id,
         `"${task.name.replace(/"/g, '""')}"`,

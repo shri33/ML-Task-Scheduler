@@ -9,6 +9,16 @@ import { z } from 'zod';
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
 
+// Demo user for development without database
+const DEMO_USER = {
+  id: 'demo-user-001',
+  email: 'demo@example.com',
+  name: 'Demo User',
+  role: 'admin',
+  createdAt: new Date().toISOString()
+};
+const DEMO_PASSWORD = 'password123';
+
 // Validation schemas
 const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -114,10 +124,37 @@ router.post('/login', authLimiter, async (req: Request, res: Response, next: Nex
 
     const { email, password } = validation.data;
 
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email }
-    });
+    // Check for demo user (works without database)
+    if (email === DEMO_USER.email && password === DEMO_PASSWORD) {
+      const { accessToken, refreshToken } = generateTokens({
+        id: DEMO_USER.id,
+        email: DEMO_USER.email,
+        role: DEMO_USER.role
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          user: DEMO_USER,
+          accessToken,
+          refreshToken
+        }
+      });
+    }
+
+    // Find user in database
+    let user;
+    try {
+      user = await prisma.user.findUnique({
+        where: { email }
+      });
+    } catch (dbError) {
+      // Database not available, only demo login works
+      return res.status(503).json({
+        success: false,
+        error: 'Database unavailable. Use demo@example.com / password123'
+      });
+    }
 
     if (!user) {
       return res.status(401).json({
@@ -277,18 +314,36 @@ router.post('/logout', authenticate, async (req: AuthRequest, res: Response, nex
 // Get current user
 router.get('/me', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        lastLogin: true,
-        createdAt: true,
-        notifications: true
-      }
-    });
+    // Check if demo user
+    if (req.user!.userId === DEMO_USER.id) {
+      return res.json({
+        success: true,
+        data: {
+          user: DEMO_USER
+        }
+      });
+    }
+
+    let user;
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: req.user!.userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          lastLogin: true,
+          createdAt: true,
+          notifications: true
+        }
+      });
+    } catch (dbError) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database unavailable'
+      });
+    }
 
     if (!user) {
       return res.status(404).json({
@@ -299,7 +354,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response, next: Ne
 
     res.json({
       success: true,
-      data: user
+      data: { user }
     });
   } catch (error) {
     next(error);
