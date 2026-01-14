@@ -1,6 +1,9 @@
 import rateLimit from 'express-rate-limit';
 import { Request, Response } from 'express';
 
+// Paths to skip rate limiting (health checks, monitoring)
+const EXEMPT_PATHS = ['/api/health', '/api/docs', '/api-docs'];
+
 // General API rate limiter
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -12,6 +15,10 @@ export const apiLimiter = rateLimit({
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skip: (req: Request) => {
+    // Skip rate limiting for health checks and documentation
+    return EXEMPT_PATHS.some(path => req.path === path || req.originalUrl === path);
+  },
   handler: (req: Request, res: Response) => {
     res.status(429).json({
       success: false,
