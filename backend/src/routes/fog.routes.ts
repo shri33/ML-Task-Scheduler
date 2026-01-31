@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import {
   HybridHeuristicScheduler,
+  fcfsSchedule,
   roundRobinSchedule,
   minMinSchedule,
   ipsoOnlySchedule,
@@ -44,7 +45,7 @@ router.get('/info', (req: Request, res: Response) => {
       algorithm: 'Hybrid Heuristic (HH) - IPSO + IACO',
       reference: 'Wang & Li (2019) - Task Scheduling Based on Hybrid Heuristic Algorithm',
       capabilities: {
-        algorithms: ['Hybrid Heuristic (HH)', 'Improved PSO (IPSO)', 'Improved ACO (IACO)', 'Round-Robin', 'Min-Min'],
+        algorithms: ['Hybrid Heuristic (HH)', 'Improved PSO (IPSO)', 'Improved ACO (IACO)', 'FCFS', 'Round-Robin', 'Min-Min'],
         metrics: ['Completion Time', 'Energy Consumption', 'Reliability'],
         features: ['Multi-objective optimization', 'Delay constraints', 'Energy constraints', 'Maximum tolerance time analysis']
       },
@@ -219,6 +220,10 @@ router.post('/schedule', async (req: Request, res: Response) => {
       case 'aco':
         result = iacoOnlySchedule(fogTasks, fogNodes, terminalDevices);
         break;
+      case 'fcfs':
+      case 'first-come-first-served':
+        result = fcfsSchedule(fogTasks, fogNodes, terminalDevices);
+        break;
       case 'rr':
       case 'round-robin':
         result = roundRobinSchedule(fogTasks, fogNodes, terminalDevices);
@@ -230,7 +235,7 @@ router.post('/schedule', async (req: Request, res: Response) => {
       default:
         return res.status(400).json({
           success: false,
-          error: `Unknown algorithm: ${algorithm}. Use 'hh', 'ipso', 'iaco', 'rr', or 'min-min'`
+          error: `Unknown algorithm: ${algorithm}. Use 'hh', 'ipso', 'iaco', 'fcfs', 'rr', or 'min-min'`
         });
     }
     
@@ -304,6 +309,11 @@ router.post('/compare', async (req: Request, res: Response) => {
     const iaco = iacoOnlySchedule(testTasks, testFogNodes, testDevices);
     const iacoTime = Date.now() - iacoStart;
     
+    // Run FCFS
+    const fcfsStart = Date.now();
+    const fcfs = fcfsSchedule(testTasks, testFogNodes, testDevices);
+    const fcfsTime = Date.now() - fcfsStart;
+    
     // Run RR
     const rrStart = Date.now();
     const rr = roundRobinSchedule(testTasks, testFogNodes, testDevices);
@@ -323,6 +333,8 @@ router.post('/compare', async (req: Request, res: Response) => {
     const hhVsMmEnergy = ((minMin.totalEnergy - hh.totalEnergy) / minMin.totalEnergy * 100).toFixed(2);
     const hhVsIpsoDelay = ((ipso.totalDelay - hh.totalDelay) / ipso.totalDelay * 100).toFixed(2);
     const hhVsIacoDelay = ((iaco.totalDelay - hh.totalDelay) / iaco.totalDelay * 100).toFixed(2);
+    const hhVsFcfsDelay = ((fcfs.totalDelay - hh.totalDelay) / fcfs.totalDelay * 100).toFixed(2);
+    const hhVsFcfsEnergy = ((fcfs.totalEnergy - hh.totalEnergy) / fcfs.totalEnergy * 100).toFixed(2);
     
     res.json({
       success: true,
@@ -351,6 +363,12 @@ router.post('/compare', async (req: Request, res: Response) => {
             reliability: parseFloat(iaco.reliability.toFixed(2)),
             executionTimeMs: iacoTime
           },
+          fcfs: {
+            totalDelay: parseFloat(fcfs.totalDelay.toFixed(4)),
+            totalEnergy: parseFloat(fcfs.totalEnergy.toFixed(4)),
+            reliability: parseFloat(fcfs.reliability.toFixed(2)),
+            executionTimeMs: fcfsTime
+          },
           roundRobin: {
             totalDelay: parseFloat(rr.totalDelay.toFixed(4)),
             totalEnergy: parseFloat(rr.totalEnergy.toFixed(4)),
@@ -369,6 +387,11 @@ router.post('/compare', async (req: Request, res: Response) => {
             delayReduction: `${hhVsRrDelay}%`,
             energyReduction: `${hhVsRrEnergy}%`,
             reliabilityGain: `${(hh.reliability - rr.reliability).toFixed(2)}%`
+          },
+          hhVsFCFS: {
+            delayReduction: `${hhVsFcfsDelay}%`,
+            energyReduction: `${hhVsFcfsEnergy}%`,
+            reliabilityGain: `${(hh.reliability - fcfs.reliability).toFixed(2)}%`
           },
           hhVsMinMin: {
             delayReduction: `${hhVsMmDelay}%`,
@@ -416,6 +439,7 @@ router.get('/metrics', async (req: Request, res: Response) => {
       const hh = hhScheduler.schedule();
       const ipso = ipsoOnlySchedule(testTasks, testFogNodes, testDevices);
       const iaco = iacoOnlySchedule(testTasks, testFogNodes, testDevices);
+      const fcfs = fcfsSchedule(testTasks, testFogNodes, testDevices);
       const rr = roundRobinSchedule(testTasks, testFogNodes, testDevices);
       const minMin = minMinSchedule(testTasks, testFogNodes, testDevices);
       
@@ -425,6 +449,7 @@ router.get('/metrics', async (req: Request, res: Response) => {
           hh: parseFloat(hh.totalDelay.toFixed(2)),
           ipso: parseFloat(ipso.totalDelay.toFixed(2)),
           iaco: parseFloat(iaco.totalDelay.toFixed(2)),
+          fcfs: parseFloat(fcfs.totalDelay.toFixed(2)),
           rr: parseFloat(rr.totalDelay.toFixed(2)),
           minMin: parseFloat(minMin.totalDelay.toFixed(2))
         },
@@ -432,6 +457,7 @@ router.get('/metrics', async (req: Request, res: Response) => {
           hh: parseFloat(hh.totalEnergy.toFixed(2)),
           ipso: parseFloat(ipso.totalEnergy.toFixed(2)),
           iaco: parseFloat(iaco.totalEnergy.toFixed(2)),
+          fcfs: parseFloat(fcfs.totalEnergy.toFixed(2)),
           rr: parseFloat(rr.totalEnergy.toFixed(2)),
           minMin: parseFloat(minMin.totalEnergy.toFixed(2))
         },
@@ -439,6 +465,7 @@ router.get('/metrics', async (req: Request, res: Response) => {
           hh: parseFloat(hh.reliability.toFixed(2)),
           ipso: parseFloat(ipso.reliability.toFixed(2)),
           iaco: parseFloat(iaco.reliability.toFixed(2)),
+          fcfs: parseFloat(fcfs.reliability.toFixed(2)),
           rr: parseFloat(rr.reliability.toFixed(2)),
           minMin: parseFloat(minMin.reliability.toFixed(2))
         }
@@ -453,18 +480,21 @@ router.get('/metrics', async (req: Request, res: Response) => {
           completionTime: metrics.map(m => ({
             tasks: m.taskCount,
             HH: m.completionTime.hh,
+            FCFS: m.completionTime.fcfs,
             RR: m.completionTime.rr,
             MinMin: m.completionTime.minMin
           })),
           energyConsumption: metrics.map(m => ({
             tasks: m.taskCount,
             HH: m.energyConsumption.hh,
+            FCFS: m.energyConsumption.fcfs,
             RR: m.energyConsumption.rr,
             MinMin: m.energyConsumption.minMin
           })),
           reliability: metrics.map(m => ({
             tasks: m.taskCount,
             HH: m.reliability.hh,
+            FCFS: m.reliability.fcfs,
             RR: m.reliability.rr,
             MinMin: m.reliability.minMin
           }))
@@ -523,37 +553,38 @@ router.get('/export/csv', async (req: Request, res: Response) => {
       const hh = hhScheduler.schedule();
       const ipso = ipsoOnlySchedule(testTasks, testFogNodes, testDevices);
       const iaco = iacoOnlySchedule(testTasks, testFogNodes, testDevices);
+      const fcfs = fcfsSchedule(testTasks, testFogNodes, testDevices);
       const rr = roundRobinSchedule(testTasks, testFogNodes, testDevices);
       const minMin = minMinSchedule(testTasks, testFogNodes, testDevices);
       
-      results.push({ count, hh, ipso, iaco, rr, minMin });
+      results.push({ count, hh, ipso, iaco, fcfs, rr, minMin });
     }
     
     let csv = '';
     
     if (type === 'delay' || type === 'all') {
       csv += 'COMPLETION TIME (seconds)\n';
-      csv += 'TaskCount,HH,IPSO,IACO,RoundRobin,MinMin\n';
+      csv += 'TaskCount,HH,IPSO,IACO,FCFS,RoundRobin,MinMin\n';
       results.forEach(r => {
-        csv += `${r.count},${r.hh.totalDelay.toFixed(2)},${r.ipso.totalDelay.toFixed(2)},${r.iaco.totalDelay.toFixed(2)},${r.rr.totalDelay.toFixed(2)},${r.minMin.totalDelay.toFixed(2)}\n`;
+        csv += `${r.count},${r.hh.totalDelay.toFixed(2)},${r.ipso.totalDelay.toFixed(2)},${r.iaco.totalDelay.toFixed(2)},${r.fcfs.totalDelay.toFixed(2)},${r.rr.totalDelay.toFixed(2)},${r.minMin.totalDelay.toFixed(2)}\n`;
       });
       csv += '\n';
     }
     
     if (type === 'energy' || type === 'all') {
       csv += 'ENERGY CONSUMPTION (Joules)\n';
-      csv += 'TaskCount,HH,IPSO,IACO,RoundRobin,MinMin\n';
+      csv += 'TaskCount,HH,IPSO,IACO,FCFS,RoundRobin,MinMin\n';
       results.forEach(r => {
-        csv += `${r.count},${r.hh.totalEnergy.toFixed(2)},${r.ipso.totalEnergy.toFixed(2)},${r.iaco.totalEnergy.toFixed(2)},${r.rr.totalEnergy.toFixed(2)},${r.minMin.totalEnergy.toFixed(2)}\n`;
+        csv += `${r.count},${r.hh.totalEnergy.toFixed(2)},${r.ipso.totalEnergy.toFixed(2)},${r.iaco.totalEnergy.toFixed(2)},${r.fcfs.totalEnergy.toFixed(2)},${r.rr.totalEnergy.toFixed(2)},${r.minMin.totalEnergy.toFixed(2)}\n`;
       });
       csv += '\n';
     }
     
     if (type === 'reliability' || type === 'all') {
       csv += 'RELIABILITY (%)\n';
-      csv += 'TaskCount,HH,IPSO,IACO,RoundRobin,MinMin\n';
+      csv += 'TaskCount,HH,IPSO,IACO,FCFS,RoundRobin,MinMin\n';
       results.forEach(r => {
-        csv += `${r.count},${r.hh.reliability.toFixed(2)},${r.ipso.reliability.toFixed(2)},${r.iaco.reliability.toFixed(2)},${r.rr.reliability.toFixed(2)},${r.minMin.reliability.toFixed(2)}\n`;
+        csv += `${r.count},${r.hh.reliability.toFixed(2)},${r.ipso.reliability.toFixed(2)},${r.iaco.reliability.toFixed(2)},${r.fcfs.reliability.toFixed(2)},${r.rr.reliability.toFixed(2)},${r.minMin.reliability.toFixed(2)}\n`;
       });
     }
     
