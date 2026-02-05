@@ -282,15 +282,15 @@ export default function FogComputing() {
           </button>
           <div className="border-l border-gray-300 dark:border-gray-600 pl-4 flex gap-2">
             <a
-              href="/api/fog/export/csv?type=all"
-              download
+              href="http://localhost:3001/api/fog/export/csv?type=all"
+              download="fog_benchmark.csv"
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
             >
               📊 Export CSV
             </a>
             <a
-              href="/api/fog/export/json"
-              download
+              href="http://localhost:3001/api/fog/export/json"
+              download="fog_benchmark.json"
               className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-sm"
             >
               📋 Export JSON

@@ -105,7 +105,7 @@ class PDFService {
     // Footer
     const pageCount = doc.bufferedPageRange().count;
     for (let i = 0; i < pageCount; i++) {
-      doc.switchToPage(i);
+      doc.switchToPage(i + 1);
       doc.fontSize(8).text(
         `Page ${i + 1} of ${pageCount} | ML Task Scheduler Report`,
         50,

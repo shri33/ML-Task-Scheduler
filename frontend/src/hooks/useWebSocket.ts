@@ -65,23 +65,29 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
       setState((prev) => ({ ...prev, error }));
     });
 
-    // Task events
+    // Task events - debounced to prevent duplicate fetches
+    let taskFetchTimeout: ReturnType<typeof setTimeout> | null = null;
+    const debouncedFetchTasks = () => {
+      if (taskFetchTimeout) clearTimeout(taskFetchTimeout);
+      taskFetchTimeout = setTimeout(() => fetchTasks(), 300);
+    };
+
     socket.on('task:created', (task) => {
       console.log('📥 Task created:', task);
       setState((prev) => ({ ...prev, lastMessage: { type: 'task:created', data: task } }));
-      fetchTasks();
+      // Don't fetch here - the creator already fetched
     });
 
     socket.on('task:updated', (task) => {
       console.log('📥 Task updated:', task);
       setState((prev) => ({ ...prev, lastMessage: { type: 'task:updated', data: task } }));
-      fetchTasks();
+      debouncedFetchTasks();
     });
 
     socket.on('task:deleted', (data) => {
       console.log('📥 Task deleted:', data);
       setState((prev) => ({ ...prev, lastMessage: { type: 'task:deleted', data } }));
-      fetchTasks();
+      debouncedFetchTasks();
     });
 
     socket.on('tasks:scheduled', (results) => {

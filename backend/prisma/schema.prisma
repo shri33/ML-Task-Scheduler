@@ -160,3 +160,63 @@ model NotificationPreference {
   emailDailySummary   Boolean @default(false)
   emailAddress        String?
 }
+
+// ML Model Versioning
+enum ModelStatus {
+  ACTIVE
+  ARCHIVED
+  TRAINING
+  FAILED
+}
+
+model MlModel {
+  id              String      @id @default(uuid())
+  version         String      @unique
+  modelType       String      // random_forest, xgboost, gradient_boosting
+  status          ModelStatus @default(TRAINING)
+  r2Score         Float?
+  maeScore        Float?
+  rmseScore       Float?
+  trainingDataSize Int
+  featureImportance Json?
+  hyperparameters Json?
+  modelPath       String?     // Path to serialized model file
+  createdAt       DateTime    @default(now())
+  trainedAt       DateTime?
+  archivedAt      DateTime?
+  
+  trainingJobs    TrainingJob[]
+
+  @@index([status])
+  @@index([modelType])
+  @@index([createdAt])
+}
+
+model TrainingJob {
+  id              String      @id @default(uuid())
+  modelId         String?
+  model           MlModel?    @relation(fields: [modelId], references: [id])
+  status          String      @default("pending") // pending, running, completed, failed
+  triggerType     String      // manual, auto, scheduled
+  dataPointsUsed  Int
+  startedAt       DateTime?
+  completedAt     DateTime?
+  errorMessage    String?
+  metrics         Json?
+  createdAt       DateTime    @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Auto-retrain configuration
+model AutoRetrainConfig {
+  id                    String   @id @default(uuid())
+  isEnabled             Boolean  @default(true)
+  dataThreshold         Int      @default(100)    // Retrain after N new data points
+  accuracyThreshold     Float    @default(0.85)   // Retrain if accuracy drops below
+  maxRetrainFrequency   Int      @default(3600)   // Minimum seconds between retrains
+  lastRetrainAt         DateTime?
+  pendingDataPoints     Int      @default(0)
+  updatedAt             DateTime @updatedAt
+}

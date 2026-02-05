@@ -11,7 +11,7 @@ import TaskEditModal from '../components/TaskEditModal';
 import CSVExport from '../components/CSVExport';
 
 export default function Tasks() {
-  const { tasks, tasksLoading, fetchTasks, addTask, updateTask, removeTask, runScheduler } = useStore();
+  const { tasks, tasksLoading, fetchTasks, updateTask, removeTask, runScheduler } = useStore();
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filter, setFilter] = useState<string>('');
@@ -34,15 +34,12 @@ export default function Tasks() {
       t.type.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-  const handleCreateTask = async (data: CreateTaskInput) => {
-    try {
-      const task = await taskApi.create(data);
-      addTask(task);
-      setShowForm(false);
-      toast.success('Task created', `"${task.name}" has been created successfully.`);
-    } catch (error) {
-      toast.error('Failed to create task', 'Please try again.');
-    }
+  const handleCreateTask = async (data: CreateTaskInput): Promise<void> => {
+    const task = await taskApi.create(data);
+    setShowForm(false);
+    toast.success('Task created', `"${task.name}" has been created successfully.`);
+    // Fetch tasks to ensure we have the latest data
+    await fetchTasks();
   };
 
   const handleDeleteTask = async (id: string, name: string) => {
@@ -280,7 +277,7 @@ function TaskFormModal({
   onSubmit,
 }: {
   onClose: () => void;
-  onSubmit: (data: CreateTaskInput) => void;
+  onSubmit: (data: CreateTaskInput) => Promise<void>;
 }) {
   const [formData, setFormData] = useState<CreateTaskInput>({
     name: '',
@@ -289,10 +286,17 @@ function TaskFormModal({
     priority: 3,
     dueDate: null,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await onSubmit(formData);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -398,12 +402,13 @@ function TaskFormModal({
             <button
               type="button"
               onClick={onClose}
+              disabled={isSubmitting}
               className="btn btn-secondary flex-1"
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary flex-1">
-              Create Task
+            <button type="submit" disabled={isSubmitting} className="btn btn-primary flex-1">
+              {isSubmitting ? 'Creating...' : 'Create Task'}
             </button>
           </div>
         </form>
