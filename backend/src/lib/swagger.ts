@@ -174,9 +174,45 @@ Authorization: Bearer <your-jwt-token>
 
 const swaggerSpec = swaggerJsdoc(options);
 
-export function setupSwagger(app: Express): void {
-  // Swagger UI
-  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+import logger from './logger';
+
+// Basic auth middleware for protecting Swagger in production
+function swaggerAuthMiddleware(req: any, res: any, next: any) {
+  const authHeader = req.headers.authorization;
+  
+  // Check for basic auth credentials
+  if (!authHeader || !authHeader.startsWith('Basic ')) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="API Documentation"');
+    return res.status(401).send('Authentication required for API documentation');
+  }
+  
+  const base64Credentials = authHeader.split(' ')[1];
+  const credentials = Buffer.from(base64Credentials, 'base64').toString('utf8');
+  const [username, password] = credentials.split(':');
+  
+  // Use environment variables for credentials (defaults for development only)
+  const validUser = process.env.SWAGGER_USER || 'admin';
+  const validPass = process.env.SWAGGER_PASS || 'changeme';
+  
+  if (username === validUser && password === validPass) {
+    return next();
+  }
+  
+  res.setHeader('WWW-Authenticate', 'Basic realm="API Documentation"');
+  return res.status(401).send('Invalid credentials');
+}
+
+export function setupSwagger(app: Express, protectInProduction: boolean = false): void {
+  const middlewares: any[] = [swaggerUi.serve];
+  
+  // Add auth protection in production
+  if (protectInProduction) {
+    middlewares.unshift(swaggerAuthMiddleware);
+    logger.info('Swagger documentation protected with authentication');
+  }
+  
+  // Swagger UI with optional auth
+  app.use('/api/docs', ...middlewares, swaggerUi.setup(swaggerSpec, {
     customCss: `
       .swagger-ui .topbar { display: none }
       .swagger-ui .info { margin: 20px 0; }
@@ -186,13 +222,20 @@ export function setupSwagger(app: Express): void {
     customfavIcon: '/favicon.ico'
   }));
 
-  // JSON spec endpoint
-  app.get('/api/docs.json', (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.send(swaggerSpec);
-  });
+  // JSON spec endpoint (also protected in production)
+  if (protectInProduction) {
+    app.get('/api/docs.json', swaggerAuthMiddleware, (req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      res.send(swaggerSpec);
+    });
+  } else {
+    app.get('/api/docs.json', (req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      res.send(swaggerSpec);
+    });
+  }
 
-  console.log('📚 API Docs available at http://localhost:3001/api/docs');
+  logger.info('API Docs available at /api/docs');
 }
 
 export default swaggerSpec;

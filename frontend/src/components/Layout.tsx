@@ -15,6 +15,7 @@ import {
   LogOut,
   User,
   Settings,
+  Cpu,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import socketService from '../lib/socket';
@@ -29,6 +30,7 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Tasks', href: '/tasks', icon: ListTodo },
   { name: 'Resources', href: '/resources', icon: Server },
+  { name: 'Devices', href: '/devices', icon: Cpu },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Fog Computing', href: '/fog-computing', icon: Cloud },
 ];

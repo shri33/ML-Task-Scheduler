@@ -1,17 +1,29 @@
 # Dependencies
 node_modules/
-/backend/node_modules/
-/frontend/node_modules/
+**/node_modules/
+
+# Python virtual environments
+.venv/
+venv/
+**/.venv/
+**/venv/
+*.pyc
+**/__pycache__/
 
 # Build outputs
-/frontend/dist/
-/backend/dist/
-/ml-service/__pycache__/
-/ml-service/*.pyc
+dist/
+**/dist/
+build/
+**/build/
+*.js.map
 
-# Environment
+# Environment files (NEVER commit secrets)
 .env
-.env.local
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
 
 # IDE
 .vscode/
@@ -23,6 +35,7 @@ node_modules/
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Docker
 .dockerignore
@@ -31,6 +44,35 @@ Thumbs.db
 logs/
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # Cache
 .cache/
+.npm/
+.yarn/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Git internals (should never be in zip exports)
+.git/
+
+# ML model artifacts (regenerate, don't commit)
+*.joblib
+*.pkl
+*.h5
+*.pt
+!models/.gitkeep
+!ml-service/models/.gitkeep
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Lock files (optional - uncomment if you want to ignore)
+# package-lock.json
+# yarn.lock

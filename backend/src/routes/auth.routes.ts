@@ -402,6 +402,156 @@ router.put('/profile', authenticate, async (req: AuthRequest, res: Response, nex
   }
 });
 
+// Forgot password - Request reset
+router.post('/forgot-password', authLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email is required'
+      });
+    }
+
+    // Check for demo user
+    if (email === DEMO_USER.email) {
+      return res.json({
+        success: true,
+        message: 'If an account exists with this email, a password reset link has been sent.'
+      });
+    }
+
+    let user;
+    try {
+      user = await prisma.user.findUnique({
+        where: { email }
+      });
+    } catch (dbError) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database unavailable'
+      });
+    }
+
+    // Always return success to prevent email enumeration
+    if (!user) {
+      return res.json({
+        success: true,
+        message: 'If an account exists with this email, a password reset link has been sent.'
+      });
+    }
+
+    // Generate reset token (valid for 1 hour)
+    const resetToken = jwt.sign(
+      { userId: user.id, type: 'password-reset' },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // Store reset token in database
+    await prisma.refreshToken.create({
+      data: {
+        token: `reset:${resetToken}`,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+      }
+    });
+
+    // In production, send email with reset link
+    // For demo, we'll just return success
+    console.log(`Password reset token for ${email}: ${resetToken}`);
+
+    res.json({
+      success: true,
+      message: 'If an account exists with this email, a password reset link has been sent.',
+      // Include token in development for testing
+      ...(process.env.NODE_ENV !== 'production' && { resetToken })
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Reset password with token
+router.post('/reset-password', authLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'Token and new password are required'
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password must be at least 8 characters'
+      });
+    }
+
+    // Verify token
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid or expired reset token'
+      });
+    }
+
+    if (decoded.type !== 'password-reset') {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid token type'
+      });
+    }
+
+    // Check if reset token exists
+    const storedToken = await prisma.refreshToken.findFirst({
+      where: { 
+        token: `reset:${token}`,
+        userId: decoded.userId,
+        expiresAt: { gt: new Date() }
+      }
+    });
+
+    if (!storedToken) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid or expired reset token'
+      });
+    }
+
+    // Hash new password and update user
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({
+      where: { id: decoded.userId },
+      data: { password: hashedPassword }
+    });
+
+    // Delete reset token
+    await prisma.refreshToken.delete({
+      where: { id: storedToken.id }
+    });
+
+    // Invalidate all existing refresh tokens
+    await prisma.refreshToken.deleteMany({
+      where: { userId: decoded.userId }
+    });
+
+    res.json({
+      success: true,
+      message: 'Password has been reset successfully. Please login with your new password.'
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Change password
 router.put('/password', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {

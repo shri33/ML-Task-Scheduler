@@ -9,6 +9,8 @@
  * - Hybrid Heuristic (HH) Algorithm
  */
 
+import logger from '../lib/logger';
+
 // ==================== TYPE DEFINITIONS ====================
 
 export interface TerminalDevice {
@@ -581,17 +583,16 @@ export class HybridHeuristicScheduler {
    * Step 3: Run IACO for final optimization
    */
   schedule(): SchedulingSolution {
-    console.log('🔄 Starting Hybrid Heuristic (HH) Algorithm...');
-    console.log(`   Tasks: ${this.tasks.length}, Fog Nodes: ${this.fogNodes.length}`);
+    logger.debug('Starting Hybrid Heuristic (HH) Algorithm', { tasks: this.tasks.length, fogNodes: this.fogNodes.length });
 
     // Step 1: Run IPSO
-    console.log('📊 Phase 1: Running Improved PSO...');
+    logger.debug('Phase 1: Running Improved PSO');
     const ipso = new ImprovedPSO(this.tasks, this.fogNodes, this.devices, 30, 50);
     const psoResult = ipso.run();
-    console.log(`   PSO Best Fitness: ${psoResult.bestFitness.toFixed(6)}`);
+    logger.debug('PSO completed', { bestFitness: psoResult.bestFitness });
 
     // Step 2: Use PSO result as initial pheromone for ACO
-    console.log('🐜 Phase 2: Running Improved ACO...');
+    logger.debug('Phase 2: Running Improved ACO');
     const iaco = new ImprovedACO(
       this.tasks, 
       this.fogNodes, 
@@ -601,7 +602,7 @@ export class HybridHeuristicScheduler {
       psoResult.bestPosition // Initial pheromone from PSO
     );
     const acoResult = iaco.run();
-    console.log(`   ACO Best Path Length: ${acoResult.bestPathLength.toFixed(4)}`);
+    logger.debug('ACO completed', { bestPathLength: acoResult.bestPathLength });
 
     // Convert ACO result to allocation map
     const allocations = new Map<string, string>();
@@ -631,10 +632,11 @@ export class HybridHeuristicScheduler {
     }
     const reliability = (successfulTasks / this.tasks.length) * 100;
 
-    console.log('✅ HH Algorithm Complete!');
-    console.log(`   Total Delay: ${result.totalDelay.toFixed(4)}s`);
-    console.log(`   Total Energy: ${result.totalEnergy.toFixed(4)}J`);
-    console.log(`   Reliability: ${reliability.toFixed(2)}%`);
+    logger.debug('HH Algorithm completed', { 
+      totalDelay: result.totalDelay, 
+      totalEnergy: result.totalEnergy, 
+      reliability 
+    });
 
     return {
       allocations,
@@ -1033,34 +1035,31 @@ export function runAlgorithmComparison(
   rr: SchedulingSolution;
   minMin: SchedulingSolution;
 } {
-  console.log('\n========== Algorithm Comparison ==========\n');
+  logger.debug('Starting Algorithm Comparison');
 
   // Run HH
   const hhScheduler = new HybridHeuristicScheduler(tasks, fogNodes, devices);
   const hh = hhScheduler.schedule();
 
-  console.log('\n📊 Running IPSO-Only...');
+  logger.debug('Running IPSO-Only');
   const ipso = ipsoOnlySchedule(tasks, fogNodes, devices);
-  console.log(`   IPSO - Delay: ${ipso.totalDelay.toFixed(4)}s, Energy: ${ipso.totalEnergy.toFixed(4)}J, Reliability: ${ipso.reliability.toFixed(2)}%`);
 
-  console.log('\n🐜 Running IACO-Only...');
+  logger.debug('Running IACO-Only');
   const iaco = iacoOnlySchedule(tasks, fogNodes, devices);
-  console.log(`   IACO - Delay: ${iaco.totalDelay.toFixed(4)}s, Energy: ${iaco.totalEnergy.toFixed(4)}J, Reliability: ${iaco.reliability.toFixed(2)}%`);
 
-  console.log('\n📋 Running Round-Robin...');
+  logger.debug('Running Round-Robin');
   const rr = roundRobinSchedule(tasks, fogNodes, devices);
-  console.log(`   RR - Delay: ${rr.totalDelay.toFixed(4)}s, Energy: ${rr.totalEnergy.toFixed(4)}J, Reliability: ${rr.reliability.toFixed(2)}%`);
 
-  console.log('\n📋 Running Min-Min...');
+  logger.debug('Running Min-Min');
   const minMin = minMinSchedule(tasks, fogNodes, devices);
-  console.log(`   Min-Min - Delay: ${minMin.totalDelay.toFixed(4)}s, Energy: ${minMin.totalEnergy.toFixed(4)}J, Reliability: ${minMin.reliability.toFixed(2)}%`);
 
-  console.log('\n========== Comparison Summary ==========');
-  console.log(`HH      - Delay: ${hh.totalDelay.toFixed(4)}s, Energy: ${hh.totalEnergy.toFixed(4)}J, Reliability: ${hh.reliability.toFixed(2)}%`);
-  console.log(`IPSO    - Delay: ${ipso.totalDelay.toFixed(4)}s, Energy: ${ipso.totalEnergy.toFixed(4)}J, Reliability: ${ipso.reliability.toFixed(2)}%`);
-  console.log(`IACO    - Delay: ${iaco.totalDelay.toFixed(4)}s, Energy: ${iaco.totalEnergy.toFixed(4)}J, Reliability: ${iaco.reliability.toFixed(2)}%`);
-  console.log(`RR      - Delay: ${rr.totalDelay.toFixed(4)}s, Energy: ${rr.totalEnergy.toFixed(4)}J, Reliability: ${rr.reliability.toFixed(2)}%`);
-  console.log(`Min-Min - Delay: ${minMin.totalDelay.toFixed(4)}s, Energy: ${minMin.totalEnergy.toFixed(4)}J, Reliability: ${minMin.reliability.toFixed(2)}%`);
+  logger.info('Algorithm comparison completed', {
+    hh: { delay: hh.totalDelay, energy: hh.totalEnergy, reliability: hh.reliability },
+    ipso: { delay: ipso.totalDelay, energy: ipso.totalEnergy, reliability: ipso.reliability },
+    iaco: { delay: iaco.totalDelay, energy: iaco.totalEnergy, reliability: iaco.reliability },
+    rr: { delay: rr.totalDelay, energy: rr.totalEnergy, reliability: rr.reliability },
+    minMin: { delay: minMin.totalDelay, energy: minMin.totalEnergy, reliability: minMin.reliability }
+  });
 
   return { hh, ipso, iaco, rr, minMin };
 }

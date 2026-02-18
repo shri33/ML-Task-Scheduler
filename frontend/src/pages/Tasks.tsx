@@ -42,6 +42,7 @@ export default function Tasks() {
       toast.success('Task created', `"${task.name}" has been created successfully.`);
     } catch (error) {
       toast.error('Failed to create task', 'Please try again.');
+      throw error; // Re-throw to let the modal know submission failed
     }
   };
 
@@ -289,10 +290,17 @@ function TaskFormModal({
     priority: 3,
     dueDate: null,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    if (isSubmitting) return; // Prevent double submission
+    setIsSubmitting(true);
+    try {
+      await onSubmit(formData);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -398,12 +406,17 @@ function TaskFormModal({
             <button
               type="button"
               onClick={onClose}
-              className="btn btn-secondary flex-1"
+              disabled={isSubmitting}
+              className="btn btn-secondary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary flex-1">
-              Create Task
+            <button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="btn btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Creating...' : 'Create Task'}
             </button>
           </div>
         </form>

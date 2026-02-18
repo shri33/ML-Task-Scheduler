@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import prisma from '../lib/prisma';
+import logger from '../lib/logger';
 
 interface EmailOptions {
   to: string;
@@ -33,9 +34,9 @@ class EmailService {
         }
       });
       this.isConfigured = true;
-      console.log('📧 Email service configured');
+      logger.info('Email service configured');
     } else {
-      console.log('📧 Email service not configured (missing SMTP credentials)');
+      logger.info('Email service not configured (missing SMTP credentials)');
     }
   }
 
@@ -45,7 +46,7 @@ class EmailService {
 
   async sendEmail(options: EmailOptions): Promise<boolean> {
     if (!this.isAvailable()) {
-      console.log('📧 Email not sent (service not configured):', options.subject);
+      logger.debug('Email not sent (service not configured)', { subject: options.subject });
       return false;
     }
 
@@ -60,10 +61,10 @@ class EmailService {
         text: options.text
       });
 
-      console.log('📧 Email sent:', options.subject, 'to', options.to);
+      logger.info('Email sent', { subject: options.subject, to: options.to });
       return true;
     } catch (error) {
-      console.error('📧 Email send error:', error);
+      logger.error('Email send error', error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }
@@ -98,7 +99,7 @@ class EmailService {
         });
       }
     } catch (error) {
-      console.error('Error sending task completed notification:', error);
+      logger.error('Error sending task completed notification', error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -131,7 +132,7 @@ class EmailService {
         });
       }
     } catch (error) {
-      console.error('Error sending task failed notification:', error);
+      logger.error('Error sending task failed notification', error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -185,7 +186,7 @@ class EmailService {
         });
       }
     } catch (error) {
-      console.error('Error sending daily summary:', error);
+      logger.error('Error sending daily summary', error instanceof Error ? error : new Error(String(error)));
     }
   }
 

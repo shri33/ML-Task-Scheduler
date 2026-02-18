@@ -1,6 +1,8 @@
 import axios from 'axios';
 import prisma from '../lib/prisma';
 import { Prisma } from '@prisma/client';
+import logger from '../lib/logger';
+import { errorRecovery } from './errorRecovery.service';
 
 interface PredictionRequest {
   taskSize: number;  // 1=SMALL, 2=MEDIUM, 3=LARGE
@@ -32,6 +34,12 @@ export class MLService {
     priority: number,
     resourceLoad: number
   ): Promise<PredictionResponse> {
+    // Check circuit breaker before making request
+    if (!errorRecovery.isServiceAvailable('ml-service')) {
+      logger.warn('ML Service circuit breaker open, using fallback');
+      return this.fallbackPrediction(taskSize, taskType, priority, resourceLoad);
+    }
+
     try {
       const request: PredictionRequest = {
         taskSize: sizeMap[taskSize] || 2,
@@ -46,9 +54,15 @@ export class MLService {
         { timeout: 5000 }
       );
 
+      // Record success for circuit breaker
+      errorRecovery.recordSuccess('ml-service');
       return response.data;
     } catch (error) {
-      console.warn('ML Service unavailable, using fallback prediction');
+      // Record failure for circuit breaker
+      errorRecovery.recordFailure('ml-service', error instanceof Error ? error : new Error(String(error)));
+      logger.warn('ML Service unavailable, using fallback prediction', { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
       return this.fallbackPrediction(taskSize, taskType, priority, resourceLoad);
     }
   }
@@ -99,6 +113,32 @@ export class MLService {
       return response.status === 200;
     } catch {
       return false;
+    }
+  }
+
+  async getModelInfo(): Promise<any> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/api/model/info`, { timeout: 3000 });
+      return response.data;
+    } catch {
+      return null;
+    }
+  }
+
+  getHealthStatus(): { isHealthy: boolean; fallbackMode: boolean; lastCheck: Date } {
+    return {
+      isHealthy: true,
+      fallbackMode: false,
+      lastCheck: new Date()
+    };
+  }
+
+  async compareModels(params: { features: any; modelTypes?: string[] }): Promise<any> {
+    try {
+      const response = await axios.post(`${this.baseUrl}/api/model/compare`, params, { timeout: 10000 });
+      return response.data;
+    } catch {
+      return { error: 'Model comparison unavailable' };
     }
   }
 }

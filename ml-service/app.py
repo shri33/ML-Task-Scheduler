@@ -4,7 +4,9 @@ Predicts task execution time using Random Forest Regression
 """
 
 import os
-from flask import Flask, request, jsonify
+import logging
+from datetime import datetime
+from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 from dotenv import load_dotenv
 import numpy as np
@@ -12,11 +14,46 @@ from model import TaskPredictor
 
 load_dotenv()
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] [ml-service] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
+
+# Add file handler for production (only if logs directory can be created)
+if os.getenv('FLASK_ENV') == 'production':
+    try:
+        log_dir = 'logs'
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir, exist_ok=True)
+        file_handler = logging.FileHandler(f'{log_dir}/ml-service.log')
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s [%(levelname)s] [ml-service] %(message)s'
+        ))
+        logger.addHandler(file_handler)
+    except Exception as e:
+        logger.warning(f"Could not create file handler for logging: {e}")
+
 app = Flask(__name__)
 CORS(app)
 
+# Request logging middleware
+@app.before_request
+def log_request():
+    g.start_time = datetime.now()
+    logger.info(f"Request: {request.method} {request.path}")
+
+@app.after_request
+def log_response(response):
+    duration = (datetime.now() - g.start_time).total_seconds() * 1000
+    logger.info(f"Response: {request.method} {request.path} {response.status_code} {duration:.2f}ms")
+    return response
+
 # Initialize model
 predictor = TaskPredictor()
+logger.info(f"Model initialized: {predictor.model_type} - {predictor.get_version()}")
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -83,6 +120,120 @@ def predict():
             'confidence': round(confidence, 4),
             'modelVersion': predictor.get_version()
         })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/predict/batch', methods=['POST'])
+def predict_batch():
+    """
+    Batch prediction for multiple tasks at once
+    
+    Request body:
+    {
+        "tasks": [
+            {
+                "taskId": "optional-id",
+                "taskSize": 1-3,
+                "taskType": 1-3,
+                "priority": 1-5,
+                "resourceLoad": 0-100
+            },
+            ...
+        ]
+    }
+    
+    Response:
+    {
+        "predictions": [
+            {
+                "taskId": "optional-id",
+                "predictedTime": float,
+                "confidence": float
+            },
+            ...
+        ],
+        "totalTasks": int,
+        "avgPredictedTime": float,
+        "modelVersion": string
+    }
+    """
+    try:
+        data = request.get_json()
+        
+        if 'tasks' not in data or not isinstance(data['tasks'], list):
+            return jsonify({'error': 'Missing "tasks" array in request body'}), 400
+        
+        if len(data['tasks']) == 0:
+            return jsonify({'error': 'Empty tasks array'}), 400
+        
+        if len(data['tasks']) > 1000:
+            return jsonify({'error': 'Maximum 1000 tasks per batch request'}), 400
+        
+        predictions = []
+        total_time = 0
+        errors = []
+        
+        for idx, task in enumerate(data['tasks']):
+            try:
+                # Validate required fields
+                required_fields = ['taskSize', 'taskType', 'priority', 'resourceLoad']
+                missing = [f for f in required_fields if f not in task]
+                if missing:
+                    errors.append({'index': idx, 'error': f'Missing fields: {missing}'})
+                    continue
+                
+                task_size = int(task['taskSize'])
+                task_type = int(task['taskType'])
+                priority = int(task['priority'])
+                resource_load = float(task['resourceLoad'])
+                
+                # Validate ranges
+                if task_size not in [1, 2, 3]:
+                    errors.append({'index': idx, 'error': 'taskSize must be 1, 2, or 3'})
+                    continue
+                if task_type not in [1, 2, 3]:
+                    errors.append({'index': idx, 'error': 'taskType must be 1, 2, or 3'})
+                    continue
+                if not 1 <= priority <= 5:
+                    errors.append({'index': idx, 'error': 'priority must be between 1 and 5'})
+                    continue
+                if not 0 <= resource_load <= 100:
+                    errors.append({'index': idx, 'error': 'resourceLoad must be between 0 and 100'})
+                    continue
+                
+                # Make prediction
+                predicted_time, confidence = predictor.predict(
+                    task_size, task_type, priority, resource_load
+                )
+                
+                prediction_result = {
+                    'predictedTime': round(predicted_time, 2),
+                    'confidence': round(confidence, 4)
+                }
+                
+                # Include taskId if provided
+                if 'taskId' in task:
+                    prediction_result['taskId'] = task['taskId']
+                
+                predictions.append(prediction_result)
+                total_time += predicted_time
+                
+            except Exception as e:
+                errors.append({'index': idx, 'error': str(e)})
+        
+        response = {
+            'predictions': predictions,
+            'totalTasks': len(predictions),
+            'avgPredictedTime': round(total_time / len(predictions), 2) if predictions else 0,
+            'modelVersion': predictor.get_version()
+        }
+        
+        if errors:
+            response['errors'] = errors
+            response['errorCount'] = len(errors)
+        
+        return jsonify(response)
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500

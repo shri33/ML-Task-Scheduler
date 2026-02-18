@@ -160,3 +160,122 @@ model NotificationPreference {
   emailDailySummary   Boolean @default(false)
   emailAddress        String?
 }
+
+// ML Model Versioning
+enum ModelStatus {
+  TRAINING
+  ACTIVE
+  ARCHIVED
+  FAILED
+}
+
+model MlModel {
+  id                String      @id @default(uuid())
+  version           String      @unique
+  modelType         String      // random_forest, xgboost, gradient_boosting
+  status            ModelStatus @default(TRAINING)
+  r2Score           Float?
+  maeScore          Float?
+  rmseScore         Float?
+  featureImportance Json?
+  trainingDataCount Int?
+  filePath          String?
+  createdAt         DateTime    @default(now())
+  activatedAt       DateTime?
+
+  @@index([status])
+  @@index([modelType])
+}
+
+model TrainingJob {
+  id            String      @id @default(uuid())
+  status        ModelStatus @default(TRAINING)
+  triggerType   String      // manual, auto, scheduled
+  triggerReason String?
+  dataPointsNew Int?
+  startedAt     DateTime    @default(now())
+  completedAt   DateTime?
+  error         String?
+  modelVersion  String?
+
+  @@index([status])
+}
+
+model AutoRetrainConfig {
+  id                      String   @id @default(uuid())
+  enabled                 Boolean  @default(false)
+  minDataPointsThreshold  Int      @default(100)
+  maxDataPointsThreshold  Int      @default(1000)
+  r2ScoreThreshold        Float    @default(0.8)
+  lastCheckedAt           DateTime?
+  dataPointsSinceRetrain  Int      @default(0)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
+// IoT Device Management
+enum DeviceType {
+  CAMERA
+  ROBOT_ARM
+  IOT_SENSOR
+  EDGE_SERVER
+  ACTUATOR
+}
+
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+  MAINTENANCE
+  ERROR
+}
+
+model Device {
+  id            String       @id @default(uuid())
+  name          String
+  type          DeviceType
+  status        DeviceStatus @default(OFFLINE)
+  ipAddress     String?
+  port          Int?
+  location      String?
+  description   String?
+  capabilities  Json?        // Device-specific capabilities
+  configuration Json?        // Device configuration settings
+  lastHeartbeat DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  deviceLogs    DeviceLog[]
+  deviceMetrics DeviceMetric[]
+
+  @@index([type])
+  @@index([status])
+  @@unique([ipAddress, port])
+}
+
+model DeviceLog {
+  id        String   @id @default(uuid())
+  deviceId  String
+  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  level     String   // info, warning, error
+  message   String
+  metadata  Json?
+  timestamp DateTime @default(now())
+
+  @@index([deviceId])
+  @@index([timestamp])
+}
+
+model DeviceMetric {
+  id        String   @id @default(uuid())
+  deviceId  String
+  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  metricName String   // cpu_usage, memory_usage, temperature, etc.
+  value     Float
+  unit      String?
+  timestamp DateTime @default(now())
+
+  @@index([deviceId])
+  @@index([metricName])
+  @@index([timestamp])
+}
+

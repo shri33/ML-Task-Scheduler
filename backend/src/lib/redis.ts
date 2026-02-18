@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import logger from './logger';
 
 class RedisService {
   private client: Redis | null = null;
@@ -21,17 +22,17 @@ class RedisService {
       });
 
       this.client.on('error', (err: Error) => {
-        console.error('Redis Client Error:', err.message);
+        logger.error('Redis Client Error', err);
         this.isConnected = false;
       });
 
       this.client.on('connect', () => {
-        console.log('🔴 Redis connected');
+        logger.info('Redis connected');
         this.isConnected = true;
       });
 
       this.client.on('close', () => {
-        console.log('🔴 Redis disconnected');
+        logger.warn('Redis disconnected');
         this.isConnected = false;
       });
 
@@ -39,7 +40,7 @@ class RedisService {
       await this.client.ping();
       this.isConnected = true;
     } catch (error) {
-      console.error('Failed to connect to Redis:', error);
+      logger.warn('Failed to connect to Redis', { error: error instanceof Error ? error.message : String(error) });
       this.isConnected = false;
     }
   }
@@ -65,7 +66,7 @@ class RedisService {
     try {
       return await this.client!.get(key);
     } catch (error) {
-      console.error('Redis GET error:', error);
+      logger.error('Redis GET error', error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }
@@ -80,7 +81,7 @@ class RedisService {
       }
       return true;
     } catch (error) {
-      console.error('Redis SET error:', error);
+      logger.error('Redis SET error', error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }
@@ -91,7 +92,7 @@ class RedisService {
       await this.client!.del(key);
       return true;
     } catch (error) {
-      console.error('Redis DEL error:', error);
+      logger.error('Redis DEL error', error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }
@@ -117,7 +118,7 @@ class RedisService {
       await this.client!.publish(channel, message);
       return true;
     } catch (error) {
-      console.error('Redis PUBLISH error:', error);
+      logger.error('Redis PUBLISH error', error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }
@@ -129,7 +130,7 @@ class RedisService {
       await this.client!.hset(key, field, value);
       return true;
     } catch (error) {
-      console.error('Redis HSET error:', error);
+      logger.error('Redis HSET error', error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }
@@ -140,7 +141,7 @@ class RedisService {
       const value = await this.client!.hget(key, field);
       return value || null;
     } catch (error) {
-      console.error('Redis HGET error:', error);
+      logger.error('Redis HGET error', error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }
@@ -150,7 +151,7 @@ class RedisService {
     try {
       return await this.client!.hgetall(key);
     } catch (error) {
-      console.error('Redis HGETALL error:', error);
+      logger.error('Redis HGETALL error', error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }
@@ -162,7 +163,7 @@ class RedisService {
       await this.client!.lpush(key, value);
       return true;
     } catch (error) {
-      console.error('Redis LPUSH error:', error);
+      logger.error('Redis LPUSH error', error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }
@@ -172,7 +173,7 @@ class RedisService {
     try {
       return await this.client!.rpop(key);
     } catch (error) {
-      console.error('Redis RPOP error:', error);
+      logger.error('Redis RPOP error', error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }
@@ -182,7 +183,7 @@ class RedisService {
     try {
       return await this.client!.llen(key);
     } catch (error) {
-      console.error('Redis LLEN error:', error);
+      logger.error('Redis LLEN error', error instanceof Error ? error : new Error(String(error)));
       return 0;
     }
   }
@@ -193,7 +194,7 @@ class RedisService {
     try {
       return await this.client!.incr(key);
     } catch (error) {
-      console.error('Redis INCR error:', error);
+      logger.error('Redis INCR error', error instanceof Error ? error : new Error(String(error)));
       return 0;
     }
   }
@@ -204,7 +205,7 @@ class RedisService {
       await this.client!.expire(key, seconds);
       return true;
     } catch (error) {
-      console.error('Redis EXPIRE error:', error);
+      logger.error('Redis EXPIRE error', error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }

@@ -6,6 +6,7 @@ import Tasks from './pages/Tasks';
 import Resources from './pages/Resources';
 import Analytics from './pages/Analytics';
 import FogComputing from './pages/FogComputing';
+import Devices from './pages/Devices';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import socketService from './lib/socket';
@@ -144,6 +145,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <Profile />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/devices"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Devices />
             </Layout>
           </ProtectedRoute>
         }

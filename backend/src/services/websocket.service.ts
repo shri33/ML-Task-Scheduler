@@ -87,6 +87,11 @@ export class WebSocketService {
         console.log(`Socket ${socket.id} joined fog-computing room`);
       });
 
+      socket.on('join:ml-events', () => {
+        socket.join('ml-events');
+        console.log(`Socket ${socket.id} joined ml-events room`);
+      });
+
       // Handle leaving rooms
       socket.on('leave:tasks', () => {
         socket.leave('tasks');
@@ -98,6 +103,10 @@ export class WebSocketService {
 
       socket.on('leave:fog-computing', () => {
         socket.leave('fog-computing');
+      });
+
+      socket.on('leave:ml-events', () => {
+        socket.leave('ml-events');
       });
 
       // Handle disconnection
@@ -170,6 +179,48 @@ export class WebSocketService {
 
   emitFogAlgorithmCompleted(algorithm: string, results: any) {
     this.io.to('fog-computing').emit('fog:algorithm:completed', { algorithm, results });
+  }
+
+  // Emit ML events
+  emitMLModelUpdated(model: any) {
+    this.io.to('general').emit('ml:model:updated', model);
+    this.io.to('ml-events').emit('ml:model:updated', model);
+  }
+
+  emitMLTrainingStarted(data: { jobId: string; triggerType: string }) {
+    this.io.to('general').emit('ml:training:started', data);
+    this.io.to('ml-events').emit('ml:training:started', data);
+  }
+
+  emitMLTrainingProgress(data: { jobId: string; progress: number }) {
+    this.io.to('ml-events').emit('ml:training:progress', data);
+  }
+
+  emitMLTrainingCompleted(data: { jobId: string; model: any; metrics: any }) {
+    this.io.to('general').emit('ml:training:completed', data);
+    this.io.to('ml-events').emit('ml:training:completed', data);
+  }
+
+  emitMLTrainingFailed(data: { error: string; jobId?: string }) {
+    this.io.to('general').emit('ml:training:failed', data);
+    this.io.to('ml-events').emit('ml:training:failed', data);
+  }
+
+  emitMLPredictionMade(data: any) {
+    this.io.to('ml-events').emit('ml:prediction:made', data);
+  }
+
+  emitMLServiceHealthChange(data: { isHealthy: boolean; fallbackMode: boolean }) {
+    this.io.to('general').emit('ml:service:health', data);
+  }
+
+  // Emit system events
+  emitSystemAlert(data: { type: string; title: string; message: string }) {
+    this.io.to('general').emit('system:alert', { ...data, timestamp: new Date() });
+  }
+
+  emitMetricsUpdate(data: any) {
+    this.io.to('general').emit('metrics:update', data);
   }
 
   // Emit notification to specific user
