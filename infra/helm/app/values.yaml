@@ -1,0 +1,38 @@
+image:
+  api: registry/api:latest
+  worker: registry/ml-worker:latest
+
+replicaCount:
+  api: 3
+  worker: 2
+
+resources:
+  api:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1
+      memory: 512Mi
+  worker:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2
+      memory: 2Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  cpuTarget: 70
+
+ingress:
+  host: api.example.com
+  tlsSecret: app-tls
+
+secrets:
+  DATABASE_URL: ""
+  REDIS_URL: ""
+  JWT_SECRET: ""

@@ -1,0 +1,89 @@
+# =============================================================================
+# Chaos Mesh - Pod Chaos Experiments
+# Tests system resilience to pod failures
+# =============================================================================
+
+---
+# Random kill ML worker pods
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: kill-ml-worker
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: pod-kill
+spec:
+  action: pod-kill
+  mode: random-one
+  selector:
+    namespaces:
+      - ml-scheduler
+    labelSelectors:
+      app: ml-worker
+  duration: "30s"
+  scheduler:
+    cron: "*/5 * * * *"  # Every 5 minutes in staging
+
+---
+# Random kill API pods
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: kill-api-pod
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: pod-kill
+spec:
+  action: pod-kill
+  mode: random-one
+  selector:
+    namespaces:
+      - ml-scheduler
+    labelSelectors:
+      app: api
+  duration: "30s"
+
+---
+# Container kill (more aggressive)
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: kill-queue-worker-container
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: container-kill
+spec:
+  action: container-kill
+  mode: one
+  containerNames:
+    - queue-worker
+  selector:
+    namespaces:
+      - ml-scheduler
+    labelSelectors:
+      app: queue-worker
+  duration: "30s"
+
+---
+# Pod failure (graceful shutdown test)
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: pod-failure-api
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: pod-failure
+spec:
+  action: pod-failure
+  mode: fixed-percent
+  value: "30"
+  selector:
+    namespaces:
+      - ml-scheduler
+    labelSelectors:
+      app: api
+  duration: "60s"

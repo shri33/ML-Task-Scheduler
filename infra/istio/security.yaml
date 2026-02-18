@@ -1,0 +1,160 @@
+# =============================================================================
+# Istio Service Mesh Security - mTLS and Authorization
+# =============================================================================
+
+---
+# Enable strict mTLS for the namespace
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: ml-scheduler
+spec:
+  mtls:
+    mode: STRICT
+
+---
+# Namespace-wide mTLS policy
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: ml-scheduler-mtls
+  namespace: ml-scheduler
+spec:
+  selector:
+    matchLabels:
+      app: api
+  mtls:
+    mode: STRICT
+  portLevelMtls:
+    3001:  # Metrics port - allow plain text for Prometheus
+      mode: PERMISSIVE
+
+---
+# Authorization Policy - API Service
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: api-auth-policy
+  namespace: ml-scheduler
+spec:
+  selector:
+    matchLabels:
+      app: api
+  action: ALLOW
+  rules:
+    # Allow frontend to call API
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/ml-scheduler/sa/frontend
+      to:
+        - operation:
+            methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+            paths: ["/api/*"]
+    
+    # Allow queue worker to call API
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/ml-scheduler/sa/queue-worker
+      to:
+        - operation:
+            paths: ["/internal/*", "/api/*"]
+    
+    # Allow ingress gateway
+    - from:
+        - source:
+            namespaces: ["istio-system"]
+    
+    # Allow health checks
+    - to:
+        - operation:
+            methods: ["GET"]
+            paths: ["/health", "/health/*", "/metrics"]
+
+---
+# Authorization Policy - ML Worker
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: ml-worker-auth-policy
+  namespace: ml-scheduler
+spec:
+  selector:
+    matchLabels:
+      app: ml-worker
+  action: ALLOW
+  rules:
+    # Only queue worker and API can call ML worker
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/ml-scheduler/sa/queue-worker
+              - cluster.local/ns/ml-scheduler/sa/api
+      to:
+        - operation:
+            paths: ["/predict", "/batch-predict", "/health"]
+    
+    # Allow health checks and metrics
+    - to:
+        - operation:
+            methods: ["GET"]
+            paths: ["/health", "/metrics"]
+
+---
+# Authorization Policy - Redis
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: redis-auth-policy
+  namespace: ml-scheduler
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  action: ALLOW
+  rules:
+    # Only backend services can access Redis
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/ml-scheduler/sa/api
+              - cluster.local/ns/ml-scheduler/sa/queue-worker
+
+---
+# Authorization Policy - PostgreSQL
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: postgres-auth-policy
+  namespace: ml-scheduler
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  action: ALLOW
+  rules:
+    # Only API can access database
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/ml-scheduler/sa/api
+
+---
+# Request Authentication - JWT validation
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata:
+  name: jwt-auth
+  namespace: ml-scheduler
+spec:
+  selector:
+    matchLabels:
+      app: api
+  jwtRules:
+    - issuer: "https://auth.ml-scheduler.example.com"
+      jwksUri: "https://auth.ml-scheduler.example.com/.well-known/jwks.json"
+      audiences:
+        - "ml-scheduler-api"
+      forwardOriginalToken: true

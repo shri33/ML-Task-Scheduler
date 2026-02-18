@@ -1,0 +1,155 @@
+# =============================================================================
+# Staging Environment Values
+# =============================================================================
+
+global:
+  environment: staging
+  domain: staging.ml-scheduler.example.com
+  imageRegistry: ghcr.io/shri33/ml-task-scheduler
+
+# API Configuration
+api:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/shri33/ml-task-scheduler/api
+    tag: staging
+    pullPolicy: Always
+  
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 1Gi
+  
+  env:
+    NODE_ENV: staging
+    LOG_LEVEL: info
+    RATE_LIMIT_MAX: 200
+    ENABLE_SWAGGER: "true"
+  
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+# ML Service Configuration
+mlService:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/shri33/ml-task-scheduler/ml-service
+    tag: staging
+    pullPolicy: Always
+  
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2
+      memory: 2Gi
+  
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+# Queue Worker Configuration
+queueWorker:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/shri33/ml-task-scheduler/api
+    tag: staging
+  
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 1Gi
+
+# Frontend Configuration
+frontend:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/shri33/ml-task-scheduler/frontend
+    tag: staging
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+# PostgreSQL (use internal for staging)
+postgresql:
+  enabled: true
+  auth:
+    existingSecret: postgres-credentials
+  primary:
+    persistence:
+      size: 20Gi
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 2
+        memory: 4Gi
+
+# Redis (use internal for staging)
+redis:
+  enabled: true
+  auth:
+    existingSecret: redis-credentials
+  master:
+    persistence:
+      size: 5Gi
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 1
+        memory: 2Gi
+
+# Monitoring enabled for staging
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+  grafana:
+    enabled: true
+
+# Ingress
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+  hosts:
+    - host: staging.ml-scheduler.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: ml-scheduler-staging-tls
+      hosts:
+        - staging.ml-scheduler.example.com
+
+# Autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Pod topology spread constraints
+topologySpreadConstraints:
+  enabled: true
+  maxSkew: 1
+  topologyKey: topology.kubernetes.io/zone

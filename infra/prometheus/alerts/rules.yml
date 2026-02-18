@@ -1,0 +1,160 @@
+# Alert Rules for ML Task Scheduler
+
+groups:
+  - name: api_alerts
+    rules:
+      # High error rate
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{status_code=~"5.."}[5m])) 
+          / sum(rate(http_requests_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 5% for the last 5 minutes"
+
+      # High latency
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API latency"
+          description: "95th percentile latency is above 2 seconds"
+
+      # API down
+      - alert: APIDown
+        expr: up{job="api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API server is down"
+          description: "API server has been down for more than 1 minute"
+
+  - name: ml_alerts
+    rules:
+      # ML service circuit breaker open
+      - alert: MLCircuitBreakerOpen
+        expr: circuit_breaker_state{service="ml-service"} == 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "ML service circuit breaker is open"
+          description: "ML service has been failing, circuit breaker is open"
+
+      # High ML prediction latency
+      - alert: HighMLLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(ml_prediction_duration_seconds_bucket[5m])) by (le)
+          ) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High ML prediction latency"
+          description: "95th percentile ML prediction latency is above 5 seconds"
+
+      # High fallback rate
+      - alert: HighFallbackRate
+        expr: |
+          sum(rate(ml_predictions_total{fallback="true"}[5m]))
+          / sum(rate(ml_predictions_total[5m])) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High ML fallback rate"
+          description: "More than 50% of predictions are using fallback"
+
+  - name: queue_alerts
+    rules:
+      # Queue backlog growing
+      - alert: QueueBacklogHigh
+        expr: queue_depth{queue="ml-prediction"} > 1000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prediction queue backlog is high"
+          description: "More than 1000 jobs waiting in prediction queue"
+
+      # Queue processing failures
+      - alert: QueueFailuresHigh
+        expr: |
+          sum(rate(queue_jobs_total{status="failed"}[5m]))
+          / sum(rate(queue_jobs_total[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High queue job failure rate"
+          description: "More than 10% of queue jobs are failing"
+
+  - name: infrastructure_alerts
+    rules:
+      # Redis down
+      - alert: RedisDown
+        expr: service_health{service="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+          description: "Redis service is not responding"
+
+      # Database connection issues
+      - alert: DatabaseConnectionHigh
+        expr: db_connections_active > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High database connection count"
+          description: "Active database connections are above 80"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: |
+          (process_resident_memory_bytes / 1024 / 1024) > 450
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Process memory usage is above 450MB"
+
+  - name: task_alerts
+    rules:
+      # Task completion rate low
+      - alert: LowTaskCompletionRate
+        expr: |
+          sum(rate(tasks_completed_total{status="COMPLETED"}[1h]))
+          / sum(rate(tasks_created_total[1h])) < 0.8
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low task completion rate"
+          description: "Less than 80% of tasks are completing successfully"
+
+      # Long-running tasks
+      - alert: LongRunningTasks
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(task_execution_duration_seconds_bucket[1h])) by (le)
+          ) > 300
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tasks taking too long"
+          description: "95th percentile task duration is above 5 minutes"

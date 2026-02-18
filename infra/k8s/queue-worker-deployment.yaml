@@ -1,0 +1,86 @@
+# =============================================================================
+# Queue Worker Deployment
+# Node.js BullMQ workers processing async jobs
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: queue-worker
+  namespace: ml-scheduler
+  labels:
+    app: queue-worker
+    tier: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: queue-worker
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: queue-worker
+        tier: worker
+    spec:
+      serviceAccountName: queue-worker-service-account
+      containers:
+        - name: queue-worker
+          image: ghcr.io/your-org/ml-scheduler-api:latest
+          imagePullPolicy: Always
+          command: ["node", "dist/workers/prediction.worker.js"]
+          envFrom:
+            - secretRef:
+                name: app-secrets
+            - configMapRef:
+                name: app-config
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: WORKER_CONCURRENCY
+              value: "5"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: queue-worker-hpa
+  namespace: ml-scheduler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: queue-worker
+  minReplicas: 1
+  maxReplicas: 6
+  metrics:
+    - type: External
+      external:
+        metric:
+          name: redis_queue_depth
+          selector:
+            matchLabels:
+              queue: ml-prediction
+        target:
+          type: AverageValue
+          averageValue: "100"

@@ -1,0 +1,282 @@
+# =============================================================================
+# ML Scheduler Helm Chart Values
+# Override these values for different environments
+# =============================================================================
+
+# Global settings
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# Namespace
+namespace: ml-scheduler
+
+# -----------------------------------------------------------------------------
+# API Service Configuration
+# -----------------------------------------------------------------------------
+api:
+  enabled: true
+  replicaCount: 2
+  
+  image:
+    repository: ml-scheduler-api
+    tag: latest
+    pullPolicy: Always
+  
+  service:
+    type: ClusterIP
+    port: 3000
+  
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  
+  env:
+    NODE_ENV: production
+    PORT: "3000"
+    LOG_LEVEL: info
+  
+  # Liveness and readiness probes
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 3000
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+# -----------------------------------------------------------------------------
+# ML Worker Configuration
+# -----------------------------------------------------------------------------
+mlWorker:
+  enabled: true
+  replicaCount: 2
+  
+  image:
+    repository: ml-scheduler-ml
+    tag: latest
+    pullPolicy: Always
+  
+  service:
+    type: ClusterIP
+    port: 5000
+  
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+  
+  # Persistent volume for ML models
+  persistence:
+    enabled: true
+    size: 5Gi
+    accessMode: ReadWriteOnce
+    storageClass: ""
+
+# -----------------------------------------------------------------------------
+# Queue Worker Configuration
+# -----------------------------------------------------------------------------
+queueWorker:
+  enabled: true
+  replicaCount: 2
+  
+  image:
+    repository: ml-scheduler-api
+    tag: latest
+    pullPolicy: Always
+  
+  command: ["node", "dist/workers/prediction.worker.js"]
+  
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+
+# -----------------------------------------------------------------------------
+# Frontend Configuration
+# -----------------------------------------------------------------------------
+frontend:
+  enabled: true
+  replicaCount: 2
+  
+  image:
+    repository: ml-scheduler-frontend
+    tag: latest
+    pullPolicy: Always
+  
+  service:
+    type: ClusterIP
+    port: 80
+  
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "200m"
+      memory: "128Mi"
+
+# -----------------------------------------------------------------------------
+# Ingress Configuration
+# -----------------------------------------------------------------------------
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+  hosts:
+    - host: ml-scheduler.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+          port: 80
+    - host: api.ml-scheduler.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: api
+          port: 3000
+  tls:
+    - secretName: ml-scheduler-tls
+      hosts:
+        - ml-scheduler.example.com
+        - api.ml-scheduler.example.com
+
+# -----------------------------------------------------------------------------
+# Redis Configuration (Bitnami subchart)
+# -----------------------------------------------------------------------------
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+
+# -----------------------------------------------------------------------------
+# PostgreSQL Configuration (Bitnami subchart)
+# -----------------------------------------------------------------------------
+postgresql:
+  enabled: true
+  auth:
+    database: ml_scheduler
+    username: scheduler
+    existingSecret: ml-scheduler-secrets
+    secretKeys:
+      adminPasswordKey: POSTGRES_PASSWORD
+      userPasswordKey: POSTGRES_PASSWORD
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+
+# -----------------------------------------------------------------------------
+# Secrets Configuration
+# -----------------------------------------------------------------------------
+secrets:
+  # If using external secrets, set to false
+  create: true
+  # Values will be base64 encoded automatically
+  data:
+    JWT_SECRET: "CHANGE_ME_TO_64_BYTE_RANDOM_STRING"
+    # DATABASE_URL is constructed from postgresql values
+
+# -----------------------------------------------------------------------------
+# Monitoring Configuration
+# -----------------------------------------------------------------------------
+monitoring:
+  enabled: true
+  
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    path: /metrics
+  
+  prometheusRule:
+    enabled: true
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: High error rate detected
+
+# -----------------------------------------------------------------------------
+# Pod Disruption Budget
+# -----------------------------------------------------------------------------
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# -----------------------------------------------------------------------------
+# Network Policy
+# -----------------------------------------------------------------------------
+networkPolicy:
+  enabled: false
+  ingress: []
+  egress: []
+
+# -----------------------------------------------------------------------------
+# Service Account
+# -----------------------------------------------------------------------------
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""

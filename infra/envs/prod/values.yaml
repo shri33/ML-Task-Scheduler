@@ -1,0 +1,206 @@
+# =============================================================================
+# Production Environment Values
+# =============================================================================
+
+global:
+  environment: production
+  domain: ml-scheduler.example.com
+  imageRegistry: ghcr.io/shri33/ml-task-scheduler
+
+# API Configuration
+api:
+  replicaCount: 3
+  image:
+    repository: ghcr.io/shri33/ml-task-scheduler/api
+    tag: stable
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2
+      memory: 2Gi
+  
+  env:
+    NODE_ENV: production
+    LOG_LEVEL: warn
+    RATE_LIMIT_MAX: 100
+    ENABLE_SWAGGER: "false"
+  
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+  
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - api
+          topologyKey: kubernetes.io/hostname
+
+# ML Service Configuration
+mlService:
+  replicaCount: 3
+  image:
+    repository: ghcr.io/shri33/ml-task-scheduler/ml-service
+    tag: stable
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    limits:
+      cpu: 4
+      memory: 4Gi
+  
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+  
+  # GPU support if available
+  nodeSelector:
+    workload-type: ml-inference
+
+# Queue Worker Configuration
+queueWorker:
+  replicaCount: 3
+  image:
+    repository: ghcr.io/shri33/ml-task-scheduler/api
+    tag: stable
+  
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2
+      memory: 2Gi
+  
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+
+# Frontend Configuration
+frontend:
+  replicaCount: 3
+  image:
+    repository: ghcr.io/shri33/ml-task-scheduler/frontend
+    tag: stable
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+# PostgreSQL - Use AWS RDS in production
+postgresql:
+  enabled: false
+  external:
+    host: ml-scheduler-prod.cluster-xxx.us-east-1.rds.amazonaws.com
+    port: 5432
+    database: ml_scheduler
+    existingSecret: rds-credentials
+    sslMode: require
+
+# Redis - Use AWS ElastiCache in production
+redis:
+  enabled: false
+  external:
+    host: ml-scheduler-prod.xxx.use1.cache.amazonaws.com
+    port: 6379
+    existingSecret: elasticache-credentials
+    tls: true
+
+# Monitoring
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    scrapeInterval: 15s
+  grafana:
+    enabled: true
+    persistence:
+      enabled: true
+      size: 10Gi
+
+# Ingress
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/limit-rps: "50"
+    nginx.ingress.kubernetes.io/limit-burst: "100"
+    nginx.ingress.kubernetes.io/rate-limit-key: "$binary_remote_addr"
+  hosts:
+    - host: ml-scheduler.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+    - host: api.ml-scheduler.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: ml-scheduler-prod-tls
+      hosts:
+        - ml-scheduler.example.com
+        - api.ml-scheduler.example.com
+
+# Autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 60
+  targetMemoryUtilizationPercentage: 70
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 10
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+        - type: Pods
+          value: 4
+          periodSeconds: 15
+      selectPolicy: Max
+
+# Pod topology spread constraints
+topologySpreadConstraints:
+  enabled: true
+  maxSkew: 1
+  topologyKey: topology.kubernetes.io/zone
+  whenUnsatisfiable: DoNotSchedule
+
+# Security
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# Network policies
+networkPolicies:
+  enabled: true
+
+# Pod Security Standards
+podSecurityStandards:
+  enforce: restricted

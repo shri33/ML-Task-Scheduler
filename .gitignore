@@ -65,7 +65,6 @@ coverage/
 *.pkl
 *.h5
 *.pt
-!models/.gitkeep
 !ml-service/models/.gitkeep
 
 # Temporary files
@@ -76,3 +75,13 @@ temp/
 # Lock files (optional - uncomment if you want to ignore)
 # package-lock.json
 # yarn.lock
+
+# Binary documents (use Markdown instead)
+*.docx
+*.doc
+*.xlsx
+*.xls
+
+# Docker temp files
+query
+start

@@ -1,0 +1,38 @@
+# =============================================================================
+# ConfigMap - Non-sensitive configuration
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ml-scheduler-config
+  namespace: ml-scheduler
+  labels:
+    app: ml-scheduler
+data:
+  # Application
+  NODE_ENV: "production"
+  PORT: "3000"
+  
+  # Database
+  POSTGRES_DB: "ml_scheduler"
+  
+  # Redis
+  REDIS_URL: "redis://redis:6379"
+  
+  # ML Service
+  ML_SERVICE_URL: "http://ml-worker:5000"
+  
+  # Logging
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  
+  # Rate Limiting
+  RATE_LIMIT_WINDOW_MS: "60000"
+  RATE_LIMIT_MAX_REQUESTS: "100"
+  
+  # CORS
+  CORS_ORIGIN: "https://ml-scheduler.example.com"
+  
+  # Metrics
+  METRICS_ENABLED: "true"
+  METRICS_PREFIX: "ml_scheduler_"

@@ -1,0 +1,116 @@
+# =============================================================================
+# Development Environment Values
+# =============================================================================
+
+global:
+  environment: dev
+  domain: dev.ml-scheduler.local
+  imageRegistry: ghcr.io/shri33/ml-task-scheduler
+
+# API Configuration
+api:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/shri33/ml-task-scheduler/api
+    tag: latest
+    pullPolicy: Always
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  env:
+    NODE_ENV: development
+    LOG_LEVEL: debug
+    RATE_LIMIT_MAX: 1000
+    ENABLE_SWAGGER: "true"
+
+# ML Service Configuration  
+mlService:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/shri33/ml-task-scheduler/ml-service
+    tag: latest
+    pullPolicy: Always
+  
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 1Gi
+
+# Queue Worker Configuration
+queueWorker:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/shri33/ml-task-scheduler/api
+    tag: latest
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Frontend Configuration
+frontend:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/shri33/ml-task-scheduler/frontend
+    tag: latest
+  
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# PostgreSQL (use internal for dev)
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: devpassword123
+    database: ml_scheduler_dev
+  primary:
+    persistence:
+      size: 5Gi
+
+# Redis (use internal for dev)
+redis:
+  enabled: true
+  auth:
+    password: devredis123
+  master:
+    persistence:
+      size: 1Gi
+
+# Monitoring (minimal for dev)
+monitoring:
+  enabled: false
+
+# Ingress
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+  hosts:
+    - host: dev.ml-scheduler.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Autoscaling disabled in dev
+autoscaling:
+  enabled: false

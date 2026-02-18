@@ -1,0 +1,45 @@
+# =============================================================================
+# Production Environment Terraform Variables
+# =============================================================================
+
+aws_region  = "us-east-1"
+environment = "prod"
+project_name = "ml-scheduler"
+
+# Networking
+vpc_cidr           = "10.0.0.0/16"
+enable_nat_gateway = true
+single_nat_gateway = false  # Multi-AZ NAT for production
+
+# EKS Cluster
+cluster_version                = "1.29"
+cluster_endpoint_public_access = true
+cluster_endpoint_private_access = true
+
+# Node Groups - General
+node_instance_types = ["t3.large", "t3a.large"]
+node_desired_size   = 3
+node_min_size       = 2
+node_max_size       = 10
+
+# Node Groups - ML Workers
+ml_node_instance_types = ["c5.xlarge", "c5a.xlarge"]
+ml_node_desired_size   = 2
+ml_node_min_size       = 1
+ml_node_max_size       = 8
+
+# Database
+db_instance_class        = "db.t3.medium"
+db_allocated_storage     = 50
+db_max_allocated_storage = 200
+db_multi_az              = true
+db_backup_retention_period = 7
+
+# Redis
+redis_node_type           = "cache.t3.medium"
+redis_num_cache_clusters  = 2
+redis_automatic_failover  = true
+
+# Monitoring
+enable_cloudwatch_logs = true
+log_retention_days     = 30

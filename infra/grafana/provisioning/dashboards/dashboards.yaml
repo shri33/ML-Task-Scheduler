@@ -1,0 +1,17 @@
+# =============================================================================
+# Grafana Dashboard Provisioning
+# =============================================================================
+
+apiVersion: 1
+
+providers:
+  - name: 'ML Scheduler Dashboards'
+    orgId: 1
+    folder: 'ML Scheduler'
+    folderUid: 'ml-scheduler'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/ml-scheduler

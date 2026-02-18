@@ -1,0 +1,76 @@
+# =============================================================================
+# Chaos Mesh - Stress Chaos Experiments
+# Tests system resilience to resource pressure
+# =============================================================================
+
+---
+# CPU stress on ML workers
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: ml-worker-cpu-stress
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: cpu-stress
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - ml-scheduler
+    labelSelectors:
+      app: ml-worker
+  stressors:
+    cpu:
+      workers: 2
+      load: 80
+  duration: "120s"
+
+---
+# Memory stress on API
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: api-memory-stress
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: memory-stress
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - ml-scheduler
+    labelSelectors:
+      app: api
+  stressors:
+    memory:
+      workers: 1
+      size: "256MB"
+  duration: "60s"
+
+---
+# Combined stress (CPU + Memory)
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: queue-worker-combined-stress
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: combined-stress
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - ml-scheduler
+    labelSelectors:
+      app: queue-worker
+  stressors:
+    cpu:
+      workers: 1
+      load: 50
+    memory:
+      workers: 1
+      size: "128MB"
+  duration: "90s"

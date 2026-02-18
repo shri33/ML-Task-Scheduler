@@ -1,0 +1,110 @@
+# =============================================================================
+# ArgoCD Application - Production Environment
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ml-scheduler-prod
+  namespace: argocd
+  labels:
+    environment: prod
+    app: ml-scheduler
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: platform-alerts
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: platform-alerts
+    notifications.argoproj.io/subscribe.on-health-degraded.pagerduty: ml-scheduler
+spec:
+  project: ml-scheduler-prod
+  
+  source:
+    repoURL: https://github.com/shri33/ML-Task-Scheduler
+    targetRevision: main
+    path: infra/helm/app
+    helm:
+      valueFiles:
+        - ../../envs/prod/values.yaml
+      parameters:
+        - name: image.tag
+          value: stable
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ml-scheduler
+  
+  # Manual sync for production - no auto-deploy
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # Ignore HPA-managed replicas
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+      jsonPointers:
+        - /spec/minReplicas
+        - /spec/maxReplicas
+
+---
+# Production AppProject with restrictions
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: ml-scheduler-prod
+  namespace: argocd
+spec:
+  description: ML Scheduler Production Project
+  
+  sourceRepos:
+    - https://github.com/shri33/ML-Task-Scheduler
+  
+  destinations:
+    - namespace: ml-scheduler
+      server: https://kubernetes.default.svc
+  
+  # Only allow specific resources
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: networking.k8s.io
+      kind: Ingress
+  
+  namespaceResourceWhitelist:
+    - group: ''
+      kind: '*'
+    - group: apps
+      kind: '*'
+    - group: batch
+      kind: '*'
+    - group: autoscaling
+      kind: '*'
+  
+  # Require manual sync for deletions
+  orphanedResources:
+    warn: true
+  
+  roles:
+    - name: admin
+      policies:
+        - p, proj:ml-scheduler-prod:admin, applications, *, ml-scheduler-prod/*, allow
+      groups:
+        - platform-admins
+    - name: viewer
+      policies:
+        - p, proj:ml-scheduler-prod:viewer, applications, get, ml-scheduler-prod/*, allow
+      groups:
+        - developers

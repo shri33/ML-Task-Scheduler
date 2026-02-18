@@ -1,5 +1,8 @@
 {
-  "name": "task-scheduler-ml",
-  "version": "1.0.0",
-  "description": "ML Prediction Service for Task Scheduling"
+  "private": true,
+  "description": "This is a Python service. See requirements.txt for dependencies. This package.json exists only for workspace tooling compatibility.",
+  "scripts": {
+    "start": "echo 'Use: python app.py'",
+    "install": "pip install -r requirements.txt"
+  }
 }

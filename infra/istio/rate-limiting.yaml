@@ -1,0 +1,218 @@
+# =============================================================================
+# Rate Limiting Configuration
+# Multi-layer rate limiting for API protection
+# =============================================================================
+
+---
+# Istio EnvoyFilter for Rate Limiting
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: ratelimit-filter
+  namespace: istio-system
+spec:
+  workloadSelector:
+    labels:
+      istio: ingressgateway
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: GATEWAY
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+              subFilter:
+                name: "envoy.filters.http.router"
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.filters.http.ratelimit
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
+            domain: ml-scheduler-ratelimit
+            failure_mode_deny: false
+            timeout: 10s
+            rate_limit_service:
+              grpc_service:
+                envoy_grpc:
+                  cluster_name: rate_limit_cluster
+              transport_api_version: V3
+
+---
+# Rate Limit Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ratelimit
+  namespace: ml-scheduler
+  labels:
+    app: ratelimit
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ratelimit
+  template:
+    metadata:
+      labels:
+        app: ratelimit
+    spec:
+      containers:
+        - name: ratelimit
+          image: envoyproxy/ratelimit:v1.4.0
+          ports:
+            - containerPort: 8080
+              name: http
+            - containerPort: 8081
+              name: grpc
+            - containerPort: 6070
+              name: debug
+          env:
+            - name: USE_STATSD
+              value: "false"
+            - name: LOG_LEVEL
+              value: "info"
+            - name: REDIS_SOCKET_TYPE
+              value: "tcp"
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: host
+            - name: RUNTIME_ROOT
+              value: /data
+            - name: RUNTIME_SUBDIRECTORY
+              value: ratelimit
+            - name: RUNTIME_WATCH_ROOT
+              value: "false"
+          volumeMounts:
+            - name: config
+              mountPath: /data/ratelimit/config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: config
+          configMap:
+            name: ratelimit-config
+
+---
+# Rate Limit Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: ratelimit
+  namespace: ml-scheduler
+spec:
+  ports:
+    - port: 8081
+      targetPort: 8081
+      name: grpc
+    - port: 8080
+      targetPort: 8080
+      name: http
+  selector:
+    app: ratelimit
+
+---
+# Rate Limit Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ratelimit-config
+  namespace: ml-scheduler
+data:
+  config.yaml: |
+    domain: ml-scheduler-ratelimit
+    descriptors:
+      # Global rate limit
+      - key: generic_key
+        value: global
+        rate_limit:
+          unit: second
+          requests_per_unit: 100
+      
+      # Per-IP rate limiting
+      - key: remote_address
+        rate_limit:
+          unit: minute
+          requests_per_unit: 200
+      
+      # Auth endpoints - stricter limits
+      - key: path
+        value: /api/auth/login
+        rate_limit:
+          unit: minute
+          requests_per_unit: 10
+      
+      - key: path
+        value: /api/auth/register
+        rate_limit:
+          unit: hour
+          requests_per_unit: 5
+      
+      # API endpoints by type
+      - key: header_match
+        value: api-key
+        rate_limit:
+          unit: second
+          requests_per_unit: 50
+      
+      - key: header_match
+        value: jwt
+        rate_limit:
+          unit: second
+          requests_per_unit: 100
+      
+      # ML prediction endpoints - resource intensive
+      - key: path
+        value: /api/tasks/predict
+        rate_limit:
+          unit: minute
+          requests_per_unit: 30
+      
+      # Batch operations
+      - key: path
+        value: /api/tasks/batch
+        rate_limit:
+          unit: hour
+          requests_per_unit: 10
+
+---
+# NGINX Ingress Rate Limiting (backup/alternative)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ml-scheduler-ratelimited
+  namespace: ml-scheduler
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    # Global rate limits
+    nginx.ingress.kubernetes.io/limit-rps: "50"
+    nginx.ingress.kubernetes.io/limit-connections: "100"
+    nginx.ingress.kubernetes.io/limit-rpm: "1000"
+    # Burst allowance
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "3"
+    # Rate limit by IP
+    nginx.ingress.kubernetes.io/limit-whitelist: "10.0.0.0/8,172.16.0.0/12"
+    # Custom error response
+    nginx.ingress.kubernetes.io/server-snippet: |
+      limit_req_status 429;
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: api.ml-scheduler.example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 3000

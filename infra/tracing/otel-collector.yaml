@@ -1,0 +1,287 @@
+# =============================================================================
+# OpenTelemetry Configuration
+# Distributed tracing for all services
+# =============================================================================
+
+---
+# OpenTelemetry Collector ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: observability
+data:
+  otel-collector-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+            cors:
+              allowed_origins:
+                - "*"
+      
+      # Receive from Jaeger clients
+      jaeger:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:14250
+          thrift_http:
+            endpoint: 0.0.0.0:14268
+          thrift_compact:
+            endpoint: 0.0.0.0:6831
+          thrift_binary:
+            endpoint: 0.0.0.0:6832
+      
+      # Receive from Zipkin clients
+      zipkin:
+        endpoint: 0.0.0.0:9411
+      
+      # Prometheus metrics
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'otel-collector'
+              scrape_interval: 10s
+              static_configs:
+                - targets: ['localhost:8888']
+            - job_name: 'ml-scheduler-api'
+              kubernetes_sd_configs:
+                - role: pod
+                  namespaces:
+                    names:
+                      - ml-scheduler
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                  action: keep
+                  regex: true
+      
+      # Host metrics
+      hostmetrics:
+        collection_interval: 30s
+        scrapers:
+          cpu:
+          disk:
+          filesystem:
+          load:
+          memory:
+          network:
+    
+    processors:
+      # Batch traces/metrics for efficiency
+      batch:
+        timeout: 10s
+        send_batch_size: 1000
+        send_batch_max_size: 2000
+      
+      # Memory limiter for protection
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 25
+      
+      # Resource detection
+      resourcedetection:
+        detectors:
+          - env
+          - system
+          - docker
+        timeout: 5s
+        override: false
+      
+      # Attribute processing
+      attributes:
+        actions:
+          - key: environment
+            value: production
+            action: upsert
+          - key: service.namespace
+            value: ml-scheduler
+            action: upsert
+      
+      # Span filtering
+      filter:
+        traces:
+          span:
+            - 'attributes["http.target"] == "/health"'
+            - 'attributes["http.target"] == "/metrics"'
+      
+      # Tail sampling for production
+      tail_sampling:
+        decision_wait: 10s
+        num_traces: 100
+        expected_new_traces_per_sec: 10
+        policies:
+          - name: errors
+            type: status_code
+            status_code:
+              status_codes:
+                - ERROR
+          - name: slow-traces
+            type: latency
+            latency:
+              threshold_ms: 1000
+          - name: probability
+            type: probabilistic
+            probabilistic:
+              sampling_percentage: 10
+    
+    exporters:
+      # Jaeger
+      jaeger:
+        endpoint: jaeger-collector.observability:14250
+        tls:
+          insecure: true
+      
+      # Prometheus for metrics
+      prometheus:
+        endpoint: "0.0.0.0:8889"
+        namespace: ml_scheduler
+      
+      # Logging for debugging
+      logging:
+        loglevel: info
+        sampling_initial: 5
+        sampling_thereafter: 200
+      
+      # OTLP export (for remote backends)
+      otlp:
+        endpoint: "tempo.observability:4317"
+        tls:
+          insecure: true
+    
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+      pprof:
+        endpoint: 0.0.0.0:1777
+      zpages:
+        endpoint: 0.0.0.0:55679
+    
+    service:
+      extensions:
+        - health_check
+        - pprof
+        - zpages
+      pipelines:
+        traces:
+          receivers:
+            - otlp
+            - jaeger
+            - zipkin
+          processors:
+            - memory_limiter
+            - resourcedetection
+            - attributes
+            - batch
+          exporters:
+            - jaeger
+            - logging
+        metrics:
+          receivers:
+            - otlp
+            - prometheus
+            - hostmetrics
+          processors:
+            - memory_limiter
+            - batch
+          exporters:
+            - prometheus
+            - logging
+        logs:
+          receivers:
+            - otlp
+          processors:
+            - memory_limiter
+            - batch
+          exporters:
+            - logging
+
+---
+# OpenTelemetry Collector Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: observability
+  labels:
+    app: otel-collector
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.91.0
+          command:
+            - "/otelcol-contrib"
+            - "--config=/conf/otel-collector-config.yaml"
+          ports:
+            - containerPort: 4317  # OTLP gRPC
+            - containerPort: 4318  # OTLP HTTP
+            - containerPort: 14250 # Jaeger gRPC
+            - containerPort: 14268 # Jaeger thrift HTTP
+            - containerPort: 9411  # Zipkin
+            - containerPort: 8889  # Prometheus metrics
+            - containerPort: 13133 # Health check
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 1
+              memory: 1Gi
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 13133
+      volumes:
+        - name: config
+          configMap:
+            name: otel-collector-config
+
+---
+# OpenTelemetry Collector Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: observability
+spec:
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
+    - name: jaeger-grpc
+      port: 14250
+      targetPort: 14250
+    - name: jaeger-http
+      port: 14268
+      targetPort: 14268
+    - name: zipkin
+      port: 9411
+      targetPort: 9411
+    - name: prometheus
+      port: 8889
+      targetPort: 8889
+  selector:
+    app: otel-collector

@@ -1,0 +1,26 @@
+apiVersion: v2
+name: ml-scheduler
+description: ML Task Scheduler - Intelligent task scheduling with machine learning predictions
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - scheduler
+  - machine-learning
+  - task-management
+  - fog-computing
+home: https://github.com/your-org/ml-task-scheduler
+sources:
+  - https://github.com/your-org/ml-task-scheduler
+maintainers:
+  - name: Your Name
+    email: your@email.com
+dependencies:
+  - name: redis
+    version: "18.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+  - name: postgresql
+    version: "13.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled

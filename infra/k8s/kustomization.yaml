@@ -1,0 +1,37 @@
+# =============================================================================
+# Kustomization - Deploy all K8s resources
+# Usage: kubectl apply -k infra/k8s/
+# =============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ml-scheduler
+
+# Resource ordering matters - namespace first, then configs, then workloads
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secrets.yaml
+  - redis.yaml
+  - postgres.yaml
+  - api-deployment.yaml
+  - ml-worker-deployment.yaml
+  - queue-worker-deployment.yaml
+  - ingress.yaml
+
+# Common labels applied to all resources
+commonLabels:
+  app.kubernetes.io/name: ml-scheduler
+  app.kubernetes.io/managed-by: kustomize
+
+# Image customization (override in overlays)
+images:
+  - name: ml-scheduler-api
+    newName: ghcr.io/your-org/ml-scheduler-api
+    newTag: latest
+  - name: ml-scheduler-ml
+    newName: ghcr.io/your-org/ml-scheduler-ml
+    newTag: latest
+  - name: ml-scheduler-frontend
+    newName: ghcr.io/your-org/ml-scheduler-frontend
+    newTag: latest

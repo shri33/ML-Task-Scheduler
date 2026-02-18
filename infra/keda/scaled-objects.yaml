@@ -1,0 +1,72 @@
+# =============================================================================
+# KEDA ScaledObject - Queue-based autoscaling for ML workers
+# 
+# Prerequisites:
+#   kubectl apply -f https://github.com/kedacore/keda/releases/download/v2.12.0/keda-2.12.0.yaml
+#
+# This scales ML workers based on Redis queue depth.
+# When queue backs up, more workers spin up automatically.
+# =============================================================================
+
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: worker-scale
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: ml-worker
+  pollingInterval: 15
+  cooldownPeriod: 300
+  minReplicaCount: 1
+  maxReplicaCount: 20
+  triggers:
+    - type: redis
+      metadata:
+        address: redis:6379
+        listName: prediction
+        listLength: "10"
+---
+# Alternative: Scale based on BullMQ queue (using Redis list length)
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: queue-worker-scale
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: queue-worker
+  pollingInterval: 10
+  cooldownPeriod: 180
+  minReplicaCount: 1
+  maxReplicaCount: 15
+  triggers:
+    - type: redis
+      metadata:
+        address: redis:6379
+        listName: bull:prediction:waiting
+        listLength: "5"
+---
+# Scale API based on Prometheus metrics (request latency)
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: api-latency-scale
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: api
+  pollingInterval: 30
+  cooldownPeriod: 300
+  minReplicaCount: 2
+  maxReplicaCount: 10
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus:9090
+        metricName: http_request_duration_seconds
+        threshold: "0.5"
+        query: |
+          histogram_quantile(0.95, 
+            sum(rate(http_request_duration_seconds_bucket{app="api"}[2m])) by (le)
+          )

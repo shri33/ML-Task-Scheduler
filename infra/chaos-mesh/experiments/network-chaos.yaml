@@ -1,0 +1,160 @@
+# =============================================================================
+# Chaos Mesh - Network Chaos Experiments
+# Tests system resilience to network issues
+# =============================================================================
+
+---
+# Network delay to Redis
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: redis-network-delay
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: network-delay
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces:
+      - ml-scheduler
+    labelSelectors:
+      app: api
+  delay:
+    latency: "100ms"
+    jitter: "50ms"
+    correlation: "50"
+  direction: to
+  target:
+    selector:
+      namespaces:
+        - ml-scheduler
+      labelSelectors:
+        app: redis
+    mode: all
+  duration: "60s"
+
+---
+# Network delay to PostgreSQL
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: postgres-network-delay
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: network-delay
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces:
+      - ml-scheduler
+    labelSelectors:
+      app: api
+  delay:
+    latency: "200ms"
+    jitter: "100ms"
+    correlation: "25"
+  direction: to
+  target:
+    selector:
+      namespaces:
+        - ml-scheduler
+      labelSelectors:
+        app: postgres
+    mode: all
+  duration: "120s"
+
+---
+# Network partition - isolate ML workers
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: ml-worker-partition
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: network-partition
+spec:
+  action: partition
+  mode: one
+  selector:
+    namespaces:
+      - ml-scheduler
+    labelSelectors:
+      app: ml-worker
+  direction: both
+  duration: "30s"
+
+---
+# Packet loss to API
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: api-packet-loss
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: packet-loss
+spec:
+  action: loss
+  mode: all
+  selector:
+    namespaces:
+      - ml-scheduler
+    labelSelectors:
+      app: api
+  loss:
+    loss: "10"
+    correlation: "50"
+  direction: both
+  duration: "60s"
+
+---
+# Bandwidth limit simulation
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: api-bandwidth-limit
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: bandwidth
+spec:
+  action: bandwidth
+  mode: all
+  selector:
+    namespaces:
+      - ml-scheduler
+    labelSelectors:
+      app: api
+  bandwidth:
+    rate: "1mbps"
+    limit: 100
+    buffer: 10000
+  direction: to
+  duration: "120s"
+
+---
+# DNS failure simulation
+apiVersion: chaos-mesh.org/v1alpha1
+kind: DNSChaos
+metadata:
+  name: dns-failure
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: dns
+spec:
+  action: error
+  mode: all
+  selector:
+    namespaces:
+      - ml-scheduler
+    labelSelectors:
+      app: api
+  patterns:
+    - "external-service.example.com"
+  duration: "30s"

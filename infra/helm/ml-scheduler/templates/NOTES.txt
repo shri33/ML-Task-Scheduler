@@ -1,0 +1,61 @@
+========================================================================
+ ML Task Scheduler has been deployed!
+========================================================================
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Version: {{ .Chart.AppVersion }}
+
+{{- if .Values.ingress.enabled }}
+
+Access the application:
+{{- range .Values.ingress.hosts }}
+  - https://{{ .host }}
+{{- end }}
+
+{{- else }}
+
+Access the application by running:
+
+  kubectl port-forward svc/{{ include "ml-scheduler.fullname" . }}-api 3000:3000 -n {{ .Release.Namespace }}
+
+Then visit: http://localhost:3000
+
+{{- end }}
+
+Services deployed:
+{{- if .Values.api.enabled }}
+  - API: {{ include "ml-scheduler.fullname" . }}-api ({{ .Values.api.replicaCount }} replicas)
+{{- end }}
+{{- if .Values.mlWorker.enabled }}
+  - ML Worker: {{ include "ml-scheduler.fullname" . }}-ml ({{ .Values.mlWorker.replicaCount }} replicas)
+{{- end }}
+{{- if .Values.queueWorker.enabled }}
+  - Queue Worker: {{ include "ml-scheduler.fullname" . }}-queue ({{ .Values.queueWorker.replicaCount }} replicas)
+{{- end }}
+{{- if .Values.frontend.enabled }}
+  - Frontend: {{ include "ml-scheduler.fullname" . }}-frontend ({{ .Values.frontend.replicaCount }} replicas)
+{{- end }}
+
+{{- if .Values.monitoring.enabled }}
+
+Monitoring:
+  Metrics endpoint: /metrics
+  ServiceMonitor: enabled
+{{- end }}
+
+Useful commands:
+
+  # Check pod status
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+  # View logs
+  kubectl logs -l app.kubernetes.io/component=api -n {{ .Release.Namespace }} -f
+
+  # Check HPA status
+  kubectl get hpa -n {{ .Release.Namespace }}
+
+  # Run database migrations
+  kubectl exec -it deploy/{{ include "ml-scheduler.fullname" . }}-api -n {{ .Release.Namespace }} -- npx prisma migrate deploy
+
+========================================================================

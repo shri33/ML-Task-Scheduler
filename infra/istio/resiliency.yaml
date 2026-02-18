@@ -1,0 +1,209 @@
+# =============================================================================
+# Istio Resiliency - Retries, Timeouts, Circuit Breaking
+# =============================================================================
+
+---
+# API Service - Circuit Breaking and Retries
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: api-resilient
+  namespace: ml-scheduler
+spec:
+  host: api
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+        connectTimeout: 30s
+      http:
+        h2UpgradePolicy: UPGRADE
+        http1MaxPendingRequests: 100
+        http2MaxRequests: 1000
+        maxRequestsPerConnection: 100
+        maxRetries: 3
+    
+    # Load balancer settings
+    loadBalancer:
+      simple: LEAST_CONN
+      consistentHash:
+        httpHeaderName: x-session-id
+    
+    # Circuit breaker (outlier detection)
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+      minHealthPercent: 30
+      splitExternalLocalOriginErrors: true
+
+---
+# ML Worker Service - Circuit Breaking for Long Operations
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: ml-worker-resilient
+  namespace: ml-scheduler
+spec:
+  host: ml-worker
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 50
+        connectTimeout: 60s
+      http:
+        http1MaxPendingRequests: 50
+        http2MaxRequests: 100
+        maxRetries: 2
+    
+    loadBalancer:
+      simple: ROUND_ROBIN
+    
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 60s
+      baseEjectionTime: 60s
+      maxEjectionPercent: 30
+
+---
+# Queue Worker - Connection pooling
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: queue-worker-resilient
+  namespace: ml-scheduler
+spec:
+  host: queue-worker
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http2MaxRequests: 500
+        maxRetries: 3
+    
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+
+---
+# Redis - Connection pooling
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: redis-resilient
+  namespace: ml-scheduler
+spec:
+  host: redis
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 200
+        connectTimeout: 10s
+    
+    outlierDetection:
+      consecutiveErrors: 3
+      interval: 30s
+      baseEjectionTime: 60s
+
+---
+# VirtualService with retry policies
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: api-resilient
+  namespace: ml-scheduler
+spec:
+  hosts:
+    - api
+  http:
+    # Health endpoints - no retries needed
+    - match:
+        - uri:
+            prefix: /health
+      route:
+        - destination:
+            host: api
+      timeout: 5s
+    
+    # Read operations - aggressive retries
+    - match:
+        - method:
+            exact: GET
+      route:
+        - destination:
+            host: api
+      retries:
+        attempts: 3
+        perTryTimeout: 5s
+        retryOn: connect-failure,refused-stream,unavailable,cancelled,retriable-4xx,reset,5xx
+      timeout: 15s
+    
+    # Write operations - careful retries
+    - match:
+        - method:
+            regex: "POST|PUT|PATCH"
+      route:
+        - destination:
+            host: api
+      retries:
+        attempts: 2
+        perTryTimeout: 10s
+        retryOn: connect-failure,refused-stream,unavailable,reset
+      timeout: 30s
+    
+    # Default route
+    - route:
+        - destination:
+            host: api
+      retries:
+        attempts: 3
+        perTryTimeout: 10s
+      timeout: 30s
+
+---
+# ML Worker VirtualService - Long timeout for ML operations
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ml-worker-resilient
+  namespace: ml-scheduler
+spec:
+  hosts:
+    - ml-worker
+  http:
+    # Prediction endpoint
+    - match:
+        - uri:
+            prefix: /predict
+      route:
+        - destination:
+            host: ml-worker
+      retries:
+        attempts: 2
+        perTryTimeout: 30s
+        retryOn: connect-failure,unavailable
+      timeout: 60s
+    
+    # Batch prediction - even longer timeout
+    - match:
+        - uri:
+            prefix: /batch-predict
+      route:
+        - destination:
+            host: ml-worker
+      retries:
+        attempts: 1
+        perTryTimeout: 120s
+      timeout: 300s
+    
+    # Health check
+    - match:
+        - uri:
+            prefix: /health
+      route:
+        - destination:
+            host: ml-worker
+      timeout: 5s

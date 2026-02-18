@@ -1,0 +1,161 @@
+# =============================================================================
+# Chaos Mesh - Scheduled Chaos Experiments
+# Comprehensive reliability testing for ML Task Scheduler
+# =============================================================================
+
+---
+# Scheduled pod kill experiment - runs daily
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: daily-ml-worker-kill
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: scheduled
+spec:
+  schedule: "0 3 * * *"  # 3 AM daily
+  historyLimit: 5
+  concurrencyPolicy: Forbid
+  type: PodChaos
+  podChaos:
+    selector:
+      namespaces:
+        - ml-scheduler
+      labelSelectors:
+        app: ml-worker
+    mode: random-one
+    action: pod-kill
+
+---
+# Scheduled API pod kill
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: daily-api-pod-kill
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: scheduled
+spec:
+  schedule: "0 3 * * *"  # 3 AM daily
+  historyLimit: 5
+  concurrencyPolicy: Forbid
+  type: PodChaos
+  podChaos:
+    selector:
+      namespaces:
+        - ml-scheduler
+      labelSelectors:
+        app: api
+    mode: random-one
+    action: pod-kill
+
+---
+# Scheduled network delay test
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: daily-network-delay
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: scheduled
+spec:
+  schedule: "30 3 * * *"  # 3:30 AM daily
+  historyLimit: 5
+  concurrencyPolicy: Forbid
+  type: NetworkChaos
+  networkChaos:
+    selector:
+      namespaces:
+        - ml-scheduler
+      labelSelectors:
+        app: api
+    mode: all
+    action: delay
+    delay:
+      latency: "100ms"
+      jitter: "50ms"
+    duration: "5m"
+
+---
+# Scheduled stress test
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: daily-stress-test
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: scheduled
+spec:
+  schedule: "0 4 * * *"  # 4 AM daily
+  historyLimit: 5
+  concurrencyPolicy: Forbid
+  type: StressChaos
+  stressChaos:
+    selector:
+      namespaces:
+        - ml-scheduler
+      labelSelectors:
+        app: ml-worker
+    mode: one
+    stressors:
+      cpu:
+        workers: 2
+        load: 70
+    duration: "3m"
+
+---
+# Weekly Redis failure simulation
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: weekly-redis-failure
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: scheduled
+spec:
+  schedule: "0 4 * * 0"  # 4 AM every Sunday
+  historyLimit: 3
+  concurrencyPolicy: Forbid
+  type: PodChaos
+  podChaos:
+    selector:
+      namespaces:
+        - ml-scheduler
+      labelSelectors:
+        app: redis
+    mode: one
+    action: pod-failure
+    duration: "60s"
+
+---
+# Packet loss simulation - weekly
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: weekly-packet-loss
+  namespace: chaos-testing
+  labels:
+    app: ml-scheduler
+    experiment: scheduled
+spec:
+  schedule: "0 5 * * 0"  # 5 AM every Sunday
+  historyLimit: 3
+  concurrencyPolicy: Forbid
+  type: NetworkChaos
+  networkChaos:
+    selector:
+      namespaces:
+        - ml-scheduler
+      labelSelectors:
+        app: api
+    mode: all
+    action: loss
+    loss:
+      loss: "10"
+      correlation: "50"
+    duration: "2m"

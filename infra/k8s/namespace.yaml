@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ml-scheduler
+  labels:
+    app.kubernetes.io/name: ml-task-scheduler
+    app.kubernetes.io/part-of: ml-task-scheduler

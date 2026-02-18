@@ -1,0 +1,53 @@
+# =============================================================================
+# ArgoCD Application - Staging Environment
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ml-scheduler-staging
+  namespace: argocd
+  labels:
+    environment: staging
+    app: ml-scheduler
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/shri33/ML-Task-Scheduler
+    targetRevision: main
+    path: infra/helm/app
+    helm:
+      valueFiles:
+        - ../../envs/staging/values.yaml
+      parameters:
+        - name: image.tag
+          value: staging
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ml-scheduler-staging
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  # Pre-sync and post-sync hooks
+  info:
+    - name: "Environment"
+      value: "Staging"
+    - name: "Maintained by"
+      value: "Platform Team"

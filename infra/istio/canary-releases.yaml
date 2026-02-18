@@ -1,0 +1,203 @@
+# =============================================================================
+# Istio VirtualService - Canary Release Configuration
+# Gradual traffic shifting for safe deployments
+# =============================================================================
+
+---
+# API Service - Canary Traffic Split
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: api-canary
+  namespace: ml-scheduler
+  labels:
+    app: api
+    release: canary
+spec:
+  hosts:
+    - api
+    - api.ml-scheduler.svc.cluster.local
+  http:
+    # Header-based routing for testing
+    - match:
+        - headers:
+            x-canary:
+              exact: "true"
+      route:
+        - destination:
+            host: api
+            subset: canary
+          weight: 100
+    
+    # Cookie-based routing for beta users
+    - match:
+        - headers:
+            cookie:
+              regex: ".*canary=true.*"
+      route:
+        - destination:
+            host: api
+            subset: canary
+          weight: 100
+    
+    # Default traffic split
+    - route:
+        - destination:
+            host: api
+            subset: stable
+          weight: 90
+        - destination:
+            host: api
+            subset: canary
+          weight: 10
+      
+      # Retry policy
+      retries:
+        attempts: 3
+        perTryTimeout: 2s
+        retryOn: connect-failure,refused-stream,unavailable,cancelled,retriable-4xx,reset
+      
+      # Timeout
+      timeout: 30s
+
+---
+# API DestinationRule - Define subsets
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: api-destination
+  namespace: ml-scheduler
+spec:
+  host: api
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        h2UpgradePolicy: UPGRADE
+        http1MaxPendingRequests: 100
+        http2MaxRequests: 1000
+    loadBalancer:
+      simple: LEAST_CONN
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+  subsets:
+    - name: stable
+      labels:
+        version: stable
+    - name: canary
+      labels:
+        version: canary
+
+---
+# ML Worker Service - Canary
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ml-worker-canary
+  namespace: ml-scheduler
+  labels:
+    app: ml-worker
+    release: canary
+spec:
+  hosts:
+    - ml-worker
+  http:
+    - route:
+        - destination:
+            host: ml-worker
+            subset: stable
+          weight: 95
+        - destination:
+            host: ml-worker
+            subset: canary
+          weight: 5
+      retries:
+        attempts: 2
+        perTryTimeout: 30s
+      timeout: 60s
+
+---
+# ML Worker DestinationRule
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: ml-worker-destination
+  namespace: ml-scheduler
+spec:
+  host: ml-worker
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+    connectionPool:
+      http:
+        http2MaxRequests: 500
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 60s
+      baseEjectionTime: 60s
+  subsets:
+    - name: stable
+      labels:
+        version: stable
+    - name: canary
+      labels:
+        version: canary
+
+---
+# Frontend Service - Canary
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: frontend-canary
+  namespace: ml-scheduler
+  labels:
+    app: frontend
+    release: canary
+spec:
+  hosts:
+    - frontend
+    - ml-scheduler.example.com
+  gateways:
+    - ml-scheduler-gateway
+  http:
+    - match:
+        - headers:
+            x-canary:
+              exact: "true"
+      route:
+        - destination:
+            host: frontend
+            subset: canary
+    - route:
+        - destination:
+            host: frontend
+            subset: stable
+          weight: 95
+        - destination:
+            host: frontend
+            subset: canary
+          weight: 5
+
+---
+# Frontend DestinationRule
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: frontend-destination
+  namespace: ml-scheduler
+spec:
+  host: frontend
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+  subsets:
+    - name: stable
+      labels:
+        version: stable
+    - name: canary
+      labels:
+        version: canary

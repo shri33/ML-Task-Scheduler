@@ -1,0 +1,98 @@
+# =============================================================================
+# Istio Gateway Configuration
+# =============================================================================
+
+---
+# Main Istio Gateway
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: ml-scheduler-gateway
+  namespace: ml-scheduler
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    # HTTPS
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: ml-scheduler-tls
+      hosts:
+        - ml-scheduler.example.com
+        - api.ml-scheduler.example.com
+    
+    # HTTP (redirect to HTTPS)
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      tls:
+        httpsRedirect: true
+      hosts:
+        - ml-scheduler.example.com
+        - api.ml-scheduler.example.com
+
+---
+# VirtualService for Gateway
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ml-scheduler-main
+  namespace: ml-scheduler
+spec:
+  hosts:
+    - ml-scheduler.example.com
+  gateways:
+    - ml-scheduler-gateway
+  http:
+    # API routes
+    - match:
+        - uri:
+            prefix: /api
+      route:
+        - destination:
+            host: api
+            port:
+              number: 3000
+      retries:
+        attempts: 3
+        perTryTimeout: 10s
+      timeout: 30s
+      corsPolicy:
+        allowOrigins:
+          - exact: "https://ml-scheduler.example.com"
+        allowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        allowHeaders:
+          - authorization
+          - content-type
+          - x-request-id
+        exposeHeaders:
+          - x-request-id
+        maxAge: "24h"
+    
+    # WebSocket routes
+    - match:
+        - uri:
+            prefix: /socket.io
+      route:
+        - destination:
+            host: api
+            port:
+              number: 3000
+      timeout: 0s  # No timeout for WebSocket
+    
+    # Frontend routes (default)
+    - route:
+        - destination:
+            host: frontend
+            port:
+              number: 80
