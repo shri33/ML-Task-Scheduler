@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { Mail, Lock, User, UserPlus, AlertCircle } from 'lucide-react';
 import { clsx } from 'clsx';
 

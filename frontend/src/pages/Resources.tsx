@@ -7,6 +7,7 @@ import { clsx } from 'clsx';
 import { useToast } from '../contexts/ToastContext';
 import { SearchFilter } from '../components/SearchFilter';
 import { ResourceCardSkeleton } from '../components/Skeletons';
+import { StatusBadge } from '../components/shared/Badges';
 
 export default function Resources() {
   const {
@@ -281,15 +282,4 @@ function ResourceFormModal({
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    AVAILABLE: 'text-green-600 dark:text-green-400',
-    BUSY: 'text-yellow-600 dark:text-yellow-400',
-    OFFLINE: 'text-gray-600 dark:text-gray-400',
-  };
-  return (
-    <span className={clsx('text-sm font-medium', colors[status])}>
-      {status}
-    </span>
-  );
-}
+// StatusBadge imported from shared/Badges.tsx

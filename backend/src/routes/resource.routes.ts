@@ -2,17 +2,32 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { resourceService } from '../services/resource.service';
 import { createResourceSchema, updateResourceSchema } from '../validators/resource.validator';
 import { AppError } from '../middleware/errorHandler';
+import { authenticate, authorize, adminOnly, AuthRequest } from '../middleware/auth.middleware';
 
 type ResourceStatus = 'AVAILABLE' | 'BUSY' | 'OFFLINE';
 
 const router = Router();
 
+// All resource routes require authentication
+router.use(authenticate);
+
 // GET /api/resources - List all resources
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const status = req.query.status as ResourceStatus | undefined;
-    const resources = await resourceService.findAll(status);
-    res.json({ success: true, data: resources });
+    const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
+    const result = await resourceService.findAll(status, { page, limit });
+    res.json({
+      success: true,
+      data: result.items,
+      pagination: {
+        page: result.page,
+        limit: result.limit,
+        total: result.total,
+        totalPages: Math.ceil(result.total / result.limit)
+      }
+    });
   } catch (error) {
     next(error);
   }

@@ -302,7 +302,7 @@ When you schedule a task, the system:
 
 3. **Scheduler Calculates Score:**
    ```
-   Score = (Priority × 0.4) + (1/PredictedTime × 0.3) + (1/Load × 0.3)
+   Score = 0.4 × (100 - load) / 100 + 0.3 × (1 - predictedTime / 20) + 0.3 × (priority / 5)
    ```
 
 4. **Best Resource Selected:**

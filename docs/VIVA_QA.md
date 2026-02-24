@@ -63,7 +63,7 @@
 > "We use Machine Learning, specifically regression models, to predict task execution time."
 
 **Detailed Answer:**
-> "We use supervised learning - specifically regression - to predict execution time. The model takes features like task size, task type, priority, and current resource load. It outputs a predicted execution time in seconds. We use simple models like Linear Regression or Random Forest. This is NOT deep learning, NOT classification, NOT NLP."
+> "We use supervised learning - specifically regression - to predict execution time. The model takes features like task size, task type, priority, and current resource load. It outputs a predicted execution time in seconds. We use an ensemble model — **Random Forest** as the primary, with **XGBoost** and **Gradient Boosting** as alternatives. This is NOT deep learning, NOT classification, NOT NLP."
 
 ---
 
@@ -78,16 +78,16 @@
 
 ### Q7: What model are you using?
 **Short Answer:**
-> "Linear Regression for simplicity, or Random Forest for better accuracy. Both are simple and explainable."
+> "Random Forest as the primary model, with XGBoost and Gradient Boosting as alternatives. All are ensemble methods — accurate yet explainable."
 
 **Detailed Answer:**
-> "We chose Linear Regression as our primary model because:
-> 1. It's simple and explainable
+> "We chose **Random Forest** as our primary model because:
+> 1. It's an ensemble of decision trees — more accurate than a single model
 > 2. No GPU required
-> 3. Works well with small datasets
-> 4. Professors can understand the math
+> 3. Works well with small datasets and handles non-linear relationships
+> 4. Feature importance is easy to interpret
 > 
-> Random Forest is our backup if we need better accuracy. We are NOT using neural networks or deep learning because the problem doesn't require that complexity."
+> We also support **XGBoost** (if installed) for even better accuracy, and **Gradient Boosting** as a fallback. We are NOT using neural networks or deep learning because the problem doesn't require that complexity."
 
 ---
 
@@ -182,7 +182,7 @@ Output:
 > "Our scheduling algorithm works in these steps:
 > 1. **Get pending tasks** from queue
 > 2. **For each task,** call ML to get predicted execution time
-> 3. **Calculate score:** Score = Priority × (1 / PredictedTime)
+> 3. **Calculate score:** Score = 0.4 × (100 - load) / 100 + 0.3 × (1 - predictedTime / 20) + 0.3 × (priority / 5)
 > 4. **Sort tasks** by score (highest first)
 > 5. **For each task,** find resource with lowest load that can handle it
 > 6. **Assign task** to selected resource
@@ -254,7 +254,7 @@ Analytics:
 > - **Phase 3 (Apr-May):** Full implementation, ML integration, testing
 > - **Capstone (Jun-Aug):** Deployment, optimization, paper writing
 > 
-> The ML is simple (Linear Regression), the architecture is standard (REST API), and we have 3 team members with clear roles. This is well within scope."
+> The ML is straightforward (Random Forest ensemble), the architecture is standard (REST API), and we have 3 team members with clear roles. This is well within scope."
 
 ---
 
@@ -327,7 +327,7 @@ Analytics:
 | ML library? | scikit-learn |
 | Database? | PostgreSQL |
 | Type of ML? | Regression |
-| ML model? | Linear Regression |
+| ML model? | Random Forest (with XGBoost/GB alternatives) |
 | Deployment? | Docker |
 | Team size? | 3 members |
 | Duration? | 6-9 months |

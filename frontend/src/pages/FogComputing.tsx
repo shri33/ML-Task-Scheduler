@@ -16,50 +16,38 @@ import {
   PolarRadiusAxis,
   Radar,
 } from 'recharts';
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: '/api',
-  headers: { 'Content-Type': 'application/json' },
-});
-
-interface FogMetrics {
-  taskCount: number;
-  completionTime: { hh: number; ipso: number; iaco: number; rr: number; minMin: number };
-  energyConsumption: { hh: number; ipso: number; iaco: number; rr: number; minMin: number };
-  reliability: { hh: number; ipso: number; iaco: number; rr: number; minMin: number };
-}
-
-interface ComparisonResult {
-  hybridHeuristic: { totalDelay: number; totalEnergy: number; reliability: number; executionTimeMs: number };
-  ipso: { totalDelay: number; totalEnergy: number; reliability: number; executionTimeMs: number };
-  iaco: { totalDelay: number; totalEnergy: number; reliability: number; executionTimeMs: number };
-  roundRobin: { totalDelay: number; totalEnergy: number; reliability: number; executionTimeMs: number };
-  minMin: { totalDelay: number; totalEnergy: number; reliability: number; executionTimeMs: number };
-}
+import { fogApi, FogMetrics, FogNode, AlgorithmComparison } from '../lib/api';
 
 interface ToleranceReliability {
   maxToleranceTime: number;
   reliability: { hh: number; ipso: number; iaco: number; rr: number };
 }
 
-interface FogNode {
-  id: string;
-  name: string;
-  computingResourceGHz: string;
-  networkBandwidthMbps: string;
-  currentLoadPercent: string;
+interface ScheduleResult {
+  algorithm: string;
+  metrics: {
+    totalDelay: number;
+    totalEnergy: number;
+    reliability: number;
+    executionTimeMs: number;
+  };
+  assignments: Array<{
+    taskId: string;
+    nodeId: string;
+    delay: number;
+    energy: number;
+  }>;
 }
 
 export default function FogComputing() {
   const [metrics, setMetrics] = useState<FogMetrics[]>([]);
-  const [comparison, setComparison] = useState<ComparisonResult | null>(null);
+  const [comparison, setComparison] = useState<AlgorithmComparison | null>(null);
   const [fogNodes, setFogNodes] = useState<FogNode[]>([]);
   const [toleranceData, setToleranceData] = useState<ToleranceReliability[]>([]);
   const [loading, setLoading] = useState(false);
   const [taskCount, setTaskCount] = useState(50);
   const [selectedAlgorithm, setSelectedAlgorithm] = useState('hh');
-  const [scheduleResult, setScheduleResult] = useState<any>(null);
+  const [scheduleResult, setScheduleResult] = useState<ScheduleResult | null>(null);
 
   useEffect(() => {
     fetchMetrics();
@@ -69,10 +57,8 @@ export default function FogComputing() {
 
   const fetchMetrics = async () => {
     try {
-      const response = await api.get('/fog/metrics');
-      if (response.data.success) {
-        setMetrics(response.data.data.metrics);
-      }
+      const data = await fogApi.getMetrics();
+      setMetrics(data.metrics);
     } catch (error) {
       console.error('Failed to fetch metrics:', error);
     }
@@ -80,10 +66,8 @@ export default function FogComputing() {
 
   const fetchFogNodes = async () => {
     try {
-      const response = await api.get('/fog/nodes');
-      if (response.data.success) {
-        setFogNodes(response.data.data);
-      }
+      const data = await fogApi.getNodes();
+      setFogNodes(data);
     } catch (error) {
       console.error('Failed to fetch fog nodes:', error);
     }
@@ -91,10 +75,8 @@ export default function FogComputing() {
 
   const fetchToleranceReliability = async () => {
     try {
-      const response = await api.get('/fog/tolerance-reliability');
-      if (response.data.success) {
-        setToleranceData(response.data.data.metrics);
-      }
+      const data = await fogApi.getToleranceReliability();
+      setToleranceData(data.metrics as ToleranceReliability[]);
     } catch (error) {
       console.error('Failed to fetch tolerance-reliability:', error);
     }
@@ -103,10 +85,8 @@ export default function FogComputing() {
   const runComparison = async () => {
     setLoading(true);
     try {
-      const response = await api.post('/fog/compare', { taskCount });
-      if (response.data.success) {
-        setComparison(response.data.data.results);
-      }
+      const data = await fogApi.compare(taskCount);
+      setComparison(data);
     } catch (error) {
       console.error('Failed to run comparison:', error);
     } finally {
@@ -117,10 +97,8 @@ export default function FogComputing() {
   const runSchedule = async () => {
     setLoading(true);
     try {
-      const response = await api.post('/fog/schedule', { algorithm: selectedAlgorithm });
-      if (response.data.success) {
-        setScheduleResult(response.data.data);
-      }
+      const data = await fogApi.schedule(selectedAlgorithm) as ScheduleResult;
+      setScheduleResult(data);
     } catch (error) {
       console.error('Failed to run schedule:', error);
     } finally {
@@ -131,7 +109,7 @@ export default function FogComputing() {
   const resetSimulation = async () => {
     setLoading(true);
     try {
-      await api.post('/fog/reset', { taskCount });
+      await fogApi.reset(taskCount);
       await fetchMetrics();
       await fetchFogNodes();
       await fetchToleranceReliability();
@@ -318,7 +296,7 @@ export default function FogComputing() {
             </div>
             <div className="bg-orange-50 dark:bg-orange-900/30 p-3 rounded-lg">
               <p className="text-sm text-gray-600 dark:text-gray-400">Execution Time</p>
-              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{scheduleResult.executionTimeMs}ms</p>
+              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{scheduleResult.metrics.executionTimeMs}ms</p>
             </div>
           </div>
         </div>

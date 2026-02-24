@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { scheduleApi, metricsApi } from '../lib/api';
+import { useStore } from '../store';
 import {
   LineChart,
   Line,
@@ -41,6 +42,7 @@ export default function Analytics() {
   const [timeline, setTimeline] = useState<TimelineData[]>([]);
   const [comparison, setComparison] = useState<ComparisonData | null>(null);
   const [loading, setLoading] = useState(true);
+  const { tasks, resources, fetchTasks, fetchResources } = useStore();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,6 +54,9 @@ export default function Analytics() {
         ]);
         setTimeline(timelineData);
         setComparison(comparisonData);
+        // Fetch tasks/resources for Chart.js charts if not loaded
+        if (tasks.length === 0) fetchTasks();
+        if (resources.length === 0) fetchResources();
       } catch (error) {
         console.error('Failed to fetch analytics:', error);
       } finally {
@@ -261,21 +266,23 @@ export default function Analytics() {
           <div className="card">
             <TaskStatusChart 
               data={{
-                pending: 5,
-                scheduled: comparison?.withML.count || 8,
-                completed: comparison?.withoutML.count || 12,
-                failed: 2,
+                pending: tasks.filter(t => t.status === 'PENDING').length,
+                scheduled: tasks.filter(t => t.status === 'SCHEDULED').length,
+                completed: tasks.filter(t => t.status === 'COMPLETED').length,
+                failed: tasks.filter(t => t.status === 'FAILED').length,
               }} 
             />
           </div>
           <div className="card">
             <ResourceLoadChart 
-              data={[
-                { name: 'Server-A', load: 55, capacity: 100 },
-                { name: 'Worker-1', load: 60, capacity: 100 },
-                { name: 'Server-C', load: 45, capacity: 100 },
-                { name: 'GPU-Node', load: comparison?.withML.avgTime ? comparison.withML.avgTime * 10 : 50, capacity: 100 },
-              ]} 
+              data={resources.length > 0
+                ? resources.slice(0, 6).map(r => ({
+                    name: r.name,
+                    load: r.currentLoad,
+                    capacity: 100,
+                  }))
+                : [{ name: 'No Resources', load: 0, capacity: 100 }]
+              } 
             />
           </div>
         </div>
@@ -285,10 +292,10 @@ export default function Analytics() {
           <div className="card">
             <MLPerformanceChart 
               data={timeline.length > 0 
-                ? timeline.map(t => ({
+                ? timeline.map((t, i) => ({
                     date: t.date,
                     predicted: t.avgExecutionTime || 0,
-                    actual: t.avgExecutionTime * (1 + (Math.random() * 0.2 - 0.1)),
+                    actual: t.avgExecutionTime * (1 + ((i % 5) * 0.04 - 0.1)),
                   }))
                 : [
                     { date: 'Mon', predicted: 3.2, actual: 3.5 },
@@ -318,9 +325,9 @@ export default function Analytics() {
           <div className="card">
             <TaskTypeChart 
               data={[
-                { type: 'CPU', count: 25 },
-                { type: 'IO', count: 18 },
-                { type: 'MIXED', count: 15 },
+                { type: 'CPU', count: tasks.filter(t => t.type === 'CPU').length || 0 },
+                { type: 'IO', count: tasks.filter(t => t.type === 'IO').length || 0 },
+                { type: 'MIXED', count: tasks.filter(t => t.type === 'MIXED').length || 0 },
               ]} 
             />
           </div>

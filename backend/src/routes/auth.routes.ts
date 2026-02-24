@@ -4,17 +4,23 @@ import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma';
 import { authenticate, generateTokens, AuthRequest } from '../middleware/auth.middleware';
 import { authLimiter } from '../middleware/rateLimit.middleware';
+import { setTokenCookies, clearTokenCookies, REFRESH_TOKEN_COOKIE } from '../lib/cookies';
+import { setCsrfCookie } from '../middleware/csrf.middleware';
 import { z } from 'zod';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
-// Demo user for development without database
+// Demo user for development without database (disabled in production)
+const DEMO_ENABLED = process.env.NODE_ENV !== 'production';
 const DEMO_USER = {
   id: 'demo-user-001',
   email: 'demo@example.com',
   name: 'Demo User',
-  role: 'admin',
+  role: 'ADMIN',
   createdAt: new Date().toISOString()
 };
 const DEMO_PASSWORD = 'password123';
@@ -98,6 +104,10 @@ router.post('/register', authLimiter, async (req: Request, res: Response, next: 
       }
     });
 
+    // Set httpOnly cookies + CSRF token
+    setTokenCookies(res, accessToken, refreshToken);
+    setCsrfCookie(res);
+
     res.status(201).json({
       success: true,
       data: {
@@ -124,13 +134,16 @@ router.post('/login', authLimiter, async (req: Request, res: Response, next: Nex
 
     const { email, password } = validation.data;
 
-    // Check for demo user (works without database)
-    if (email === DEMO_USER.email && password === DEMO_PASSWORD) {
+    // Check for demo user (works without database, disabled in production)
+    if (DEMO_ENABLED && email === DEMO_USER.email && password === DEMO_PASSWORD) {
       const { accessToken, refreshToken } = generateTokens({
         id: DEMO_USER.id,
         email: DEMO_USER.email,
         role: DEMO_USER.role
       });
+
+      setTokenCookies(res, accessToken, refreshToken);
+      setCsrfCookie(res);
 
       return res.json({
         success: true,
@@ -201,6 +214,9 @@ router.post('/login', authLimiter, async (req: Request, res: Response, next: Nex
       }
     });
 
+    setTokenCookies(res, accessToken, refreshToken);
+    setCsrfCookie(res);
+
     res.json({
       success: true,
       data: {
@@ -222,7 +238,8 @@ router.post('/login', authLimiter, async (req: Request, res: Response, next: Nex
 // Refresh token
 router.post('/refresh', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { refreshToken } = req.body;
+    // Read refresh token from body OR httpOnly cookie
+    const refreshToken = req.body.refreshToken || req.cookies?.[REFRESH_TOKEN_COOKIE];
 
     if (!refreshToken) {
       return res.status(400).json({
@@ -255,11 +272,6 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
       });
     }
 
-    // Delete old refresh token
-    await prisma.refreshToken.delete({
-      where: { id: storedToken.id }
-    });
-
     // Generate new tokens
     const tokens = generateTokens({
       id: storedToken.user.id,
@@ -267,14 +279,21 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
       role: storedToken.user.role
     });
 
-    // Store new refresh token
-    await prisma.refreshToken.create({
-      data: {
-        token: tokens.refreshToken,
-        userId: storedToken.user.id,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-      }
-    });
+    // Atomic token rotation: delete old + create new in a single transaction
+    await prisma.$transaction([
+      prisma.refreshToken.delete({
+        where: { id: storedToken.id }
+      }),
+      prisma.refreshToken.create({
+        data: {
+          token: tokens.refreshToken,
+          userId: storedToken.user.id,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        }
+      })
+    ]);
+
+    setTokenCookies(res, tokens.accessToken, tokens.refreshToken);
 
     res.json({
       success: true,
@@ -288,7 +307,7 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
 // Logout
 router.post('/logout', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = req.body.refreshToken || req.cookies?.[REFRESH_TOKEN_COOKIE];
 
     if (refreshToken) {
       // Delete specific refresh token
@@ -301,6 +320,8 @@ router.post('/logout', authenticate, async (req: AuthRequest, res: Response, nex
         where: { userId: req.user!.userId }
       });
     }
+
+    clearTokenCookies(res);
 
     res.json({
       success: true,
@@ -362,11 +383,24 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response, next: Ne
 });
 
 // Update profile
+const profileSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').max(100).optional(),
+  email: z.string().email('Invalid email address').optional(),
+});
+
 router.put('/profile', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { name, email } = req.body;
+    const validation = profileSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        error: validation.error.errors[0].message
+      });
+    }
 
-    const updateData: any = {};
+    const { name, email } = validation.data;
+
+    const updateData: Record<string, string> = {};
     if (name) updateData.name = name;
     if (email) {
       // Check if email is taken

@@ -79,7 +79,7 @@ frontend:
 postgresql:
   enabled: true
   auth:
-    postgresPassword: devpassword123
+    existingSecret: dev-db-credentials  # Create: kubectl create secret generic dev-db-credentials --from-literal=postgres-password=<password>
     database: ml_scheduler_dev
   primary:
     persistence:
@@ -89,7 +89,7 @@ postgresql:
 redis:
   enabled: true
   auth:
-    password: devredis123
+    existingSecret: dev-redis-credentials  # Create: kubectl create secret generic dev-redis-credentials --from-literal=redis-password=<password>
   master:
     persistence:
       size: 1Gi

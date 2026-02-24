@@ -185,7 +185,11 @@ export function metricsMiddleware() {
     
     res.on('finish', () => {
       const duration = Number(process.hrtime.bigint() - start) / 1e9;
-      const route = req.route?.path || req.path || 'unknown';
+      // Use the matched route pattern instead of the raw path to avoid
+      // high-cardinality labels from dynamic IDs (e.g. /api/tasks/:id)
+      const route = req.route?.path
+        ? `${req.baseUrl || ''}${req.route.path}`
+        : 'unmatched';
       const labels = {
         method: req.method,
         route,

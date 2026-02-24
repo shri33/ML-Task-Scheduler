@@ -31,6 +31,10 @@ interface AppState {
   // Scheduling
   scheduling: boolean;
   runScheduler: (taskIds?: string[]) => Promise<void>;
+
+  // Error state
+  error: string | null;
+  clearError: () => void;
 }
 
 export const useStore = create<AppState>()((set, get) => ({
@@ -38,13 +42,14 @@ export const useStore = create<AppState>()((set, get) => ({
   tasks: [],
   tasksLoading: false,
   fetchTasks: async (status?: string) => {
-    set({ tasksLoading: true });
+    set({ tasksLoading: true, error: null });
     try {
       const tasks = await taskApi.getAll(status);
       set({ tasks, tasksLoading: false });
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch tasks';
       console.error('Failed to fetch tasks:', error);
-      set({ tasksLoading: false });
+      set({ tasksLoading: false, error: message });
     }
   },
   addTask: (task: Task) => set((state: AppState) => ({ tasks: [task, ...state.tasks] })),
@@ -61,13 +66,14 @@ export const useStore = create<AppState>()((set, get) => ({
   resources: [],
   resourcesLoading: false,
   fetchResources: async (status?: string) => {
-    set({ resourcesLoading: true });
+    set({ resourcesLoading: true, error: null });
     try {
       const resources = await resourceApi.getAll(status);
       set({ resources, resourcesLoading: false });
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch resources';
       console.error('Failed to fetch resources:', error);
-      set({ resourcesLoading: false });
+      set({ resourcesLoading: false, error: message });
     }
   },
   addResource: (resource: Resource) =>
@@ -85,13 +91,14 @@ export const useStore = create<AppState>()((set, get) => ({
   metrics: null,
   metricsLoading: false,
   fetchMetrics: async () => {
-    set({ metricsLoading: true });
+    set({ metricsLoading: true, error: null });
     try {
       const metrics = await metricsApi.get();
       set({ metrics, metricsLoading: false });
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch metrics';
       console.error('Failed to fetch metrics:', error);
-      set({ metricsLoading: false });
+      set({ metricsLoading: false, error: message });
     }
   },
 
@@ -109,7 +116,7 @@ export const useStore = create<AppState>()((set, get) => ({
   // Scheduling
   scheduling: false,
   runScheduler: async (taskIds?: string[]) => {
-    set({ scheduling: true });
+    set({ scheduling: true, error: null });
     try {
       await scheduleApi.run(taskIds);
       // Refresh tasks and resources after scheduling
@@ -117,9 +124,15 @@ export const useStore = create<AppState>()((set, get) => ({
       await get().fetchResources();
       await get().fetchMetrics();
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to run scheduler';
       console.error('Failed to run scheduler:', error);
+      set({ error: message });
     } finally {
       set({ scheduling: false });
     }
   },
+
+  // Error state
+  error: null,
+  clearError: () => set({ error: null }),
 }));

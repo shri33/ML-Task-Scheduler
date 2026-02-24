@@ -15,9 +15,9 @@
 
 | Name | Roll Number | Role |
 |------|------------|------|
-| [Your Full Name] | [Your Roll No] | Backend Lead (Node.js, API, Scheduler) |
-| [Member 2 Full Name] | [Member 2 Roll No] | Frontend Lead (React, UI, Dashboard) |
-| [Member 3 Full Name] | [Member 3 Roll No] | ML/DevOps Lead (Python, ML, Deployment) |
+| Shri | BITS Pilani | Backend Lead (Node.js, API, Scheduler) |
+| Team Byte_hogs Member 2 | BITS Pilani | Frontend Lead (React, UI, Dashboard) |
+| Team Byte_hogs Member 3 | BITS Pilani | ML/DevOps Lead (Python, ML, Deployment) |
 
 ---
 
@@ -439,7 +439,7 @@ Final: Documentation (Weeks 10-12)
 ## SUBMISSION INFORMATION
 
 **Document:** Phase1_Study_Project_Proposal.pdf  
-**Submitted By:** [Your Name], [Member 2 Name], [Member 3 Name]  
+**Submitted By:** Team Byte_hogs, BITS Pilani  
 **Date:** January 15, 2026  
 **Course:** BCS ZC241T - Study Project (5 units)  
 **Semester:** 5 (Year 3, Term 2)  

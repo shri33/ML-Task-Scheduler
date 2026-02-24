@@ -18,36 +18,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { clsx } from 'clsx';
-
-interface Device {
-  id: string;
-  name: string;
-  type: 'CAMERA' | 'ROBOT_ARM' | 'IOT_SENSOR' | 'EDGE_SERVER' | 'ACTUATOR';
-  status: 'ONLINE' | 'OFFLINE' | 'MAINTENANCE' | 'ERROR';
-  ipAddress?: string;
-  port?: number;
-  location?: string;
-  description?: string;
-  capabilities?: Record<string, any>;
-  configuration?: Record<string, any>;
-  lastHeartbeat?: string;
-  createdAt: string;
-  _count?: {
-    deviceLogs: number;
-    deviceMetrics: number;
-  };
-}
-
-interface DeviceStats {
-  total: number;
-  online: number;
-  offline: number;
-  error: number;
-  maintenance: number;
-  byType: Record<string, number>;
-}
-
-const API_URL = '/api/devices';
+import { deviceApi, Device, DeviceStats } from '../lib/api';
 
 const deviceTypeIcons: Record<string, React.ReactNode> = {
   CAMERA: <Camera className="h-5 w-5" />,
@@ -88,6 +59,7 @@ export default function Devices() {
   const [filterType, setFilterType] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     type: 'IOT_SENSOR' as Device['type'],
@@ -100,24 +72,22 @@ export default function Devices() {
 
   const toast = useToast();
 
+  // Debounce search to avoid firing API on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const fetchDevices = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('accessToken');
-      
-      const params = new URLSearchParams();
-      if (filterType) params.append('type', filterType);
-      if (filterStatus) params.append('status', filterStatus);
-      if (searchTerm) params.append('search', searchTerm);
+      const params: { type?: string; status?: string; search?: string } = {};
+      if (filterType) params.type = filterType;
+      if (filterStatus) params.status = filterStatus;
+      if (debouncedSearch) params.search = debouncedSearch;
 
-      const response = await fetch(`${API_URL}?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setDevices(data.data);
-      }
+      const data = await deviceApi.getAll(params);
+      setDevices(data);
     } catch (error) {
       toast.error('Error', 'Failed to fetch devices');
     } finally {
@@ -127,15 +97,8 @@ export default function Devices() {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/stats/overview`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data.data);
-      }
+      const data = await deviceApi.getStats();
+      setStats(data);
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     }
@@ -144,16 +107,12 @@ export default function Devices() {
   useEffect(() => {
     fetchDevices();
     fetchStats();
-  }, [filterType, filterStatus, searchTerm]);
+  }, [filterType, filterStatus, debouncedSearch]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
-      const token = localStorage.getItem('accessToken');
-      const url = editingDevice ? `${API_URL}/${editingDevice.id}` : API_URL;
-      const method = editingDevice ? 'PUT' : 'POST';
-
       const payload = {
         name: formData.name,
         type: formData.type,
@@ -164,31 +123,24 @@ export default function Devices() {
         ...(editingDevice && { status: formData.status }),
       };
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        toast.success(
-          editingDevice ? 'Device updated' : 'Device created',
-          `${formData.name} has been ${editingDevice ? 'updated' : 'added'} successfully.`
-        );
-        setIsModalOpen(false);
-        setEditingDevice(null);
-        resetForm();
-        fetchDevices();
-        fetchStats();
+      if (editingDevice) {
+        await deviceApi.update(editingDevice.id, payload);
       } else {
-        const error = await response.json();
-        toast.error('Error', error.error || 'Failed to save device');
+        await deviceApi.create(payload);
       }
-    } catch (error) {
-      toast.error('Error', 'Failed to save device');
+
+      toast.success(
+        editingDevice ? 'Device updated' : 'Device created',
+        `${formData.name} has been ${editingDevice ? 'updated' : 'added'} successfully.`
+      );
+      setIsModalOpen(false);
+      setEditingDevice(null);
+      resetForm();
+      fetchDevices();
+      fetchStats();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to save device';
+      toast.error('Error', message);
     }
   };
 
@@ -196,22 +148,13 @@ export default function Devices() {
     if (!confirm(`Are you sure you want to delete "${device.name}"?`)) return;
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_URL}/${device.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        toast.success('Device deleted', `${device.name} has been removed.`);
-        fetchDevices();
-        fetchStats();
-      } else {
-        const error = await response.json();
-        toast.error('Error', error.error || 'Failed to delete device');
-      }
-    } catch (error) {
-      toast.error('Error', 'Failed to delete device');
+      await deviceApi.delete(device.id);
+      toast.success('Device deleted', `${device.name} has been removed.`);
+      fetchDevices();
+      fetchStats();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete device';
+      toast.error('Error', message);
     }
   };
 

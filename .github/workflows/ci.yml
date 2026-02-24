@@ -8,7 +8,7 @@ on:
 
 env:
   NODE_VERSION: '20.x'
-  PYTHON_VERSION: '3.10'
+  PYTHON_VERSION: '3.11'
 
 jobs:
   # ==========================================
@@ -152,7 +152,6 @@ jobs:
       - name: Run Tests
         working-directory: ./frontend
         run: npm test -- --passWithNoTests --ci
-        continue-on-error: true
 
       - name: Build Frontend
         working-directory: ./frontend
@@ -185,7 +184,7 @@ jobs:
 
       - name: Run Tests
         working-directory: ./ml-service
-        run: python -m pytest --cov=. --cov-report=xml -v || true
+        run: python -m pytest --cov=. --cov-report=xml -v
 
   # ==========================================
   # Build Docker Images

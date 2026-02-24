@@ -69,6 +69,9 @@ COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 # Copy generated Prisma client from deps
 COPY --from=deps --chown=nodejs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
+# Create logs directory writable by non-root user
+RUN mkdir -p /app/logs && chown nodejs:nodejs /app/logs
+
 # Switch to non-root user
 USER nodejs
 

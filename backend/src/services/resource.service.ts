@@ -23,22 +23,35 @@ export class ResourceService {
     });
   }
 
-  async findAll(status?: ResourceStatus) {
-    return prisma.resource.findMany({
-      where: status ? { status } : undefined,
-      include: {
-        _count: {
-          select: {
-            tasks: {
-              where: {
-                status: { in: ['SCHEDULED', 'RUNNING'] }
+  async findAll(status?: ResourceStatus, options?: { page?: number; limit?: number }) {
+    const page = Math.max(options?.page || 1, 1);
+    const limit = Math.min(Math.max(options?.limit || 20, 1), 100);
+    const skip = (page - 1) * limit;
+
+    const where = status ? { status } : undefined;
+
+    const [items, total] = await Promise.all([
+      prisma.resource.findMany({
+        where,
+        include: {
+          _count: {
+            select: {
+              tasks: {
+                where: {
+                  status: { in: ['SCHEDULED', 'RUNNING'] }
+                }
               }
             }
           }
-        }
-      },
-      orderBy: { name: 'asc' }
-    });
+        },
+        orderBy: { name: 'asc' },
+        skip,
+        take: limit
+      }),
+      prisma.resource.count({ where })
+    ]);
+
+    return { items, total, page, limit };
   }
 
   async findById(id: string) {

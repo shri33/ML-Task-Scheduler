@@ -41,9 +41,9 @@ spec:
               protocol: TCP
           envFrom:
             - secretRef:
-                name: app-secrets
+                name: ml-scheduler-secrets
             - configMapRef:
-                name: app-config
+                name: ml-scheduler-config
           env:
             - name: NODE_ENV
               value: "production"

@@ -2,10 +2,14 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { taskService } from '../services/task.service';
 import { createTaskSchema, updateTaskSchema } from '../validators/task.validator';
 import { AppError } from '../middleware/errorHandler';
+import { authenticate, authorize, adminOnly, AuthRequest } from '../middleware/auth.middleware';
 
 type TaskStatus = 'PENDING' | 'SCHEDULED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 
 const router = Router();
+
+// All task routes require authentication
+router.use(authenticate);
 
 /**
  * @swagger
@@ -38,8 +42,19 @@ const router = Router();
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const status = req.query.status as TaskStatus | undefined;
-    const tasks = await taskService.findAll(status);
-    res.json({ success: true, data: tasks });
+    const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
+    const result = await taskService.findAll(status, { page, limit });
+    res.json({
+      success: true,
+      data: result.items,
+      pagination: {
+        page: result.page,
+        limit: result.limit,
+        total: result.total,
+        totalPages: Math.ceil(result.total / result.limit)
+      }
+    });
   } catch (error) {
     next(error);
   }

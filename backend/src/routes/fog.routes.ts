@@ -14,29 +14,89 @@ import {
   FogNode,
   TerminalDevice,
 } from '../services/fogComputing.service';
+import { authenticate, adminOnly, AuthRequest } from '../middleware/auth.middleware';
+import prisma from '../lib/prisma';
+import logger from '../lib/logger';
+import { runSchedulingInWorker } from '../lib/fogWorker';
+import { z } from 'zod';
 
 const router = Router();
 
-// In-memory storage for fog computing entities
-let fogNodes: FogNode[] = [];
+// All fog computing routes require authentication
+router.use(authenticate);
+
+// In-memory caches for algorithm execution (transient — not the source of truth)
 let terminalDevices: TerminalDevice[] = [];
 let fogTasks: Task[] = [];
 
-// Initialize with sample data
-function initializeSampleData() {
-  if (fogNodes.length === 0) {
-    fogNodes = generateSampleFogNodes(10);
+// Initialize with sample data for algorithm-only entities
+// FogNodes are now sourced from the DB; devices & tasks remain sample-generated for demos
+async function initializeSampleData() {
+  if (terminalDevices.length === 0) {
     terminalDevices = generateSampleDevices(20);
     fogTasks = generateSampleTasks(50, terminalDevices);
   }
+
+  // Seed DB fog nodes if table is empty
+  const count = await prisma.fogNode.count();
+  if (count === 0) {
+    const sampleNodes = generateSampleFogNodes(10);
+    await prisma.fogNode.createMany({
+      data: sampleNodes.map(n => ({
+        name: n.name,
+        computingResource: n.computingResource,
+        storageCapacity: n.storageCapacity,
+        networkBandwidth: n.networkBandwidth,
+        currentLoad: n.currentLoad,
+      })),
+      skipDuplicates: true,
+    });
+    logger.info('Seeded 10 fog nodes into database');
+  }
 }
+
+/** Convert a DB FogNode row to the in-memory format the algorithms expect. */
+function dbNodeToAlgo(n: { id: string; name: string; computingResource: number; storageCapacity: number; networkBandwidth: number; currentLoad: number }): FogNode {
+  return { id: n.id, name: n.name, computingResource: n.computingResource, storageCapacity: n.storageCapacity, networkBandwidth: n.networkBandwidth, currentLoad: n.currentLoad };
+}
+
+// Validation schemas for fog endpoints
+const fogNodeSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  computingResourceGHz: z.number().positive().max(100).optional(),
+  storageCapacity: z.number().positive().max(10000).optional(),
+  networkBandwidthMbps: z.number().positive().max(10000).optional(),
+});
+
+const fogDeviceSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  isMobile: z.boolean().optional(),
+  transmissionPower: z.number().positive().max(10).optional(),
+  idlePower: z.number().positive().max(10).optional(),
+  residualEnergy: z.number().positive().optional(),
+});
+
+const fogTaskSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  dataSize: z.number().positive().max(10000).optional(),
+  computationIntensity: z.number().positive().max(10000).optional(),
+  maxToleranceTime: z.number().positive().max(3600).optional(),
+  terminalDeviceId: z.string().optional(),
+  priority: z.number().int().min(1).max(10).optional(),
+});
+
+const scheduleSchema = z.object({
+  algorithm: z.string().min(1).max(30).optional(),
+});
 
 /**
  * @route GET /api/fog/info
  * @desc Get fog computing system information
  */
-router.get('/info', (req: Request, res: Response) => {
-  initializeSampleData();
+router.get('/info', async (req: Request, res: Response) => {
+  await initializeSampleData();
+  
+  const nodeCount = await prisma.fogNode.count();
   
   res.json({
     success: true,
@@ -50,7 +110,7 @@ router.get('/info', (req: Request, res: Response) => {
         features: ['Multi-objective optimization', 'Delay constraints', 'Energy constraints', 'Maximum tolerance time analysis']
       },
       currentState: {
-        fogNodes: fogNodes.length,
+        fogNodes: nodeCount,
         terminalDevices: terminalDevices.length,
         pendingTasks: fogTasks.length
       }
@@ -62,13 +122,20 @@ router.get('/info', (req: Request, res: Response) => {
  * @route GET /api/fog/nodes
  * @desc Get all fog nodes
  */
-router.get('/nodes', (req: Request, res: Response) => {
-  initializeSampleData();
+router.get('/nodes', async (req: Request, res: Response) => {
+  await initializeSampleData();
+  
+  const nodes = await prisma.fogNode.findMany({ where: { status: 'ACTIVE' } });
   
   res.json({
     success: true,
-    data: fogNodes.map(node => ({
-      ...node,
+    data: nodes.map(node => ({
+      id: node.id,
+      name: node.name,
+      computingResource: node.computingResource,
+      storageCapacity: node.storageCapacity,
+      networkBandwidth: node.networkBandwidth,
+      currentLoad: node.currentLoad,
       computingResourceGHz: (node.computingResource / 1e9).toFixed(2),
       networkBandwidthMbps: node.networkBandwidth.toFixed(2),
       currentLoadPercent: (node.currentLoad * 100).toFixed(1)
@@ -80,19 +147,23 @@ router.get('/nodes', (req: Request, res: Response) => {
  * @route POST /api/fog/nodes
  * @desc Add a new fog node
  */
-router.post('/nodes', (req: Request, res: Response) => {
-  const { name, computingResourceGHz, storageCapacity, networkBandwidthMbps } = req.body;
+router.post('/nodes', async (req: Request, res: Response) => {
+  const parsed = fogNodeSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: parsed.error.flatten().fieldErrors });
+  }
+  const { name, computingResourceGHz, storageCapacity, networkBandwidthMbps } = parsed.data;
   
-  const newNode: FogNode = {
-    id: `fog-${Date.now()}`,
-    name: name || `FogNode-${fogNodes.length + 1}`,
-    computingResource: (computingResourceGHz || 1.5) * 1e9,
-    storageCapacity: storageCapacity || 100,
-    networkBandwidth: networkBandwidthMbps || 75,
-    currentLoad: 0
-  };
-  
-  fogNodes.push(newNode);
+  const count = await prisma.fogNode.count();
+  const newNode = await prisma.fogNode.create({
+    data: {
+      name: name || `FogNode-${count + 1}`,
+      computingResource: (computingResourceGHz || 1.5) * 1e9,
+      storageCapacity: storageCapacity || 100,
+      networkBandwidth: networkBandwidthMbps || 75,
+      currentLoad: 0,
+    },
+  });
   
   res.status(201).json({
     success: true,
@@ -104,8 +175,8 @@ router.post('/nodes', (req: Request, res: Response) => {
  * @route GET /api/fog/devices
  * @desc Get all terminal devices
  */
-router.get('/devices', (req: Request, res: Response) => {
-  initializeSampleData();
+router.get('/devices', async (req: Request, res: Response) => {
+  await initializeSampleData();
   
   res.json({
     success: true,
@@ -118,7 +189,11 @@ router.get('/devices', (req: Request, res: Response) => {
  * @desc Add a new terminal device
  */
 router.post('/devices', (req: Request, res: Response) => {
-  const { name, isMobile, transmissionPower, idlePower, residualEnergy } = req.body;
+  const parsed = fogDeviceSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: parsed.error.flatten().fieldErrors });
+  }
+  const { name, isMobile, transmissionPower, idlePower, residualEnergy } = parsed.data;
   
   const mobile = isMobile ?? Math.random() > 0.5;
   
@@ -145,8 +220,8 @@ router.post('/devices', (req: Request, res: Response) => {
  * @route GET /api/fog/tasks
  * @desc Get all fog computing tasks
  */
-router.get('/tasks', (req: Request, res: Response) => {
-  initializeSampleData();
+router.get('/tasks', async (req: Request, res: Response) => {
+  await initializeSampleData();
   
   res.json({
     success: true,
@@ -162,10 +237,14 @@ router.get('/tasks', (req: Request, res: Response) => {
  * @route POST /api/fog/tasks
  * @desc Add a new task for fog computing
  */
-router.post('/tasks', (req: Request, res: Response) => {
-  initializeSampleData();
+router.post('/tasks', async (req: Request, res: Response) => {
+  await initializeSampleData();
   
-  const { name, dataSize, computationIntensity, maxToleranceTime, terminalDeviceId, priority } = req.body;
+  const parsed = fogTaskSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: parsed.error.flatten().fieldErrors });
+  }
+  const { name, dataSize, computationIntensity, maxToleranceTime, terminalDeviceId, priority } = parsed.data;
   
   const newTask: Task = {
     id: `task-${Date.now()}`,
@@ -192,9 +271,14 @@ router.post('/tasks', (req: Request, res: Response) => {
  */
 router.post('/schedule', async (req: Request, res: Response) => {
   try {
-    initializeSampleData();
+    await initializeSampleData();
     
-    const { algorithm = 'hh' } = req.body;
+    const parsed = scheduleSchema.safeParse(req.body);
+    const algorithm = parsed.success ? (parsed.data.algorithm || 'hh') : 'hh';
+    
+    // Load fog nodes from DB, map to algorithm-compatible shape
+    const dbNodes = await prisma.fogNode.findMany({ where: { status: 'ACTIVE' } });
+    const fogNodes: FogNode[] = dbNodes.map(dbNodeToAlgo);
     
     if (fogTasks.length === 0 || fogNodes.length === 0 || terminalDevices.length === 0) {
       return res.status(400).json({
@@ -203,54 +287,58 @@ router.post('/schedule', async (req: Request, res: Response) => {
       });
     }
     
-    let result;
+    // Validate algorithm before offloading to worker
+    const validAlgos = ['hh', 'hybrid', 'ipso', 'pso', 'iaco', 'aco', 'fcfs', 'first-come-first-served', 'rr', 'round-robin', 'min-min', 'minmin'];
+    if (!validAlgos.includes(algorithm.toLowerCase())) {
+      return res.status(400).json({
+        success: false,
+        error: `Unknown algorithm: ${algorithm}. Use 'hh', 'ipso', 'iaco', 'fcfs', 'rr', or 'min-min'`
+      });
+    }
+    
     const startTime = Date.now();
     
-    switch (algorithm.toLowerCase()) {
-      case 'hh':
-      case 'hybrid':
-        const scheduler = new HybridHeuristicScheduler(fogTasks, fogNodes, terminalDevices);
-        result = scheduler.schedule();
-        break;
-      case 'ipso':
-      case 'pso':
-        result = ipsoOnlySchedule(fogTasks, fogNodes, terminalDevices);
-        break;
-      case 'iaco':
-      case 'aco':
-        result = iacoOnlySchedule(fogTasks, fogNodes, terminalDevices);
-        break;
-      case 'fcfs':
-      case 'first-come-first-served':
-        result = fcfsSchedule(fogTasks, fogNodes, terminalDevices);
-        break;
-      case 'rr':
-      case 'round-robin':
-        result = roundRobinSchedule(fogTasks, fogNodes, terminalDevices);
-        break;
-      case 'min-min':
-      case 'minmin':
-        result = minMinSchedule(fogTasks, fogNodes, terminalDevices);
-        break;
-      default:
-        return res.status(400).json({
-          success: false,
-          error: `Unknown algorithm: ${algorithm}. Use 'hh', 'ipso', 'iaco', 'fcfs', 'rr', or 'min-min'`
-        });
-    }
+    // Offload CPU-intensive scheduling to a worker thread
+    const result = await runSchedulingInWorker({
+      tasks: fogTasks,
+      fogNodes,
+      devices: terminalDevices,
+      algorithm,
+    });
     
     const executionTime = Date.now() - startTime;
     
-    // Convert allocations Map to object
+    // Convert allocations — worker serializes Map to plain object entries
     const allocations: Record<string, string> = {};
-    result.allocations.forEach((fogNodeId, taskId) => {
-      allocations[taskId] = fogNodeId;
-    });
+    if (result.allocations instanceof Map) {
+      result.allocations.forEach((fogNodeId: string, taskId: string) => {
+        allocations[taskId] = fogNodeId;
+      });
+    } else if (result.allocations && typeof result.allocations === 'object') {
+      // Serialized from worker thread
+      Object.assign(allocations, result.allocations);
+    }
+    
+    // Persist scheduling results to FogTaskAssignment
+    const algoLabel = algorithm.toUpperCase();
+    const assignmentData = Object.entries(allocations)
+      .filter(([, nodeId]) => dbNodes.some(n => n.id === nodeId))
+      .map(([taskId, nodeId]) => ({
+        fogNodeId: nodeId,
+        taskName: taskId,
+        algorithm: algoLabel,
+        completionTime: result.totalDelay / fogTasks.length,
+        energyConsumed: result.totalEnergy / fogTasks.length,
+        reliable: result.reliability > 80,
+      }));
+    if (assignmentData.length > 0) {
+      await prisma.fogTaskAssignment.createMany({ data: assignmentData, skipDuplicates: true });
+    }
     
     res.json({
       success: true,
       data: {
-        algorithm: algorithm.toUpperCase(),
+        algorithm: algoLabel,
         executionTimeMs: executionTime,
         metrics: {
           totalDelay: parseFloat(result.totalDelay.toFixed(4)),
@@ -268,7 +356,7 @@ router.post('/schedule', async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Scheduling error:', error);
+    logger.error('Scheduling error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to execute scheduling algorithm'
@@ -411,7 +499,7 @@ router.post('/compare', async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Comparison error:', error);
+    logger.error('Comparison error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to run algorithm comparison'
@@ -502,7 +590,7 @@ router.get('/metrics', async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Metrics error:', error);
+    logger.error('Metrics error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to generate performance metrics'
@@ -514,18 +602,36 @@ router.get('/metrics', async (req: Request, res: Response) => {
  * @route POST /api/fog/reset
  * @desc Reset fog computing simulation data
  */
-router.post('/reset', (req: Request, res: Response) => {
+router.post('/reset', adminOnly, async (req: Request, res: Response) => {
   const { nodeCount = 10, deviceCount = 20, taskCount = 50 } = req.body;
   
-  fogNodes = generateSampleFogNodes(nodeCount);
+  // Clear DB fog data
+  await prisma.fogTaskAssignment.deleteMany({});
+  await prisma.fogNode.deleteMany({});
+  
+  // Re-seed fog nodes into DB
+  const sampleNodes = generateSampleFogNodes(nodeCount);
+  await prisma.fogNode.createMany({
+    data: sampleNodes.map(n => ({
+      name: n.name,
+      computingResource: n.computingResource,
+      storageCapacity: n.storageCapacity,
+      networkBandwidth: n.networkBandwidth,
+      currentLoad: n.currentLoad,
+    })),
+  });
+  
+  // Re-generate in-memory transient data
   terminalDevices = generateSampleDevices(deviceCount);
   fogTasks = generateSampleTasks(taskCount, terminalDevices);
+  
+  logger.info(`Fog simulation reset: ${nodeCount} nodes, ${deviceCount} devices, ${taskCount} tasks`);
   
   res.json({
     success: true,
     message: 'Fog computing simulation reset',
     data: {
-      fogNodes: fogNodes.length,
+      fogNodes: nodeCount,
       terminalDevices: terminalDevices.length,
       tasks: fogTasks.length
     }
@@ -592,7 +698,7 @@ router.get('/export/csv', async (req: Request, res: Response) => {
     res.setHeader('Content-Disposition', `attachment; filename=fog_benchmark_${type}_${Date.now()}.csv`);
     res.send(csv);
   } catch (error) {
-    console.error('CSV export error:', error);
+    logger.error('CSV export error:', error);
     res.status(500).json({ success: false, error: 'Failed to export CSV' });
   }
 });
@@ -681,7 +787,7 @@ router.get('/export/json', async (req: Request, res: Response) => {
     res.setHeader('Content-Disposition', `attachment; filename=fog_benchmark_full_${Date.now()}.json`);
     res.json(exportData);
   } catch (error) {
-    console.error('JSON export error:', error);
+    logger.error('JSON export error:', error);
     res.status(500).json({ success: false, error: 'Failed to export JSON' });
   }
 });
@@ -740,7 +846,7 @@ router.get('/tolerance-reliability', async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Tolerance-reliability error:', error);
+    logger.error('Tolerance-reliability error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to generate tolerance-reliability metrics'

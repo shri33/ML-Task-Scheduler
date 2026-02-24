@@ -3,6 +3,33 @@ import { useState } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { clsx } from 'clsx';
 
+// Helper to read a cookie value
+function getCookie(name: string): string | undefined {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\\\/+^])/g, '\\$1') + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
+/** Shared download utility — sends credentials + CSRF with every request */
+async function downloadFile(endpoint: string, filename: string): Promise<void> {
+  const response = await fetch(endpoint, {
+    credentials: 'include',
+    headers: {
+      'X-CSRF-Token': getCookie('csrf-token') || '',
+    },
+  });
+  if (!response.ok) throw new Error('Download failed');
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+}
+
 interface ReportButton {
   name: string;
   endpoint: string;
@@ -38,20 +65,7 @@ export function PDFDownloadButtons() {
   const handleDownload = async (report: ReportButton) => {
     setDownloading(report.endpoint);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${API_URL}${report.endpoint}`);
-      if (!response.ok) throw new Error('Download failed');
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = report.filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
+      await downloadFile(report.endpoint, report.filename);
       toast.success('Download complete', `${report.name} report has been downloaded.`);
     } catch (error) {
       toast.error('Download failed', 'Could not download the report. Please try again.');
@@ -129,23 +143,7 @@ export default function PDFDownload() {
     setDownloading(report.endpoint);
     setShowDropdown(false);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${API_URL}${report.endpoint}`);
-      
-      if (!response.ok) {
-        throw new Error('Download failed');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = report.filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
+      await downloadFile(report.endpoint, report.filename);
       toast.success('Download complete', `${report.name} report has been downloaded.`);
     } catch (error) {
       toast.error('Download failed', 'Could not download the report.');

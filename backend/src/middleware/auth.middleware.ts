@@ -1,8 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma';
+import { ACCESS_TOKEN_COOKIE } from '../lib/cookies';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
 export interface JwtPayload {
   userId: string;
@@ -14,23 +18,32 @@ export interface AuthRequest extends Request {
   user?: JwtPayload;
 }
 
-// Verify JWT token middleware
+// Verify JWT token middleware (reads from Authorization header OR httpOnly cookie)
 export const authenticate = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
+    let token: string | undefined;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // 1. Prefer Authorization header (API clients / mobile)
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
+
+    // 2. Fall back to httpOnly cookie (browser clients)
+    if (!token && req.cookies?.[ACCESS_TOKEN_COOKIE]) {
+      token = req.cookies[ACCESS_TOKEN_COOKIE];
+    }
+
+    if (!token) {
       return res.status(401).json({
         success: false,
         error: 'Access denied. No token provided.'
       });
     }
-
-    const token = authHeader.split(' ')[1];
 
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
@@ -68,10 +81,20 @@ export const optionalAuth = async (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
+    let token: string | undefined;
 
+    // 1. Prefer Authorization header
+    const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
+      token = authHeader.split(' ')[1];
+    }
+
+    // 2. Fall back to httpOnly cookie (browser clients)
+    if (!token && req.cookies?.[ACCESS_TOKEN_COOKIE]) {
+      token = req.cookies[ACCESS_TOKEN_COOKIE];
+    }
+
+    if (token) {
       try {
         const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
         req.user = decoded;

@@ -98,11 +98,10 @@
 ### Input Features (What ML receives)
 | Feature | Example Value | Why Needed |
 |---------|---------------|------------|
-| Task Size | Large | Bigger tasks take longer |
-| Task Type | CPU/IO/Mixed | Different types have different speeds |
+| Task Size | 1 (SMALL), 2 (MEDIUM), 3 (LARGE) | Bigger tasks take longer |
+| Task Type | 1 (CPU), 2 (IO), 3 (MIXED) | Different types have different speeds |
 | Priority | 1-5 | May affect resource allocation |
-| Resource Load | 45% | Loaded resources are slower |
-| Historical Avg Time | 3.8 sec | Past behavior predicts future |
+| Resource Load | 0-100% | Loaded resources are slower |
 
 ### Output (What ML returns)
 ```json
@@ -112,10 +111,10 @@
 }
 ```
 
-### Model Choices (Pick ONE)
-1. **Linear Regression** ✅ Recommended (simple, explainable)
-2. **Decision Tree Regression** (visual, easy to debug)
-3. **Random Forest** (more accurate, still simple)
+### Model Choices (Our Implementation)
+1. **Random Forest** ✅ Primary (ensemble of decision trees, accurate, explainable)
+2. **XGBoost** (gradient-boosted trees, highest accuracy)
+3. **Gradient Boosting** (fallback when XGBoost is unavailable)
 
 ---
 

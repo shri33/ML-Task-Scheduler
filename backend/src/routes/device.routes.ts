@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import prisma from '../lib/prisma';
-import { authenticate, AuthRequest } from '../middleware/auth.middleware';
+import { authenticate, authorize, adminOnly, AuthRequest } from '../middleware/auth.middleware';
 import { z } from 'zod';
 
 const router = Router();
@@ -193,7 +193,7 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response, next: N
 });
 
 // Delete device
-router.delete('/:id', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.delete('/:id', authenticate, adminOnly, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 
@@ -217,7 +217,7 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res: Response, next
 });
 
 // Device heartbeat endpoint
-router.post('/:id/heartbeat', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/heartbeat', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { metrics } = req.body;
@@ -239,13 +239,14 @@ router.post('/:id/heartbeat', async (req: Request, res: Response, next: NextFunc
       }
     });
 
-    // Store metrics if provided
+    // Store metrics if provided (limit to 50 per heartbeat to prevent abuse)
     if (metrics && Array.isArray(metrics)) {
-      const metricRecords = metrics.map((m: any) => ({
+      const bounded = metrics.slice(0, 50);
+      const metricRecords = bounded.map((m: any) => ({
         deviceId: id,
-        metricName: m.name,
-        value: m.value,
-        unit: m.unit
+        metricName: String(m.name || '').slice(0, 100),
+        value: typeof m.value === 'number' ? m.value : 0,
+        unit: String(m.unit || '').slice(0, 20)
       }));
 
       await prisma.deviceMetric.createMany({
@@ -280,10 +281,13 @@ router.get('/:id/metrics', authenticate, async (req: AuthRequest, res: Response,
       if (to) where.timestamp.lte = new Date(to as string);
     }
 
+    // Clamp limit to 1-1000 to prevent abuse
+    const parsedLimit = Math.min(Math.max(parseInt(limit as string) || 100, 1), 1000);
+
     const metrics = await prisma.deviceMetric.findMany({
       where,
       orderBy: { timestamp: 'desc' },
-      take: parseInt(limit as string)
+      take: parsedLimit
     });
 
     res.json({
@@ -329,7 +333,7 @@ router.get('/:id/logs', authenticate, async (req: AuthRequest, res: Response, ne
 });
 
 // Send command to device
-router.post('/:id/command', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post('/:id/command', authenticate, authorize('ADMIN', 'USER'), async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { command, parameters } = req.body;

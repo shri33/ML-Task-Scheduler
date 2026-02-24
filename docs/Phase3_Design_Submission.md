@@ -10,7 +10,7 @@
 |-------|---------|
 | **Project Title** | Intelligent Task Allocation and Scheduling System with ML-Assisted Optimization |
 | **Team Name** | Byte_hogs |
-| **Submission Date** | May 2026 |
+| **Submission Date** | February 2026 |
 
 ### Team Members
 
@@ -924,4 +924,4 @@ CREATE INDEX idx_predictions_task_id ON predictions(task_id);
 
 ---
 
-*Submitted by Team Byte_hogs | BITS Pilani Online | May 2026*
+*Submitted by Team Byte_hogs | BITS Pilani Online | February 2026*

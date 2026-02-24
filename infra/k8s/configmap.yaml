@@ -20,7 +20,7 @@ data:
   REDIS_URL: "redis://redis:6379"
   
   # ML Service
-  ML_SERVICE_URL: "http://ml-worker:5000"
+  ML_SERVICE_URL: "http://ml-worker:5001"
   
   # Logging
   LOG_LEVEL: "info"

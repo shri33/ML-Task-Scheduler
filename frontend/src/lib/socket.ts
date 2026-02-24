@@ -11,6 +11,12 @@ const getSocketUrl = (): string => {
 };
 
 const SOCKET_URL = getSocketUrl();
+const isDev = (import.meta as any).env?.DEV === true;
+
+// Only log in development to avoid noisy production console
+const devLog = (...args: unknown[]) => {
+  if (isDev) console.log(...args);
+};
 
 class SocketService {
   private socket: Socket | null = null;
@@ -37,64 +43,64 @@ class SocketService {
 
     // Connection events
     this.socket.on('connect', () => {
-      console.log('🔌 WebSocket connected');
+      devLog('🔌 WebSocket connected');
       this.reconnectAttempts = 0;
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('🔌 WebSocket disconnected:', reason);
+      devLog('🔌 WebSocket disconnected:', reason);
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('🔌 WebSocket connection error:', error);
+      devLog('🔌 WebSocket connection error:', error);
       this.reconnectAttempts++;
     });
 
     // Task events
     this.socket.on('task:created', (task) => {
-      console.log('📥 Task created:', task.name);
+      devLog('📥 Task created:', task.name);
       store.addTask(task);
     });
 
     this.socket.on('task:updated', (task) => {
-      console.log('📝 Task updated:', task.name);
+      devLog('📝 Task updated:', task.name);
       store.updateTask(task);
     });
 
     this.socket.on('task:deleted', (data) => {
-      console.log('🗑️ Task deleted:', data.id);
+      devLog('🗑️ Task deleted:', data.id);
       store.removeTask(data.id);
     });
 
     this.socket.on('task:scheduled', (task) => {
-      console.log('📅 Task scheduled:', task.name);
+      devLog('📅 Task scheduled:', task.name);
       store.updateTask(task);
     });
 
     this.socket.on('task:completed', (task) => {
-      console.log('✅ Task completed:', task.name);
+      devLog('✅ Task completed:', task.name);
       store.updateTask(task);
     });
 
     // Resource events
     this.socket.on('resource:created', (resource) => {
-      console.log('📥 Resource created:', resource.name);
+      devLog('📥 Resource created:', resource.name);
       store.addResource(resource);
     });
 
     this.socket.on('resource:updated', (resource) => {
-      console.log('📝 Resource updated:', resource.name);
+      devLog('📝 Resource updated:', resource.name);
       store.updateResource(resource);
     });
 
     this.socket.on('resource:deleted', (data) => {
-      console.log('🗑️ Resource deleted:', data.id);
+      devLog('🗑️ Resource deleted:', data.id);
       store.removeResource(data.id);
     });
 
     // Schedule events
     this.socket.on('schedule:completed', (data) => {
-      console.log('🎯 Scheduling completed:', data.count, 'tasks');
+      devLog('🎯 Scheduling completed:', data.count, 'tasks');
       // Refresh tasks and resources after scheduling
       store.fetchTasks();
       store.fetchResources();
@@ -102,7 +108,7 @@ class SocketService {
 
     // ML status events
     this.socket.on('ml:status', (data) => {
-      console.log('🤖 ML Status:', data.available ? 'Available' : 'Unavailable');
+      devLog('🤖 ML Status:', data.available ? 'Available' : 'Unavailable');
     });
   }
 

@@ -1,9 +1,13 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { schedulerService } from '../services/scheduler.service';
 import { mlService } from '../services/ml.service';
+import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import { z } from 'zod';
 
 const router = Router();
+
+// All schedule routes require authentication
+router.use(authenticate);
 
 const scheduleRequestSchema = z.object({
   taskIds: z.array(z.string().uuid()).optional()

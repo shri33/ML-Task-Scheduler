@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -43,13 +43,25 @@ export default function Layout({ children }: LayoutProps) {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
 
-  // Check socket connection status
-  useState(() => {
-    const interval = setInterval(() => {
-      setIsConnected(socketService.isConnected());
-    }, 1000);
-    return () => clearInterval(interval);
-  });
+  // Track socket connection status via events instead of polling
+  useEffect(() => {
+    const socket = socketService.getSocket();
+    if (!socket) {
+      setIsConnected(false);
+      return;
+    }
+
+    const onConnect = () => setIsConnected(true);
+    const onDisconnect = () => setIsConnected(false);
+
+    setIsConnected(socket.connected);
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">

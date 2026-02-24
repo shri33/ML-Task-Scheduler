@@ -149,7 +149,7 @@ export default function Login() {
               <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">
                 We've sent password reset instructions to {formData.email}
               </p>
-              {resetToken && (
+              {resetToken && import.meta.env.DEV && (
                 <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Development Mode - Reset Token:</p>
                   <input

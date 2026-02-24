@@ -10,28 +10,42 @@ export class TaskService {
         name: data.name,
         type: data.type,
         size: data.size,
-        priority: data.priority
+        priority: data.priority,
+        ...(data.dueDate ? { dueDate: new Date(data.dueDate) } : {})
       }
     });
   }
 
-  async findAll(status?: TaskStatus) {
-    return prisma.task.findMany({
-      where: status ? { status } : undefined,
-      include: {
-        resource: {
-          select: {
-            id: true,
-            name: true,
-            currentLoad: true
+  async findAll(status?: TaskStatus, options?: { page?: number; limit?: number }) {
+    const page = Math.max(options?.page || 1, 1);
+    const limit = Math.min(Math.max(options?.limit || 20, 1), 100);
+    const skip = (page - 1) * limit;
+
+    const where = status ? { status } : undefined;
+
+    const [items, total] = await Promise.all([
+      prisma.task.findMany({
+        where,
+        include: {
+          resource: {
+            select: {
+              id: true,
+              name: true,
+              currentLoad: true
+            }
           }
-        }
-      },
-      orderBy: [
-        { priority: 'desc' },
-        { createdAt: 'asc' }
-      ]
-    });
+        },
+        orderBy: [
+          { priority: 'desc' },
+          { createdAt: 'asc' }
+        ],
+        skip,
+        take: limit
+      }),
+      prisma.task.count({ where })
+    ]);
+
+    return { items, total, page, limit };
   }
 
   async findById(id: string) {

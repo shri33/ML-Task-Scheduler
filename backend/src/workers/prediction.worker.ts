@@ -178,7 +178,7 @@ async function savePredictionToDb(
  */
 function startWorker(): Worker {
   const worker = new Worker(
-    'ml-prediction',
+    'prediction',
     processPrediction,
     {
       connection: getRedisConnection(),

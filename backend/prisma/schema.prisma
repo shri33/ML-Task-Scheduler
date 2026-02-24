@@ -50,6 +50,7 @@ model Task {
   createdAt     DateTime   @default(now())
   scheduledAt   DateTime?
   completedAt   DateTime?
+  deletedAt     DateTime?  // Soft delete
 
   scheduleHistory ScheduleHistory[]
   predictions     Prediction[]
@@ -57,6 +58,9 @@ model Task {
   @@index([status])
   @@index([resourceId])
   @@index([dueDate])
+  @@index([status, priority])  // Composite: scheduler queries
+  @@index([resourceId, status]) // Composite: resource task lookup
+  @@index([deletedAt])
 }
 
 model Resource {
@@ -67,17 +71,20 @@ model Resource {
   status      ResourceStatus @default(AVAILABLE)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?      // Soft delete
 
   tasks           Task[]
   scheduleHistory ScheduleHistory[]
 
   @@index([status])
+  @@index([status, currentLoad]) // Composite: available resource queries
+  @@index([deletedAt])
 }
 
 model ScheduleHistory {
   id            String   @id @default(uuid())
   taskId        String
-  task          Task     @relation(fields: [taskId], references: [id])
+  task          Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   resourceId    String
   resource      Resource @relation(fields: [resourceId], references: [id])
   algorithm     String
@@ -95,7 +102,7 @@ model ScheduleHistory {
 model Prediction {
   id            String   @id @default(uuid())
   taskId        String
-  task          Task     @relation(fields: [taskId], references: [id])
+  task          Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   predictedTime Float
   confidence    Float
   features      Json
@@ -132,11 +139,14 @@ model User {
   lastLogin     DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime? // Soft delete
 
   refreshTokens RefreshToken[]
   notifications NotificationPreference?
 
   @@index([email])
+  @@index([role, isActive]) // Composite: user management queries
+  @@index([deletedAt])
 }
 
 model RefreshToken {
@@ -277,5 +287,46 @@ model DeviceMetric {
   @@index([deviceId])
   @@index([metricName])
   @@index([timestamp])
+}
+
+// ---------------------------------------------------------------------------
+// Fog Computing Models
+// ---------------------------------------------------------------------------
+
+enum FogNodeStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+model FogNode {
+  id                String        @id @default(uuid())
+  name              String        @unique
+  computingResource Float         // Hz
+  storageCapacity   Float         // GB
+  networkBandwidth  Float         // Mbps
+  currentLoad       Float         @default(0) // 0-1
+  status            FogNodeStatus @default(ACTIVE)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  taskAssignments FogTaskAssignment[]
+
+  @@index([status])
+}
+
+model FogTaskAssignment {
+  id               String   @id @default(uuid())
+  fogNodeId        String
+  fogNode          FogNode  @relation(fields: [fogNodeId], references: [id], onDelete: Cascade)
+  taskName         String
+  algorithm        String   // HH, IPSO, IACO, FCFS, RR, MIN_MIN
+  completionTime   Float?
+  energyConsumed   Float?
+  reliable         Boolean  @default(true)
+  assignedAt       DateTime @default(now())
+
+  @@index([fogNodeId])
+  @@index([algorithm])
 }
 

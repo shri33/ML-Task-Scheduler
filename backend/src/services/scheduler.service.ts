@@ -2,6 +2,11 @@ import prisma from '../lib/prisma';
 import { taskService } from './task.service';
 import { resourceService } from './resource.service';
 import { mlService } from './ml.service';
+import logger from '../lib/logger';
+
+// Map enums to numbers (same mapping used by ML service)
+const sizeMap: Record<string, number> = { SMALL: 1, MEDIUM: 2, LARGE: 3 };
+const typeMap: Record<string, number> = { CPU: 1, IO: 2, MIXED: 3 };
 
 interface Task {
   id: string;
@@ -47,7 +52,7 @@ interface ResourceScore {
 }
 
 export class SchedulerService {
-  // Main scheduling algorithm
+  // Main scheduling algorithm — uses batch ML predictions
   async schedule(taskIds?: string[]): Promise<ScheduleResult[]> {
     // Get tasks to schedule
     let tasks: Task[];
@@ -73,17 +78,35 @@ export class SchedulerService {
       throw new Error('No available resources for scheduling');
     }
 
+    // -----------------------------------------------------------------------
+    // Batch ML prediction: collect all (task, resource) pairs in one call
+    // -----------------------------------------------------------------------
+    const batchItems = tasks.flatMap(task =>
+      resources
+        .filter(r => r.currentLoad < 100)
+        .map(resource => ({
+          taskId: `${task.id}::${resource.id}`,
+          taskSize: sizeMap[task.size] || 2,
+          taskType: typeMap[task.type] || 1,
+          priority: task.priority,
+          resourceLoad: resource.currentLoad
+        }))
+    );
+
+    logger.info(`Batch predicting ${batchItems.length} (task,resource) pairs`);
+    const predictions = await mlService.getBatchPredictions(batchItems);
+
     const results: ScheduleResult[] = [];
 
-    // Schedule each task
+    // Schedule each task using pre-fetched predictions
     for (const task of tasks) {
-      const result = await this.scheduleTask(task, resources);
+      const result = await this.scheduleTask(task, resources, predictions);
       if (result) {
         results.push(result);
         // Update resource load in memory for subsequent tasks
         const resourceIndex = resources.findIndex((r: Resource) => r.id === result.resourceId);
         if (resourceIndex !== -1) {
-          resources[resourceIndex].currentLoad += 15; // Approximate load increase
+          resources[resourceIndex].currentLoad += 15;
         }
       }
     }
@@ -91,25 +114,26 @@ export class SchedulerService {
     return results;
   }
 
-  // Schedule a single task
-  async scheduleTask(task: Task, availableResources: Resource[]): Promise<ScheduleResult | null> {
+  // Schedule a single task using the pre-fetched prediction map
+  async scheduleTask(
+    task: Task,
+    availableResources: Resource[],
+    predictionMap: Map<string, { predictedTime: number; confidence: number; modelVersion: string }>
+  ): Promise<ScheduleResult | null> {
     if (availableResources.length === 0) return null;
 
-    // Calculate scores for each resource using ML predictions
     const resourceScores: ResourceScore[] = [];
 
     for (const resource of availableResources) {
       if (resource.currentLoad >= 100) continue;
 
-      // Get ML prediction
-      const prediction = await mlService.getPrediction(
-        task.size,
-        task.type,
-        task.priority,
-        resource.currentLoad
-      );
+      const key = `${task.id}::${resource.id}`;
+      const prediction = predictionMap.get(key) || {
+        predictedTime: 5,
+        confidence: 0.5,
+        modelVersion: 'fallback-v1'
+      };
 
-      // Calculate scheduling score
       const score = this.calculateScore(task, resource, prediction.predictedTime);
 
       resourceScores.push({
@@ -125,8 +149,8 @@ export class SchedulerService {
         prediction.predictedTime,
         prediction.confidence,
         {
-          taskSize: task.size === 'SMALL' ? 1 : task.size === 'MEDIUM' ? 2 : 3,
-          taskType: task.type === 'CPU' ? 1 : task.type === 'IO' ? 2 : 3,
+          taskSize: sizeMap[task.size] || 2,
+          taskType: typeMap[task.type] || 1,
           priority: task.priority,
           resourceLoad: resource.currentLoad
         },

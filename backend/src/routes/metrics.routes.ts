@@ -2,8 +2,12 @@ import { Router, Request, Response, NextFunction } from 'express';
 import prisma from '../lib/prisma';
 import { taskService } from '../services/task.service';
 import { resourceService } from '../services/resource.service';
+import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 
 const router = Router();
+
+// All metrics routes require authentication
+router.use(authenticate);
 
 // GET /api/metrics - Get system metrics
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {

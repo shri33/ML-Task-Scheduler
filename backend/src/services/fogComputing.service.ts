@@ -7,9 +7,27 @@
  * - Improved Particle Swarm Optimization (IPSO)
  * - Improved Ant Colony Optimization (IACO)
  * - Hybrid Heuristic (HH) Algorithm
+ * - 3-Layer Architecture: Terminal → Fog → Cloud
  */
 
 import logger from '../lib/logger';
+
+// ==================== SEEDED PRNG (reproducible benchmarks) ====================
+// Mulberry32 — fast 32-bit seeded PRNG
+let _seed = 0;
+function seedRandom(s: number) { _seed = s | 0; }
+function seededRandom(): number {
+  let t = (_seed += 0x6D2B79F5);
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+// Default: use Math.random unless a seed is set
+let rng = Math.random;
+export function useSeed(seed?: number) {
+  if (seed !== undefined) { seedRandom(seed); rng = seededRandom; }
+  else { rng = Math.random; }
+}
 
 // ==================== TYPE DEFINITIONS ====================
 
@@ -44,6 +62,28 @@ export interface FogNode {
   currentLoad: number;        // Current utilization (0-1)
 }
 
+// Cloud Layer - for offloading when fog capacity is exceeded
+export interface CloudNode {
+  id: string;
+  name: string;
+  computingResource: number;  // Much higher than fog nodes (cycles/s)
+  networkBandwidth: number;   // WAN bandwidth (Mbps)
+  latencyPenalty: number;     // Additional latency for cloud (ms)
+  costPerUnit: number;        // Cost per computation unit
+  available: boolean;
+}
+
+// Offloading decision result
+export interface OffloadDecision {
+  taskId: string;
+  offloadTarget: 'fog' | 'cloud' | 'local';
+  targetId: string;
+  reason: string;
+  estimatedDelay: number;
+  estimatedEnergy: number;
+  estimatedCost: number;
+}
+
 export interface SchedulingResult {
   taskId: string;
   fogNodeId: string;
@@ -68,7 +108,7 @@ export interface SchedulingSolution {
  * Calculate execution time of task Ii at fog node Fj
  * TEij = Di * θi / Cj
  */
-function calculateExecutionTime(task: Task, fogNode: FogNode): number {
+export function calculateExecutionTime(task: Task, fogNode: FogNode): number {
   const dataSizeBits = task.dataSize * 1e6 * 8; // Convert Mb to bits
   const totalCycles = dataSizeBits * task.computationIntensity;
   return totalCycles / fogNode.computingResource;
@@ -79,7 +119,7 @@ function calculateExecutionTime(task: Task, fogNode: FogNode): number {
  * TRij = Di / rij
  * where rij = B * log2(1 + h*p/σ) - simplified to Di / Bj
  */
-function calculateTransmissionTime(task: Task, fogNode: FogNode): number {
+export function calculateTransmissionTime(task: Task, fogNode: FogNode): number {
   return task.dataSize / fogNode.networkBandwidth;
 }
 
@@ -87,7 +127,7 @@ function calculateTransmissionTime(task: Task, fogNode: FogNode): number {
  * Calculate total delay
  * Tij = TRij + TEij
  */
-function calculateTotalDelay(task: Task, fogNode: FogNode): number {
+export function calculateTotalDelay(task: Task, fogNode: FogNode): number {
   return calculateTransmissionTime(task, fogNode) + calculateExecutionTime(task, fogNode);
 }
 
@@ -95,7 +135,7 @@ function calculateTotalDelay(task: Task, fogNode: FogNode): number {
  * Calculate energy consumption
  * Eij = TRij * pir + TEij * pie
  */
-function calculateEnergyConsumption(
+export function calculateEnergyConsumption(
   task: Task,
   fogNode: FogNode,
   device: TerminalDevice
@@ -109,7 +149,7 @@ function calculateEnergyConsumption(
  * Calculate objective function value
  * f = Σ(wit * Tij + wie * Eij)
  */
-function calculateObjectiveFunction(
+export function calculateObjectiveFunction(
   allocations: Map<string, string>,
   tasks: Task[],
   fogNodes: FogNode[],
@@ -191,7 +231,7 @@ class ImprovedPSO {
     if (iteration < 0.7 * this.maxIterations) {
       return this.wMax - ((this.wMax - this.wMin) * iteration) / this.maxIterations;
     }
-    return this.wMin + (this.wMax - this.wMin) * Math.random();
+    return this.wMin + (this.wMax - this.wMin) * rng();
   }
 
   /**
@@ -220,11 +260,11 @@ class ImprovedPSO {
         const velRow: number[] = [];
         
         // Random allocation - exactly one fog node per task
-        const selectedFog = Math.floor(Math.random() * m);
+        const selectedFog = Math.floor(rng() * m);
         posRow[selectedFog] = 1;
         
         for (let j = 0; j < m; j++) {
-          velRow.push((Math.random() * 2 - 1) * this.vMax);
+          velRow.push((rng() * 2 - 1) * this.vMax);
         }
         
         position.push(posRow);
@@ -280,8 +320,8 @@ class ImprovedPSO {
 
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < m; j++) {
-        const r1 = Math.random();
-        const r2 = Math.random();
+        const r1 = rng();
+        const r2 = rng();
         
         // Update velocity (Equation 7)
         particle.velocity[i][j] = eta * (
@@ -466,7 +506,7 @@ class ImprovedACO {
    * Select next fog node using roulette wheel
    */
   private selectFogNode(probabilities: number[]): number {
-    const rand = Math.random();
+    const rand = rng();
     let cumulative = 0;
 
     for (let j = 0; j < probabilities.length; j++) {
@@ -961,7 +1001,7 @@ export function generateSampleDevices(count: number): TerminalDevice[] {
   const devices: TerminalDevice[] = [];
   
   for (let i = 0; i < count; i++) {
-    const isMobile = Math.random() > 0.5;
+    const isMobile = rng() > 0.5;
     devices.push({
       id: `device-${i + 1}`,
       name: `Terminal-${i + 1}`,
@@ -970,7 +1010,7 @@ export function generateSampleDevices(count: number): TerminalDevice[] {
       isMobile,
       delayWeight: isMobile ? 0.7 : 1.0,
       energyWeight: isMobile ? 0.3 : 0.0,
-      residualEnergy: isMobile ? 1000 + Math.random() * 500 : Infinity // Joules
+      residualEnergy: isMobile ? 1000 + rng() * 500 : Infinity // Joules
     });
   }
   
@@ -985,16 +1025,16 @@ export function generateSampleTasks(count: number, devices: TerminalDevice[]): T
   const taskTypes = ['DETECTION', 'SCHEDULING', 'MONITORING', 'ANALYSIS', 'STORAGE'];
   
   for (let i = 0; i < count; i++) {
-    const dataSize = 10 + Math.random() * 40; // 10-50 Mb
+    const dataSize = 10 + rng() * 40; // 10-50 Mb
     tasks.push({
       id: `task-${i + 1}`,
       name: `${taskTypes[i % taskTypes.length]}-${i + 1}`,
       dataSize,
-      computationIntensity: 200 + Math.random() * 200, // 200-400 cycles/bit
-      maxToleranceTime: 5 + Math.random() * 45, // 5-50 seconds
-      expectedCompletionTime: 2 + Math.random() * 8, // 2-10 seconds
+      computationIntensity: 200 + rng() * 200, // 200-400 cycles/bit
+      maxToleranceTime: 5 + rng() * 45, // 5-50 seconds
+      expectedCompletionTime: 2 + rng() * 8, // 2-10 seconds
       terminalDeviceId: devices[i % devices.length].id,
-      priority: Math.floor(Math.random() * 5) + 1 // 1-5
+      priority: Math.floor(rng() * 5) + 1 // 1-5
     });
   }
   
@@ -1011,10 +1051,10 @@ export function generateSampleFogNodes(count: number): FogNode[] {
     fogNodes.push({
       id: `fog-${i + 1}`,
       name: `FogNode-${i + 1}`,
-      computingResource: (1 + Math.random()) * 1e9, // 1-2 GHz
-      storageCapacity: 50 + Math.random() * 150, // 50-200 GB
-      networkBandwidth: 50 + Math.random() * 50, // 50-100 Mbps
-      currentLoad: Math.random() * 0.5 // 0-50% initial load
+      computingResource: (1 + rng()) * 1e9, // 1-2 GHz
+      storageCapacity: 50 + rng() * 150, // 50-200 GB
+      networkBandwidth: 50 + rng() * 50, // 50-100 Mbps
+      currentLoad: rng() * 0.5 // 0-50% initial load
     });
   }
   
@@ -1062,6 +1102,230 @@ export function runAlgorithmComparison(
   });
 
   return { hh, ipso, iaco, rr, minMin };
+}
+
+// ==================== CLOUD OFFLOADING (3-LAYER ARCHITECTURE) ====================
+
+/**
+ * Default cloud configuration
+ * Represents a remote cloud data center with high capacity but higher latency
+ */
+export const defaultCloudNode: CloudNode = {
+  id: 'cloud-main',
+  name: 'Cloud Data Center',
+  computingResource: 100e9,    // 100 GHz effective capacity
+  networkBandwidth: 100,       // 100 Mbps WAN
+  latencyPenalty: 50,          // 50ms additional latency
+  costPerUnit: 0.001,          // $0.001 per computation unit
+  available: true
+};
+
+/**
+ * Calculate cloud execution time (with latency penalty)
+ * Cloud has much higher capacity but adds WAN latency
+ */
+export function calculateCloudExecutionTime(task: Task, cloud: CloudNode): number {
+  const baseExecutionTime = (task.dataSize * task.computationIntensity) / cloud.computingResource;
+  const transmissionTime = task.dataSize / cloud.networkBandwidth;
+  return baseExecutionTime + transmissionTime + (cloud.latencyPenalty / 1000); // Convert ms to s
+}
+
+/**
+ * Calculate cloud offloading cost
+ */
+export function calculateCloudCost(task: Task, cloud: CloudNode): number {
+  const computationUnits = task.dataSize * task.computationIntensity;
+  return computationUnits * cloud.costPerUnit;
+}
+
+/**
+ * Decide offloading target for a task based on 3-layer architecture
+ * Decision criteria:
+ * 1. If task can be processed locally (on terminal) and delay is acceptable → local
+ * 2. If fog node has capacity and meets constraints → fog
+ * 3. If fog nodes are overloaded or can't meet constraints → cloud
+ */
+export function makeOffloadDecision(
+  task: Task,
+  device: TerminalDevice,
+  fogNodes: FogNode[],
+  cloud: CloudNode = defaultCloudNode
+): OffloadDecision {
+  // Calculate local execution (if device has processing capability)
+  const localDelay = task.dataSize * task.computationIntensity * 1e-6; // Simplified local processing
+  const canProcessLocally = localDelay <= task.maxToleranceTime && !device.isMobile;
+
+  // Find best fog node
+  let bestFogNode: FogNode | null = null;
+  let bestFogDelay = Infinity;
+  let bestFogEnergy = 0;
+
+  for (const fogNode of fogNodes) {
+    // Skip overloaded fog nodes (>90% load)
+    if (fogNode.currentLoad > 0.9) continue;
+
+    const delay = calculateTotalDelay(task, fogNode);
+    const energy = calculateEnergyConsumption(task, fogNode, device);
+
+    // Check if fog node can meet constraints
+    if (delay <= task.maxToleranceTime && energy <= device.residualEnergy) {
+      if (delay < bestFogDelay) {
+        bestFogDelay = delay;
+        bestFogEnergy = energy;
+        bestFogNode = fogNode;
+      }
+    }
+  }
+
+  // Calculate cloud option
+  const cloudDelay = calculateCloudExecutionTime(task, cloud);
+  const cloudCost = calculateCloudCost(task, cloud);
+  const cloudEnergy = (device.transmissionPower * (task.dataSize / cloud.networkBandwidth)) +
+                      (device.idlePower * cloudDelay);
+
+  // Decision logic following 3-layer priority
+  // Priority 1: Local processing (if capable and meets constraints)
+  if (canProcessLocally && localDelay < bestFogDelay) {
+    return {
+      taskId: task.id,
+      offloadTarget: 'local',
+      targetId: device.id,
+      reason: 'Task can be processed locally with acceptable delay',
+      estimatedDelay: localDelay,
+      estimatedEnergy: 0,
+      estimatedCost: 0
+    };
+  }
+
+  // Priority 2: Fog processing (if available and meets constraints)
+  if (bestFogNode && bestFogDelay <= task.maxToleranceTime) {
+    return {
+      taskId: task.id,
+      offloadTarget: 'fog',
+      targetId: bestFogNode.id,
+      reason: `Fog node "${bestFogNode.name}" selected with ${Math.round(bestFogNode.currentLoad * 100)}% load`,
+      estimatedDelay: bestFogDelay,
+      estimatedEnergy: bestFogEnergy,
+      estimatedCost: 0
+    };
+  }
+
+  // Priority 3: Cloud offloading (fallback when fog can't handle)
+  if (cloud.available) {
+    return {
+      taskId: task.id,
+      offloadTarget: 'cloud',
+      targetId: cloud.id,
+      reason: 'Offloading to cloud: fog nodes overloaded or cannot meet constraints',
+      estimatedDelay: cloudDelay,
+      estimatedEnergy: cloudEnergy,
+      estimatedCost: cloudCost
+    };
+  }
+
+  // Fallback: Force fog allocation to least loaded node
+  const leastLoadedFog = fogNodes.reduce((min, node) => 
+    node.currentLoad < min.currentLoad ? node : min, fogNodes[0]);
+  
+  return {
+    taskId: task.id,
+    offloadTarget: 'fog',
+    targetId: leastLoadedFog.id,
+    reason: 'Forced fog allocation to least loaded node (cloud unavailable)',
+    estimatedDelay: calculateTotalDelay(task, leastLoadedFog),
+    estimatedEnergy: calculateEnergyConsumption(task, leastLoadedFog, device),
+    estimatedCost: 0
+  };
+}
+
+/**
+ * Schedule tasks with 3-layer offloading support
+ * Combines HH algorithm for fog scheduling with cloud offloading for overflow
+ */
+export function scheduleWith3LayerOffloading(
+  tasks: Task[],
+  fogNodes: FogNode[],
+  devices: TerminalDevice[],
+  cloud: CloudNode = defaultCloudNode
+): {
+  fogAllocations: Map<string, string>;
+  cloudOffloaded: string[];
+  localProcessed: string[];
+  decisions: OffloadDecision[];
+  totalFogDelay: number;
+  totalCloudDelay: number;
+  totalCost: number;
+} {
+  logger.info('Starting 3-layer scheduling with cloud offloading');
+
+  const decisions: OffloadDecision[] = [];
+  const fogTasks: Task[] = [];
+  const cloudOffloaded: string[] = [];
+  const localProcessed: string[] = [];
+  let totalCloudDelay = 0;
+  let totalCost = 0;
+
+  // Phase 1: Make offload decisions for each task
+  for (const task of tasks) {
+    const device = devices.find(d => d.id === task.terminalDeviceId) || devices[0];
+    const decision = makeOffloadDecision(task, device, fogNodes, cloud);
+    decisions.push(decision);
+
+    if (decision.offloadTarget === 'cloud') {
+      cloudOffloaded.push(task.id);
+      totalCloudDelay += decision.estimatedDelay;
+      totalCost += decision.estimatedCost;
+    } else if (decision.offloadTarget === 'local') {
+      localProcessed.push(task.id);
+    } else {
+      fogTasks.push(task);
+    }
+  }
+
+  // Phase 2: Run HH algorithm for fog-bound tasks
+  let fogAllocations = new Map<string, string>();
+  let totalFogDelay = 0;
+
+  if (fogTasks.length > 0) {
+    const scheduler = new HybridHeuristicScheduler(fogTasks, fogNodes, devices);
+    const fogResult = scheduler.schedule();
+    fogAllocations = fogResult.allocations;
+    totalFogDelay = fogResult.totalDelay;
+  }
+
+  logger.info('3-layer scheduling completed', {
+    totalTasks: tasks.length,
+    fogTasks: fogTasks.length,
+    cloudOffloaded: cloudOffloaded.length,
+    localProcessed: localProcessed.length,
+    totalCost
+  });
+
+  return {
+    fogAllocations,
+    cloudOffloaded,
+    localProcessed,
+    decisions,
+    totalFogDelay,
+    totalCloudDelay,
+    totalCost
+  };
+}
+
+/**
+ * Generate sample cloud node configuration
+ */
+export function generateSampleCloudNode(overrides: Partial<CloudNode> = {}): CloudNode {
+  return {
+    id: 'cloud-1',
+    name: 'AWS Cloud',
+    computingResource: 100e9,
+    networkBandwidth: 100,
+    latencyPenalty: 50,
+    costPerUnit: 0.001,
+    available: true,
+    ...overrides
+  };
 }
 
 export default HybridHeuristicScheduler;

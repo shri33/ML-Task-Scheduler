@@ -97,12 +97,12 @@ const sdk = new NodeSDK({
   }),
 });
 
-// Graceful shutdown
+// Graceful shutdown — do NOT call process.exit() here; let the main
+// graceful-shutdown handler in index.ts drain HTTP + BullMQ first.
 process.on('SIGTERM', () => {
   sdk.shutdown()
     .then(() => console.log('Tracing terminated'))
-    .catch((error: Error) => console.log('Error terminating tracing', error))
-    .finally(() => process.exit(0));
+    .catch((error: Error) => console.log('Error terminating tracing', error));
 });
 
 // Start SDK

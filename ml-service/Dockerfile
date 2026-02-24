@@ -50,7 +50,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Set environment
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV PORT=5000
+ENV PORT=5001
 
 # Copy application code
 COPY --chown=mlservice:mlservice . .
@@ -62,11 +62,11 @@ RUN mkdir -p models && chown -R mlservice:mlservice models
 USER mlservice
 
 # Expose port
-EXPOSE 5000
+EXPOSE 5001
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:5000/health || exit 1
+  CMD curl -f http://localhost:5001/api/health || exit 1
 
 # Start with gunicorn for production
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--threads", "4", "--timeout", "120", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5001", "--workers", "2", "--threads", "4", "--timeout", "120", "app:app"]

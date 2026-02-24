@@ -1,20 +1,37 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import Tasks from './pages/Tasks';
-import Resources from './pages/Resources';
-import Analytics from './pages/Analytics';
-import FogComputing from './pages/FogComputing';
-import Devices from './pages/Devices';
-import Profile from './pages/Profile';
-import Login from './pages/Login';
+import ErrorBoundary from './components/ErrorBoundary';
 import socketService from './lib/socket';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
+
+// Lazy load pages for code splitting
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Tasks = lazy(() => import('./pages/Tasks'));
+const Resources = lazy(() => import('./pages/Resources'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const FogComputing = lazy(() => import('./pages/FogComputing'));
+const Devices = lazy(() => import('./pages/Devices'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+
+// Loading spinner for lazy loaded components
+function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="flex flex-col items-center gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+      </div>
+    </div>
+  );
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -84,97 +101,106 @@ function AppRoutes() {
         isOpen={showShortcutsModal} 
         onClose={() => setShowShortcutsModal(false)} 
       />
-      <Routes>
-      <Route
-        path="/login"
-        element={isAuthenticated ? <Navigate to="/" replace /> : <Login />}
-      />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Dashboard />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/tasks"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Tasks />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/resources"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Resources />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Analytics />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/fog-computing"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <FogComputing />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Profile />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/devices"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Devices />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-    </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+        <Route
+          path="/login"
+          element={isAuthenticated ? <Navigate to="/" replace /> : <Login />}
+        />
+        <Route
+          path="/register"
+          element={isAuthenticated ? <Navigate to="/" replace /> : <Register />}
+        />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Tasks />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/resources"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Resources />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Analytics />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/fog-computing"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <FogComputing />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Profile />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/devices"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Devices />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      </Suspense>
     </>
   );
 }
 
 function App() {
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <AuthProvider>
-          <Router>
-            <AppRoutes />
-          </Router>
-        </AuthProvider>
-      </ToastProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <Router>
+              <AppRoutes />
+            </Router>
+          </AuthProvider>
+        </ToastProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

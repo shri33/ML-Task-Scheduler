@@ -2,7 +2,11 @@ import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
+const _jwtSecret = process.env.JWT_SECRET;
+if (!_jwtSecret) {
+  throw new Error('JWT_SECRET environment variable is required for WebSocket authentication');
+}
+const JWT_SECRET: string = _jwtSecret;
 
 interface SocketUser {
   id: string;
@@ -44,7 +48,7 @@ export class WebSocketService {
       }
 
       try {
-        const decoded = jwt.verify(token, JWT_SECRET) as SocketUser;
+        const decoded = jwt.verify(token, JWT_SECRET) as unknown as SocketUser;
         socket.user = decoded;
         next();
       } catch (error) {

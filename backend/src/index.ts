@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
@@ -20,12 +21,15 @@ import authRoutes from './routes/auth.routes';
 import deviceRoutes from './routes/device.routes';
 import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter, scheduleLimiter } from './middleware/rateLimit.middleware';
+import { csrfProtection } from './middleware/csrf.middleware';
+import prisma from './lib/prisma';
 import redisService from './lib/redis';
 import emailService from './services/email.service';
 import { setupSwagger } from './lib/swagger';
 import logger, { requestLogger } from './lib/logger';
 import { errorRecovery } from './services/errorRecovery.service';
 import { metricsMiddleware, setupMetricsEndpoint } from './lib/metrics';
+import { closeAllQueues } from './queues';
 
 // Validate environment variables at startup (fail-fast)
 const env = validateEnv();
@@ -43,7 +47,8 @@ if (isProduction() && !corsOrigin) {
 const io = new Server(httpServer, {
   cors: {
     origin: corsOrigin,
-    methods: ['GET', 'POST', 'PUT', 'DELETE']
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
   }
 });
 
@@ -51,7 +56,23 @@ const io = new Server(httpServer, {
 const API_VERSION = 'v1';
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'blob:'],
+      connectSrc: ["'self'", corsOrigin || ''].filter(Boolean),
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // allow cross-origin for API
+}));
 app.use(cors({
   origin: corsOrigin,
   credentials: true
@@ -60,6 +81,19 @@ app.use(cors({
 // Request body size limits (prevent memory exhaustion attacks)
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(cookieParser());
+
+// Request ID for distributed tracing / log correlation
+import crypto from 'crypto';
+app.use((req, res, next) => {
+  const requestId = (req.headers['x-request-id'] as string) || crypto.randomUUID();
+  req.headers['x-request-id'] = requestId;
+  res.setHeader('x-request-id', requestId);
+  next();
+});
+
+// CSRF protection for browser-based mutating requests
+app.use('/api/', csrfProtection);
 
 // Request logging middleware
 app.use(requestLogger());
@@ -95,13 +129,24 @@ app.use('/api/v1/devices', deviceRoutes);
 // Migration: Update all clients to use /api/v1/* endpoints
 
 // Health check with circuit breaker status
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
   const circuitStatus = errorRecovery.getStatus();
-  res.json({ 
-    status: 'ok', 
+
+  // Database connectivity check
+  let dbOk = false;
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    dbOk = true;
+  } catch { /* db unreachable */ }
+
+  const allHealthy = dbOk && redisService.isAvailable();
+
+  res.status(allHealthy ? 200 : 503).json({ 
+    status: allHealthy ? 'ok' : 'degraded', 
     version: API_VERSION,
     timestamp: new Date().toISOString(),
     services: {
+      database: dbOk,
       redis: redisService.isAvailable(),
       email: emailService.isAvailable()
     },
@@ -167,23 +212,29 @@ async function startServer() {
 }
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully');
-  httpServer.close(() => {
+async function gracefulShutdown(signal: string) {
+  logger.info(`${signal} received, shutting down gracefully`);
+  httpServer.close(async () => {
     logger.info('HTTP server closed');
+    try {
+      await closeAllQueues();
+      logger.info('BullMQ queues drained and closed');
+    } catch (err) {
+      logger.error('Error closing queues', err);
+    }
     logger.shutdown();
     process.exit(0);
   });
-});
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT received, shutting down gracefully');
-  httpServer.close(() => {
-    logger.info('HTTP server closed');
-    logger.shutdown();
-    process.exit(0);
-  });
-});
+  // Force exit after 15s if graceful shutdown stalls
+  setTimeout(() => {
+    logger.fatal('Forced shutdown after timeout');
+    process.exit(1);
+  }, 15_000).unref();
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {

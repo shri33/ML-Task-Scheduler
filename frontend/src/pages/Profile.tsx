@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { User, Mail, Phone, MapPin, Building, Calendar, Camera, Save, X, Sun, Moon, Bell, Monitor } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { authApi } from '../lib/api';
+import { useStore } from '../store';
 
 interface ProfileData {
   name: string;
@@ -19,6 +21,7 @@ export default function Profile() {
   const { user } = useAuth();
   const toast = useToast();
   const { theme, toggleTheme } = useTheme();
+  const { tasks, resources, fetchTasks, fetchResources } = useStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -39,6 +42,8 @@ export default function Profile() {
 
   // Load saved profile from localStorage
   useEffect(() => {
+    fetchTasks();
+    fetchResources();
     const savedProfile = localStorage.getItem('userProfile');
     if (savedProfile) {
       const parsed = JSON.parse(savedProfile);
@@ -58,7 +63,12 @@ export default function Profile() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Save to localStorage (in real app, this would be an API call)
+      // Persist to backend
+      await authApi.updateProfile({
+        name: editedProfile.name,
+        email: editedProfile.email,
+      });
+      // Cache locally for fast reloads
       localStorage.setItem('userProfile', JSON.stringify(editedProfile));
       setProfile(editedProfile);
       setIsEditing(false);
@@ -78,6 +88,25 @@ export default function Profile() {
   const handleChange = (field: keyof ProfileData, value: string) => {
     setEditedProfile(prev => ({ ...prev, [field]: value }));
   };
+
+  // Compute real statistics from store data
+  const stats = useMemo(() => {
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(t => t.status === 'COMPLETED').length;
+    const totalResources = resources.length;
+    const oldestTask = tasks.length > 0
+      ? tasks.reduce((oldest, t) => new Date(t.createdAt) < new Date(oldest.createdAt) ? t : oldest)
+      : null;
+    const daysActive = oldestTask
+      ? Math.max(1, Math.ceil((Date.now() - new Date(oldestTask.createdAt).getTime()) / (1000 * 60 * 60 * 24)))
+      : 0;
+    return {
+      totalTasks: String(totalTasks),
+      completedTasks: String(completedTasks),
+      totalResources: String(totalResources),
+      daysActive: String(daysActive),
+    };
+  }, [tasks, resources]);
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -377,10 +406,10 @@ export default function Profile() {
           Account Statistics
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard label="Tasks Created" value="24" />
-          <StatCard label="Tasks Completed" value="18" />
-          <StatCard label="Resources Used" value="5" />
-          <StatCard label="Days Active" value="30" />
+          <StatCard label="Tasks Created" value={stats.totalTasks} />
+          <StatCard label="Tasks Completed" value={stats.completedTasks} />
+          <StatCard label="Resources Used" value={stats.totalResources} />
+          <StatCard label="Days Active" value={stats.daysActive} />
         </div>
       </div>
 

@@ -1,8 +1,30 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import pdfService from '../services/pdf.service';
 import prisma from '../lib/prisma';
+import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 
 const router = Router();
+
+// All report routes require authentication
+router.use(authenticate);
+
+// CSV sanitization helper to prevent formula injection
+function sanitizeCsvValue(value: unknown): string {
+  const str = String(value ?? '');
+  // Prevent formula injection: prefix dangerous characters with a single quote
+  if (/^[=+\-@\t\r]/.test(str)) {
+    return `"'${str.replace(/"/g, '""')}"`;
+  }
+  // Wrap in quotes if contains comma, newline, or double quote
+  if (/[,"\n\r]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+function buildCsvRow(values: unknown[]): string {
+  return values.map(sanitizeCsvValue).join(',');
+}
 
 // ============ PDF REPORTS ============
 
@@ -100,16 +122,17 @@ router.get('/csv/tasks', async (req: Request, res: Response, next: NextFunction)
   try {
     const tasks = await prisma.task.findMany({
       include: { resource: { select: { name: true } } },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      take: 10000 // Prevent unbounded export
     });
 
     const headers = ['ID', 'Name', 'Type', 'Size', 'Priority', 'Status', 'Due Date', 'Predicted Time', 'Actual Time', 'Resource', 'Created At', 'Completed At'];
     const csvRows = [headers.join(',')];
 
-    tasks.forEach((task: any) => {
-      const row = [
+    tasks.forEach((task) => {
+      csvRows.push(buildCsvRow([
         task.id,
-        `"${task.name.replace(/"/g, '""')}"`,
+        task.name,
         task.type,
         task.size,
         task.priority,
@@ -120,8 +143,7 @@ router.get('/csv/tasks', async (req: Request, res: Response, next: NextFunction)
         task.resource?.name || '',
         new Date(task.createdAt).toISOString(),
         task.completedAt ? new Date(task.completedAt).toISOString() : ''
-      ];
-      csvRows.push(row.join(','));
+      ]));
     });
 
     const csv = csvRows.join('\n');
@@ -148,23 +170,23 @@ router.get('/csv/resources', async (req: Request, res: Response, next: NextFunct
   try {
     const resources = await prisma.resource.findMany({
       include: { _count: { select: { tasks: true } } },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
+      take: 10000 // Prevent unbounded export
     });
 
     const headers = ['ID', 'Name', 'Capacity', 'Current Load (%)', 'Status', 'Active Tasks', 'Created At'];
     const csvRows = [headers.join(',')];
 
     resources.forEach(resource => {
-      const row = [
+      csvRows.push(buildCsvRow([
         resource.id,
-        `"${resource.name.replace(/"/g, '""')}"`,
+        resource.name,
         resource.capacity,
         resource.currentLoad.toFixed(1),
         resource.status,
         resource._count.tasks,
         new Date(resource.createdAt).toISOString()
-      ];
-      csvRows.push(row.join(','));
+      ]));
     });
 
     const csv = csvRows.join('\n');
@@ -202,18 +224,17 @@ router.get('/csv/schedule-history', async (req: Request, res: Response, next: Ne
     const csvRows = [headers.join(',')];
 
     history.forEach(h => {
-      const row = [
+      csvRows.push(buildCsvRow([
         h.id,
-        `"${h.task.name.replace(/"/g, '""')}"`,
-        `"${h.resource.name.replace(/"/g, '""')}"`,
+        h.task.name,
+        h.resource.name,
         h.algorithm,
         h.mlEnabled ? 'Yes' : 'No',
         h.predictedTime || '',
         h.actualTime || '',
         h.score?.toFixed(3) || '',
         new Date(h.createdAt).toISOString()
-      ];
-      csvRows.push(row.join(','));
+      ]));
     });
 
     const csv = csvRows.join('\n');

@@ -2,6 +2,12 @@ import { FileSpreadsheet, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '../contexts/ToastContext';
 
+// Helper to read a cookie value
+function getCookie(name: string): string | undefined {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
 interface ExportOption {
   name: string;
   endpoint: string;
@@ -39,7 +45,12 @@ export default function CSVExport() {
     setDownloading(option.endpoint);
     setShowDropdown(false);
     try {
-      const response = await fetch(`http://localhost:3001${option.endpoint}`);
+      const response = await fetch(option.endpoint, {
+        credentials: 'include',
+        headers: {
+          'X-CSRF-Token': getCookie('csrf-token') || '',
+        },
+      });
       if (!response.ok) throw new Error('Download failed');
 
       const blob = await response.blob();

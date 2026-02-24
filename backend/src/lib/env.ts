@@ -24,8 +24,8 @@ const envSchema = z.object({
   // CORS - required in production, optional in development
   CORS_ORIGIN: z.string().optional(),
   
-  // JWT Authentication (required)
-  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+  // JWT Authentication (required — no default for security)
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters — set this in your environment'),
   JWT_EXPIRES_IN: z.string().default('7d'),
   
   // Email (optional)

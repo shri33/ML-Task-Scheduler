@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useStore } from '../store';
 import {
   ListTodo,
@@ -12,6 +12,7 @@ import {
 import { clsx } from 'clsx';
 import { useToast } from '../contexts/ToastContext';
 import { DashboardSkeleton } from '../components/Skeletons';
+import { PriorityBadge } from '../components/shared/Badges';
 
 export default function Dashboard() {
   const {
@@ -32,8 +33,11 @@ export default function Dashboard() {
 
   const [refreshing, setRefreshing] = useState(false);
   const toast = useToast();
+  const hasFetched = useRef(false);
 
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     fetchTasks();
     fetchResources();
     fetchMetrics();
@@ -152,7 +156,7 @@ export default function Dashboard() {
                     {task.type} • {task.size} • Priority {task.priority}
                   </p>
                 </div>
-                <PriorityBadge priority={task.priority} />
+                <PriorityBadge priority={task.priority} showLabel />
               </div>
             ))}
             {pendingTasks.length === 0 && (
@@ -282,34 +286,5 @@ function StatCard({
         </div>
       </div>
     </div>
-  );
-}
-
-function PriorityBadge({ priority }: { priority: number }) {
-  const colors: Record<number, string> = {
-    1: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
-    2: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300',
-    3: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-300',
-    4: 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300',
-    5: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300',
-  };
-
-  const labels: Record<number, string> = {
-    1: 'Low',
-    2: 'Normal',
-    3: 'Medium',
-    4: 'High',
-    5: 'Critical',
-  };
-
-  return (
-    <span
-      className={clsx(
-        'px-2 py-1 rounded-full text-xs font-medium',
-        colors[priority]
-      )}
-    >
-      {labels[priority]}
-    </span>
   );
 }

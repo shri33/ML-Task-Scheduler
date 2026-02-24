@@ -19,7 +19,11 @@ async function seed() {
 
   // Create demo users
   console.log('👤 Creating users...');
-  const hashedPassword = await bcrypt.hash('password123', 10);
+  const seedPassword = process.env.SEED_PASSWORD || 'password123';
+  if (!process.env.SEED_PASSWORD) {
+    console.warn('⚠️  SEED_PASSWORD not set — using default "password123". Set SEED_PASSWORD env var for production.');
+  }
+  const hashedPassword = await bcrypt.hash(seedPassword, 10);
   
   const users = await Promise.all([
     prisma.user.create({
