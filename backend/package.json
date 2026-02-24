@@ -78,6 +78,7 @@
   },
   "overrides": {
     "fast-xml-parser": "^5.3.6",
-    "qs": "^6.15.0"
+    "qs": "^6.15.0",
+    "minimatch": "^10.2.1"
   }
 }
