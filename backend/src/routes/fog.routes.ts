@@ -370,7 +370,7 @@ router.post('/schedule', async (req: Request, res: Response) => {
  */
 router.post('/compare', async (req: Request, res: Response) => {
   try {
-    initializeSampleData();
+    await initializeSampleData();
     
     const { taskCount = 50 } = req.body;
     

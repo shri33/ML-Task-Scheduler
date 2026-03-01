@@ -1,13 +1,18 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useStore } from '../store';
 import { resourceApi } from '../lib/api';
-import { CreateResourceInput } from '../types';
-import { Plus, Trash2, X, Server } from 'lucide-react';
+import { CreateResourceInput, Resource } from '../types';
+import { Plus, Trash2, X, Server, Edit2, RefreshCw, ArrowUpDown } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useToast } from '../contexts/ToastContext';
-import { SearchFilter } from '../components/SearchFilter';
+import { SearchFilter, QuickFilters } from '../components/SearchFilter';
 import { ResourceCardSkeleton } from '../components/Skeletons';
 import { StatusBadge } from '../components/shared/Badges';
+import ResourceEditModal from '../components/ResourceEditModal';
+import CSVExport from '../components/CSVExport';
+
+type SortField = 'name' | 'load' | 'capacity' | 'status';
+type SortDir = 'asc' | 'desc';
 
 export default function Resources() {
   const {
@@ -19,7 +24,12 @@ export default function Resources() {
     updateResource,
   } = useStore();
   const [showForm, setShowForm] = useState(false);
+  const [editingResource, setEditingResource] = useState<Resource | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [refreshing, setRefreshing] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -30,9 +40,48 @@ export default function Resources() {
     setSearchQuery(query);
   }, []);
 
-  const filteredResources = resources.filter((r) =>
-    !searchQuery || r.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchResources();
+    setRefreshing(false);
+    toast.info('Refreshed', 'Resource data has been updated.');
+  };
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  };
+
+  const filteredResources = useMemo(() => {
+    const result = resources
+      .filter((r) => !searchQuery || r.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      .filter((r) => !statusFilter || r.status === statusFilter);
+
+    result.sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case 'name':
+          cmp = a.name.localeCompare(b.name);
+          break;
+        case 'load':
+          cmp = a.currentLoad - b.currentLoad;
+          break;
+        case 'capacity':
+          cmp = a.capacity - b.capacity;
+          break;
+        case 'status':
+          cmp = a.status.localeCompare(b.status);
+          break;
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    return result;
+  }, [resources, searchQuery, statusFilter, sortField, sortDir]);
 
   const handleCreateResource = async (data: CreateResourceInput) => {
     try {
@@ -56,17 +105,33 @@ export default function Resources() {
     }
   };
 
-  const handleUpdateLoad = async (id: string, currentLoad: number, name: string) => {
-    const newLoad = prompt('Enter new load (0-100):', String(currentLoad));
-    if (newLoad === null) return;
-    try {
-      const resource = await resourceApi.updateLoad(id, parseFloat(newLoad));
-      updateResource(resource);
-      toast.info('Load updated', `${name} load set to ${newLoad}%.`);
-    } catch (error) {
-      toast.error('Failed to update load', 'Please try again.');
-    }
+  const handleResourceUpdated = (updated: Resource) => {
+    updateResource(updated);
+    setEditingResource(null);
   };
+
+  const filterOptions = [
+    { label: 'All', value: '' },
+    { label: 'Available', value: 'AVAILABLE' },
+    { label: 'Busy', value: 'BUSY' },
+    { label: 'Offline', value: 'OFFLINE' },
+  ];
+
+  const sortOptions: { label: string; value: SortField }[] = [
+    { label: 'Name', value: 'name' },
+    { label: 'Load', value: 'load' },
+    { label: 'Capacity', value: 'capacity' },
+    { label: 'Status', value: 'status' },
+  ];
+
+  // Summary stats
+  const totalResources = resources.length;
+  const availableCount = resources.filter((r) => r.status === 'AVAILABLE').length;
+  const busyCount = resources.filter((r) => r.status === 'BUSY').length;
+  const offlineCount = resources.filter((r) => r.status === 'OFFLINE').length;
+  const avgLoad = totalResources > 0
+    ? Math.round(resources.reduce((sum, r) => sum + r.currentLoad, 0) / totalResources)
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -78,20 +143,84 @@ export default function Resources() {
             Manage computing resources for task allocation
           </p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="btn btn-primary flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Add Resource
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="btn btn-secondary flex items-center gap-2"
+          >
+            <RefreshCw className={clsx('h-4 w-4', refreshing && 'animate-spin')} />
+            Refresh
+          </button>
+          <CSVExport />
+          <button
+            onClick={() => setShowForm(true)}
+            className="btn btn-primary flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Resource
+          </button>
+        </div>
       </div>
 
-      {/* Search */}
-      <SearchFilter
-        placeholder="Search resources by name..."
-        onSearch={handleSearch}
-      />
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-center">
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalResources}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-center">
+          <p className="text-2xl font-bold text-green-600 dark:text-green-400">{availableCount}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Available</p>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-center">
+          <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{busyCount}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Busy</p>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-center">
+          <p className="text-2xl font-bold text-gray-600 dark:text-gray-400">{offlineCount}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Offline</p>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-center col-span-2 sm:col-span-1">
+          <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">{avgLoad}%</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Avg Load</p>
+        </div>
+      </div>
+
+      {/* Search & Filters */}
+      <div className="space-y-4">
+        <SearchFilter
+          placeholder="Search resources by name..."
+          onSearch={handleSearch}
+        />
+        <div className="flex flex-col sm:flex-row justify-between gap-3">
+          <QuickFilters
+            options={filterOptions}
+            value={statusFilter}
+            onChange={setStatusFilter}
+          />
+          {/* Sort Controls */}
+          <div className="flex items-center gap-2">
+            <ArrowUpDown className="h-4 w-4 text-gray-400" />
+            <span className="text-sm text-gray-500 dark:text-gray-400">Sort:</span>
+            {sortOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => toggleSort(opt.value)}
+                className={clsx(
+                  'px-2 py-1 rounded text-xs font-medium transition-colors',
+                  sortField === opt.value
+                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                )}
+              >
+                {opt.label}
+                {sortField === opt.value && (sortDir === 'asc' ? ' ↑' : ' ↓')}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* Resource Grid */}
       {resourcesLoading ? (
@@ -107,9 +236,9 @@ export default function Resources() {
           </div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No resources found</h3>
           <p className="text-gray-500 dark:text-gray-400 mb-4">
-            {searchQuery ? 'Try a different search term.' : 'Add one to get started.'}
+            {searchQuery || statusFilter ? 'Try a different search term or filter.' : 'Add one to get started.'}
           </p>
-          {!searchQuery && (
+          {!searchQuery && !statusFilter && (
             <button onClick={() => setShowForm(true)} className="btn btn-primary">
               Add Resource
             </button>
@@ -140,27 +269,40 @@ export default function Resources() {
                     <StatusBadge status={resource.status} />
                   </div>
                 </div>
-                <button
-                  onClick={() => handleDeleteResource(resource.id, resource.name)}
-                  className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-red-600 dark:text-red-400"
-                  title="Delete"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setEditingResource(resource)}
+                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-400"
+                    title="Edit"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteResource(resource.id, resource.name)}
+                    className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-red-600 dark:text-red-400"
+                    title="Delete"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Load Bar */}
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-sm text-gray-500 dark:text-gray-400">Current Load</span>
-                  <button
-                    onClick={() =>
-                      handleUpdateLoad(resource.id, resource.currentLoad, resource.name)
-                    }
-                    className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                  <span
+                    className={clsx(
+                      'text-sm font-medium',
+                      resource.currentLoad < 50
+                        ? 'text-green-600 dark:text-green-400'
+                        : resource.currentLoad < 80
+                        ? 'text-yellow-600 dark:text-yellow-400'
+                        : 'text-red-600 dark:text-red-400'
+                    )}
                   >
                     {Math.round(resource.currentLoad)}%
-                  </button>
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                   <div
@@ -202,6 +344,15 @@ export default function Resources() {
         <ResourceFormModal
           onClose={() => setShowForm(false)}
           onSubmit={handleCreateResource}
+        />
+      )}
+
+      {/* Edit Resource Modal */}
+      {editingResource && (
+        <ResourceEditModal
+          resource={editingResource}
+          onClose={() => setEditingResource(null)}
+          onUpdated={handleResourceUpdated}
         />
       )}
     </div>
@@ -281,5 +432,3 @@ function ResourceFormModal({
     </div>
   );
 }
-
-// StatusBadge imported from shared/Badges.tsx

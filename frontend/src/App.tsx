@@ -19,6 +19,7 @@ const Devices = lazy(() => import('./pages/Devices'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
+const Experiments = lazy(() => import('./pages/Experiments'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Loading spinner for lazy loaded components
@@ -177,6 +178,16 @@ function AppRoutes() {
             <ProtectedRoute>
               <Layout>
                 <Devices />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/experiments"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Experiments />
               </Layout>
             </ProtectedRoute>
           }

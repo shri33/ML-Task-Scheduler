@@ -19,6 +19,7 @@ import reportsRoutes from './routes/reports.routes';
 import fogRoutes from './routes/fog.routes';
 import authRoutes from './routes/auth.routes';
 import deviceRoutes from './routes/device.routes';
+import experimentsRoutes from './routes/experiments.routes';
 import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter, scheduleLimiter } from './middleware/rateLimit.middleware';
 import { csrfProtection } from './middleware/csrf.middleware';
@@ -124,6 +125,10 @@ app.use('/api/v1/metrics', metricsRoutes);
 app.use('/api/v1/reports', reportsRoutes);
 app.use('/api/v1/fog', fogRoutes);
 app.use('/api/v1/devices', deviceRoutes);
+app.use('/api/v1/experiments', experimentsRoutes);
+
+// Alias: /api/v1/scheduling/compare → fog compare endpoint
+app.use('/api/v1/scheduling', fogRoutes);
 
 // Legacy routes removed - use versioned API only (/api/v1/*)
 // Migration: Update all clients to use /api/v1/* endpoints

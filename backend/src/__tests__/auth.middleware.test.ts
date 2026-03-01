@@ -224,7 +224,7 @@ describe('CSRF Middleware', () => {
     expect(token.length).toBe(64); // 32 bytes hex
     expect(res.cookie).toHaveBeenCalledWith('csrf-token', token, expect.objectContaining({
       httpOnly: false,
-      sameSite: 'strict',
+      sameSite: 'lax',
     }));
   });
 });

@@ -35,7 +35,7 @@ export function setCsrfCookie(res: Response): string {
   res.cookie(CSRF_COOKIE, token, {
     httpOnly: false,        // JS needs to read this
     secure: COOKIE_SECURE,
-    sameSite: COOKIE_SECURE ? 'strict' : 'lax',
+    sameSite: 'lax',        // Allow cross-site requests from same domain
     path: '/',
     maxAge: 24 * 60 * 60 * 1000, // 24 h
   });
@@ -45,8 +45,14 @@ export function setCsrfCookie(res: Response): string {
 /**
  * Middleware that enforces CSRF on all non-safe requests.
  * Must be mounted after cookie-parser.
+ * CSRF is disabled in development mode to allow easier testing.
  */
 export function csrfProtection(req: Request, res: Response, next: NextFunction) {
+  // Skip CSRF in development mode
+  if (process.env.NODE_ENV === 'development') {
+    return next();
+  }
+
   if (SAFE_METHODS.has(req.method)) {
     return next();
   }

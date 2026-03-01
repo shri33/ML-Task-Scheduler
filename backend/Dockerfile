@@ -58,7 +58,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 # Set environment
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=3001
 
 # Copy built application
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
@@ -69,18 +69,18 @@ COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 # Copy generated Prisma client from deps
 COPY --from=deps --chown=nodejs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
-# Create logs directory writable by non-root user
-RUN mkdir -p /app/logs && chown nodejs:nodejs /app/logs
+# Create logs and results directories writable by non-root user
+RUN mkdir -p /app/logs /app/results && chown -R nodejs:nodejs /app/logs /app/results
 
 # Switch to non-root user
 USER nodejs
 
 # Expose port
-EXPOSE 3000
+EXPOSE 3001
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/api/health || exit 1
 
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]

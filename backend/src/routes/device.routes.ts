@@ -67,6 +67,37 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response, next: Next
   }
 });
 
+// Stats overview — MUST be before /:id to avoid matching 'stats' as an ID
+router.get('/stats/overview', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const [totalDevices, byType, onlineCount, offlineCount, errorCount, maintenanceCount] = await Promise.all([
+      prisma.device.count(),
+      prisma.device.groupBy({ by: ['type'], _count: true }),
+      prisma.device.count({ where: { status: 'ONLINE' } }),
+      prisma.device.count({ where: { status: 'OFFLINE' } }),
+      prisma.device.count({ where: { status: 'ERROR' } }),
+      prisma.device.count({ where: { status: 'MAINTENANCE' } }),
+    ]);
+
+    const typeStats: Record<string, number> = {};
+    byType.forEach((t: any) => { typeStats[t.type] = t._count; });
+
+    res.json({
+      success: true,
+      data: {
+        total: totalDevices,
+        online: onlineCount,
+        offline: offlineCount,
+        error: errorCount,
+        maintenance: maintenanceCount,
+        byType: typeStats,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Get device by ID
 router.get('/:id', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -373,45 +404,6 @@ router.post('/:id/command', authenticate, authorize('ADMIN', 'USER'), async (req
         command,
         parameters,
         timestamp: new Date()
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Get device statistics
-router.get('/stats/overview', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const [
-      totalDevices,
-      onlineDevices,
-      offlineDevices,
-      errorDevices,
-      devicesByType
-    ] = await Promise.all([
-      prisma.device.count(),
-      prisma.device.count({ where: { status: 'ONLINE' } }),
-      prisma.device.count({ where: { status: 'OFFLINE' } }),
-      prisma.device.count({ where: { status: 'ERROR' } }),
-      prisma.device.groupBy({
-        by: ['type'],
-        _count: true
-      })
-    ]);
-
-    res.json({
-      success: true,
-      data: {
-        total: totalDevices,
-        online: onlineDevices,
-        offline: offlineDevices,
-        error: errorDevices,
-        maintenance: totalDevices - onlineDevices - offlineDevices - errorDevices,
-        byType: devicesByType.reduce((acc: Record<string, number>, item: { type: string; _count: number }) => {
-          acc[item.type] = item._count;
-          return acc;
-        }, {})
       }
     });
   } catch (error) {

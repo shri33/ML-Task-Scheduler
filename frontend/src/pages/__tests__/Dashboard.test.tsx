@@ -96,6 +96,9 @@ describe('Dashboard', () => {
   });
 
   it('schedule button triggers runScheduler', async () => {
+    mockStore.tasks = [
+      { id: '1', name: 'T1', status: 'PENDING', type: 'CPU', size: 'SMALL', priority: 3 },
+    ] as any;
     renderDashboard();
 
     const scheduleBtn = screen.getByRole('button', { name: /schedule/i });
@@ -111,7 +114,7 @@ describe('Dashboard', () => {
     renderDashboard();
 
     await waitFor(() => {
-      expect(screen.getByText(/ML Service/i)).toBeInTheDocument();
+      expect(screen.getByText('ML Service Connected')).toBeInTheDocument();
     });
   });
 });

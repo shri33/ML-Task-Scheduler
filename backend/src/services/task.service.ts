@@ -21,7 +21,10 @@ export class TaskService {
     const limit = Math.min(Math.max(options?.limit || 20, 1), 100);
     const skip = (page - 1) * limit;
 
-    const where = status ? { status } : undefined;
+    const where = {
+      deletedAt: null,
+      ...(status ? { status } : {})
+    };
 
     const [items, total] = await Promise.all([
       prisma.task.findMany({
@@ -83,13 +86,28 @@ export class TaskService {
   }
 
   async delete(id: string) {
-    // Delete related records first
-    await prisma.prediction.deleteMany({ where: { taskId: id } });
-    await prisma.scheduleHistory.deleteMany({ where: { taskId: id } });
-    
-    return prisma.task.delete({
-      where: { id }
+    // Soft delete — set deletedAt timestamp instead of removing the record
+    return prisma.task.update({
+      where: { id },
+      data: { deletedAt: new Date() }
     });
+  }
+
+  async bulkCreate(tasks: CreateTaskInput[]) {
+    const created = await prisma.$transaction(
+      tasks.map(data =>
+        prisma.task.create({
+          data: {
+            name: data.name,
+            type: data.type,
+            size: data.size,
+            priority: data.priority,
+            ...(data.dueDate ? { dueDate: new Date(data.dueDate) } : {})
+          }
+        })
+      )
+    );
+    return created;
   }
 
   async assignToResource(taskId: string, resourceId: string, predictedTime?: number) {
@@ -116,13 +134,14 @@ export class TaskService {
   }
 
   async getStats() {
+    const notDeleted = { deletedAt: null };
     const [total, pending, scheduled, running, completed, failed] = await Promise.all([
-      prisma.task.count(),
-      prisma.task.count({ where: { status: 'PENDING' } }),
-      prisma.task.count({ where: { status: 'SCHEDULED' } }),
-      prisma.task.count({ where: { status: 'RUNNING' } }),
-      prisma.task.count({ where: { status: 'COMPLETED' } }),
-      prisma.task.count({ where: { status: 'FAILED' } })
+      prisma.task.count({ where: notDeleted }),
+      prisma.task.count({ where: { ...notDeleted, status: 'PENDING' } }),
+      prisma.task.count({ where: { ...notDeleted, status: 'SCHEDULED' } }),
+      prisma.task.count({ where: { ...notDeleted, status: 'RUNNING' } }),
+      prisma.task.count({ where: { ...notDeleted, status: 'COMPLETED' } }),
+      prisma.task.count({ where: { ...notDeleted, status: 'FAILED' } })
     ]);
 
     return { total, pending, scheduled, running, completed, failed };

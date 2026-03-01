@@ -2,12 +2,12 @@ import rateLimit from 'express-rate-limit';
 import { Request, Response } from 'express';
 
 // Paths to skip rate limiting (health checks, monitoring)
-const EXEMPT_PATHS = ['/api/health', '/api/docs', '/api-docs'];
+const EXEMPT_PATHS = ['/api/health', '/api/version', '/api/docs', '/api-docs', '/health'];
 
 // General API rate limiter
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === 'development' ? 1000 : 300, // higher limit in dev
   message: {
     success: false,
     error: 'Too many requests, please try again later.',
@@ -31,7 +31,7 @@ export const apiLimiter = rateLimit({
 // Stricter rate limiter for authentication endpoints
 export const authLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10, // limit each IP to 10 login attempts per hour
+  max: process.env.NODE_ENV === 'development' ? 100 : 10, // higher limit in dev
   message: {
     success: false,
     error: 'Too many login attempts, please try again later.',

@@ -43,6 +43,13 @@ export interface CreateResourceInput {
   capacity: number;
 }
 
+export interface UpdateResourceInput {
+  name?: string;
+  capacity?: number;
+  currentLoad?: number;
+  status?: 'AVAILABLE' | 'BUSY' | 'OFFLINE';
+}
+
 // Schedule Types
 export interface ScheduleResult {
   taskId: string;

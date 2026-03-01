@@ -16,6 +16,7 @@ import {
   User,
   Settings,
   Cpu,
+  FlaskConical,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import socketService from '../lib/socket';
@@ -33,6 +34,7 @@ const navigation = [
   { name: 'Devices', href: '/devices', icon: Cpu },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Fog Computing', href: '/fog-computing', icon: Cloud },
+  { name: 'Experiments', href: '/experiments', icon: FlaskConical },
 ];
 
 export default function Layout({ children }: LayoutProps) {

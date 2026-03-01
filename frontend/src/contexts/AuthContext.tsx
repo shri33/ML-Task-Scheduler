@@ -1,29 +1,30 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-}
+import { authApi, AuthUser } from '../lib/api';
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
+  updateUser: (user: AuthUser) => void;
   forgotPassword: (email: string) => Promise<{ resetToken?: string }>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_URL = '/api/auth';
+// Helper to read a cookie by name (for CSRF)
+function getCookie(name: string): string | undefined {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
+const API_URL = '/api/v1/auth';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -33,25 +34,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = async () => {
     try {
-      const response = await fetch(`${API_URL}/me`, {
-        credentials: 'include', // send httpOnly cookies
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.data.user);
-      }
-    } catch (error) {
-      console.error('Failed to fetch user:', error);
+      const me = await authApi.getMe();
+      setUser(me);
+    } catch {
+      // Not authenticated or token expired — axios interceptor handles refresh
     } finally {
       setIsLoading(false);
     }
   };
 
   const login = async (email: string, password: string) => {
+    // Login/register are CSRF-exempt so raw fetch is fine here,
+    // but we use it to avoid a circular dependency with the interceptor.
     const response = await fetch(`${API_URL}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include', // receive httpOnly cookies
+      credentials: 'include',
       body: JSON.stringify({ email, password }),
     });
 
@@ -68,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await fetch(`${API_URL}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include', // receive httpOnly cookies
+      credentials: 'include',
       body: JSON.stringify({ email, password, name }),
     });
 
@@ -83,14 +81,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
+      // Logout is NOT CSRF-exempt, so we need to send the CSRF header
+      const csrf = getCookie('csrf-token');
+      const headers: Record<string, string> = {};
+      if (csrf) headers['X-CSRF-Token'] = csrf;
+
       await fetch(`${API_URL}/logout`, {
         method: 'POST',
         credentials: 'include',
+        headers,
       });
     } catch {
       // Logout even if server call fails
     }
     setUser(null);
+  };
+
+  const updateUser = (updatedUser: AuthUser) => {
+    setUser(updatedUser);
   };
 
   const forgotPassword = async (email: string): Promise<{ resetToken?: string }> => {
@@ -133,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        updateUser,
         forgotPassword,
         resetPassword,
       }}

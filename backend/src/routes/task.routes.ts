@@ -62,6 +62,52 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
 /**
  * @swagger
+ * /api/tasks/bulk:
+ *   post:
+ *     summary: Bulk create tasks
+ *     tags: [Tasks]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [tasks]
+ *             properties:
+ *               tasks:
+ *                 type: array
+ *                 items:
+ *                   $ref: '#/components/schemas/CreateTask'
+ *                 maxItems: 100
+ *     responses:
+ *       201:
+ *         description: Tasks created successfully
+ *       400:
+ *         description: Validation error
+ */
+router.post('/bulk', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { tasks } = req.body;
+    if (!Array.isArray(tasks) || tasks.length === 0) {
+      throw new AppError('tasks array is required and must not be empty', 400);
+    }
+    if (tasks.length > 100) {
+      throw new AppError('Maximum 100 tasks per bulk create', 400);
+    }
+    const validated = tasks.map((t: unknown) => createTaskSchema.parse(t));
+    const created = await taskService.bulkCreate(validated);
+
+    const io = req.app.get('io');
+    io?.emit('tasks:updated', { count: created.length });
+
+    res.status(201).json({ success: true, data: created, count: created.length });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @swagger
  * /api/tasks/stats:
  *   get:
  *     summary: Get task statistics

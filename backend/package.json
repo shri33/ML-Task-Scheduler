@@ -14,6 +14,12 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "benchmark": "ts-node src/scripts/benchmark.ts",
+    "experiments": "ts-node src/scripts/run_experiments.ts",
+    "experiments:energy": "ts-node src/scripts/run_experiments.ts --mode energy",
+    "experiments:reliability-tasks": "ts-node src/scripts/run_experiments.ts --mode reliability-tasks",
+    "experiments:reliability-tolerance": "ts-node src/scripts/run_experiments.ts --mode reliability-tolerance",
+    "experiments:all": "ts-node src/scripts/run_experiments.ts --mode all",
+    "simulate": "ts-node src/scripts/run_experiments.ts --mode simulate",
     "demo": "ts-node src/scripts/demo-data.ts",
     "presentation": "ts-node src/scripts/presentation.ts",
     "lint": "eslint src --ext .ts"
@@ -78,7 +84,6 @@
   },
   "overrides": {
     "fast-xml-parser": "^5.3.6",
-    "qs": "^6.15.0",
-    "minimatch": "^10.2.1"
+    "qs": "^6.15.0"
   }
 }

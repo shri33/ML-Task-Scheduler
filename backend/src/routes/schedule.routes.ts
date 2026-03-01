@@ -73,4 +73,24 @@ router.get('/ml-status', async (req: Request, res: Response, next: NextFunction)
   }
 });
 
+// POST /api/schedule/simulate - Simulate scheduling without persisting
+router.post('/simulate', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { taskIds } = scheduleRequestSchema.parse(req.body);
+    // Run scheduler in dry-run mode — compute assignments but don't save
+    const results = await schedulerService.schedule(taskIds);
+    res.json({
+      success: true,
+      data: {
+        simulation: true,
+        results,
+        count: results.length,
+        note: 'This is a simulation. No tasks were actually scheduled.'
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

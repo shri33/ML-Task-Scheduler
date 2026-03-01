@@ -270,9 +270,10 @@ export class MLService {
   }
 
   getHealthStatus(): { isHealthy: boolean; fallbackMode: boolean; lastCheck: Date } {
+    const available = errorRecovery.isServiceAvailable('ml-service');
     return {
-      isHealthy: true,
-      fallbackMode: false,
+      isHealthy: available,
+      fallbackMode: !available,
       lastCheck: new Date()
     };
   }
