@@ -7,6 +7,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useDocumentTitle } from './hooks/useDocumentTitle';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
 
 // Lazy load pages for code splitting
@@ -84,6 +85,9 @@ function KeyboardShortcutsHandler({
 function AppRoutes() {
   const { isAuthenticated } = useAuth();
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+
+  // Set document title based on current route
+  useDocumentTitle();
 
   // Initialize WebSocket connection when authenticated
   useEffect(() => {

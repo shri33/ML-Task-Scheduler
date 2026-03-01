@@ -9,6 +9,7 @@ import { SearchFilter, QuickFilters } from '../components/SearchFilter';
 import { TasksTableSkeleton } from '../components/Skeletons';
 import TaskEditModal from '../components/TaskEditModal';
 import CSVExport from '../components/CSVExport';
+import ConfirmDialog from '../components/shared/ConfirmDialog';
 import { TypeBadge, PriorityBadge, StatusBadge, DueDateBadge } from '../components/shared/Badges';
 
 export default function Tasks() {
@@ -17,6 +18,13 @@ export default function Tasks() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filter, setFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  // Confirm dialog state
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  // Complete dialog state
+  const [completeTarget, setCompleteTarget] = useState<Task | null>(null);
+  const [actualTime, setActualTime] = useState('5');
+  const [isCompleting, setIsCompleting] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -48,25 +56,46 @@ export default function Tasks() {
   };
 
   const handleDeleteTask = async (id: string, name: string) => {
-    if (!confirm('Are you sure you want to delete this task?')) return;
+    setDeleteTarget({ id, name });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
     try {
-      await taskApi.delete(id);
-      removeTask(id);
-      toast.success('Task deleted', `"${name}" has been deleted.`);
+      await taskApi.delete(deleteTarget.id);
+      removeTask(deleteTarget.id);
+      toast.success('Task deleted', `"${deleteTarget.name}" has been deleted.`);
     } catch (error) {
       toast.error('Failed to delete task', 'Please try again.');
+    } finally {
+      setIsDeleting(false);
+      setDeleteTarget(null);
     }
   };
 
   const handleCompleteTask = async (task: Task) => {
-    const actualTime = prompt('Enter actual execution time (seconds):', '5');
-    if (!actualTime) return;
+    setCompleteTarget(task);
+    setActualTime('5');
+  };
+
+  const confirmComplete = async () => {
+    if (!completeTarget) return;
+    const time = parseFloat(actualTime);
+    if (isNaN(time) || time <= 0) {
+      toast.warning('Invalid time', 'Please enter a positive number.');
+      return;
+    }
+    setIsCompleting(true);
     try {
-      await taskApi.complete(task.id, parseFloat(actualTime));
+      await taskApi.complete(completeTarget.id, time);
       fetchTasks();
-      toast.success('Task completed', `"${task.name}" marked as completed.`);
+      toast.success('Task completed', `"${completeTarget.name}" marked as completed.`);
     } catch (error) {
       toast.error('Failed to complete task', 'Please try again.');
+    } finally {
+      setIsCompleting(false);
+      setCompleteTarget(null);
     }
   };
 
@@ -273,6 +302,43 @@ export default function Tasks() {
           onUpdated={handleTaskUpdated}
         />
       )}
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Delete Task"
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        isLoading={isDeleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* Complete Confirmation */}
+      <ConfirmDialog
+        isOpen={!!completeTarget}
+        title="Complete Task"
+        message={`Mark "${completeTarget?.name}" as completed. Enter the actual execution time below.`}
+        confirmLabel="Complete"
+        variant="info"
+        isLoading={isCompleting}
+        onConfirm={confirmComplete}
+        onCancel={() => setCompleteTarget(null)}
+      >
+        <div>
+          <label className="label">Actual Execution Time (seconds)</label>
+          <input
+            type="number"
+            className="input"
+            min="0.1"
+            step="0.1"
+            value={actualTime}
+            onChange={(e) => setActualTime(e.target.value)}
+            placeholder="e.g. 5"
+          />
+        </div>
+      </ConfirmDialog>
     </div>
   );
 }
@@ -304,9 +370,23 @@ function TaskFormModal({
     }
   };
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md animate-scale-in">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Create Task</h3>
           <button

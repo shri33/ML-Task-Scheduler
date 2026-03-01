@@ -6,8 +6,8 @@ export default function NotFound() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
       <div className="max-w-md w-full text-center">
         <div className="mb-8">
-          <h1 className="text-9xl font-bold text-indigo-600 dark:text-indigo-400">404</h1>
-          <div className="h-1 w-24 bg-indigo-600 mx-auto mt-4 rounded"></div>
+          <h1 className="text-9xl font-bold text-primary-600 dark:text-primary-400">404</h1>
+          <div className="h-1 w-24 bg-primary-600 mx-auto mt-4 rounded"></div>
         </div>
         
         <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
@@ -21,7 +21,7 @@ export default function NotFound() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             to="/"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
           >
             <Home className="h-5 w-5" />
             Go to Dashboard

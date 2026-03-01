@@ -24,8 +24,14 @@ export default function Profile() {
   const { tasks, resources, fetchTasks, fetchResources } = useStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [compactView, setCompactView] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    const saved = localStorage.getItem('pref_notifications');
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [compactView, setCompactView] = useState(() => {
+    const saved = localStorage.getItem('pref_compactView');
+    return saved === 'true';
+  });
   
   const [profile, setProfile] = useState<ProfileData>({
     name: user?.name || '',
@@ -360,7 +366,10 @@ export default function Profile() {
               </div>
             </div>
             <button
-              onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+              onClick={() => {
+                setNotificationsEnabled(!notificationsEnabled);
+                localStorage.setItem('pref_notifications', String(!notificationsEnabled));
+              }}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                 notificationsEnabled ? 'bg-primary-600' : 'bg-gray-300'
               }`}
@@ -385,7 +394,10 @@ export default function Profile() {
               </div>
             </div>
             <button
-              onClick={() => setCompactView(!compactView)}
+              onClick={() => {
+                setCompactView(!compactView);
+                localStorage.setItem('pref_compactView', String(!compactView));
+              }}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                 compactView ? 'bg-primary-600' : 'bg-gray-300'
               }`}

@@ -10,6 +10,7 @@ import { ResourceCardSkeleton } from '../components/Skeletons';
 import { StatusBadge } from '../components/shared/Badges';
 import ResourceEditModal from '../components/ResourceEditModal';
 import CSVExport from '../components/CSVExport';
+import ConfirmDialog from '../components/shared/ConfirmDialog';
 
 type SortField = 'name' | 'load' | 'capacity' | 'status';
 type SortDir = 'asc' | 'desc';
@@ -30,6 +31,8 @@ export default function Resources() {
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [refreshing, setRefreshing] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -95,13 +98,21 @@ export default function Resources() {
   };
 
   const handleDeleteResource = async (id: string, name: string) => {
-    if (!confirm('Are you sure you want to delete this resource?')) return;
+    setDeleteTarget({ id, name });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
     try {
-      await resourceApi.delete(id);
-      removeResource(id);
-      toast.success('Resource deleted', `"${name}" has been removed.`);
+      await resourceApi.delete(deleteTarget.id);
+      removeResource(deleteTarget.id);
+      toast.success('Resource deleted', `"${deleteTarget.name}" has been removed.`);
     } catch (error) {
       toast.error('Failed to delete resource', 'Please try again.');
+    } finally {
+      setIsDeleting(false);
+      setDeleteTarget(null);
     }
   };
 
@@ -355,6 +366,18 @@ export default function Resources() {
           onUpdated={handleResourceUpdated}
         />
       )}
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Delete Resource"
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? All tasks assigned to this resource will be unassigned.`}
+        confirmLabel="Delete"
+        variant="danger"
+        isLoading={isDeleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
@@ -376,9 +399,23 @@ function ResourceFormModal({
     onSubmit(formData);
   };
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md animate-scale-in">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add Resource</h3>
           <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
