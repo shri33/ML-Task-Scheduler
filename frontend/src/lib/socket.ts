@@ -27,11 +27,19 @@ class SocketService {
   connect() {
     if (this.socket?.connected) return;
 
+    // Send auth token so the server can verify the connection
+    const token = document.cookie
+      .split('; ')
+      .find(c => c.startsWith('access_token='))
+      ?.split('=')?.[1];
+
     this.socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: this.maxReconnectAttempts,
       reconnectionDelay: 1000,
+      auth: token ? { token } : undefined,
+      withCredentials: true,
     });
 
     this.setupEventListeners();

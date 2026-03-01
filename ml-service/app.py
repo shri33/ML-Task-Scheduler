@@ -112,8 +112,21 @@ def require_api_key(f):
 # a shared store (e.g. Redis) or an API gateway (e.g. Nginx, Istio).
 # ---------------------------------------------------------------------------
 _rate_limit_store: dict = defaultdict(list)
+_rate_limit_last_cleanup: float = time.time()
+_RATE_LIMIT_CLEANUP_INTERVAL = 300  # purge stale IPs every 5 minutes
 RATE_LIMIT_WINDOW = int(os.getenv('RATE_LIMIT_WINDOW', '60'))   # seconds
 RATE_LIMIT_MAX = int(os.getenv('RATE_LIMIT_MAX', '60'))         # requests per window
+
+def _cleanup_rate_limit_store():
+    """Remove IPs with no recent requests to prevent unbounded memory growth."""
+    global _rate_limit_last_cleanup
+    now = time.time()
+    if now - _rate_limit_last_cleanup < _RATE_LIMIT_CLEANUP_INTERVAL:
+        return
+    _rate_limit_last_cleanup = now
+    stale_ips = [ip for ip, ts in _rate_limit_store.items() if not ts or ts[-1] < now - RATE_LIMIT_WINDOW]
+    for ip in stale_ips:
+        del _rate_limit_store[ip]
 
 def rate_limit(f):
     """Decorator that applies per-IP rate limiting."""
@@ -121,7 +134,9 @@ def rate_limit(f):
     def decorated(*args, **kwargs):
         ip = request.remote_addr or 'unknown'
         now = time.time()
-        # Prune old entries
+        # Periodic cleanup of stale IPs
+        _cleanup_rate_limit_store()
+        # Prune old entries for this IP
         _rate_limit_store[ip] = [t for t in _rate_limit_store[ip] if t > now - RATE_LIMIT_WINDOW]
         if len(_rate_limit_store[ip]) >= RATE_LIMIT_MAX:
             return jsonify({'error': 'Rate limit exceeded. Try again later.'}), 429
@@ -488,9 +503,6 @@ def compare_models():
         priority = int(data['priority'])
         resource_load = float(data['resourceLoad'])
         
-        # Store current model type
-        original_type = predictor.model_type
-        
         results = {}
         model_types = ['random_forest', 'gradient_boosting']
         
@@ -501,10 +513,16 @@ def compare_models():
         except ImportError:
             pass
         
+        # Use isolated predictor instances to avoid mutating global state.
+        # Each gets a unique model_path so _load_or_create_model trains the
+        # correct model type rather than loading the global model from disk.
         for model_type in model_types:
             try:
-                predictor.switch_model(model_type)
-                pred_time, confidence = predictor.predict(task_size, task_type, priority, resource_load)
+                temp_predictor = TaskPredictor(
+                    model_path=f'models/compare_{model_type}.joblib',
+                    model_type=model_type,
+                )
+                pred_time, confidence = temp_predictor.predict(task_size, task_type, priority, resource_load)
                 results[model_type] = {
                     'predictedTime': round(pred_time, 2),
                     'confidence': round(confidence, 4)
@@ -512,14 +530,11 @@ def compare_models():
             except Exception as e:
                 results[model_type] = {'error': safe_error(e)}
         
-        # Restore original model
-        predictor.switch_model(original_type)
-        
         return jsonify({
             'success': True,
             'input': data,
             'predictions': results,
-            'activeModel': original_type
+            'activeModel': predictor.model_type
         })
         
     except Exception as e:

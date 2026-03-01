@@ -23,6 +23,7 @@ import experimentsRoutes from './routes/experiments.routes';
 import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter, scheduleLimiter } from './middleware/rateLimit.middleware';
 import { csrfProtection } from './middleware/csrf.middleware';
+import jwt from 'jsonwebtoken';
 import prisma from './lib/prisma';
 import redisService from './lib/redis';
 import emailService from './services/email.service';
@@ -172,7 +173,41 @@ app.get('/api/version', (req, res) => {
 // Error handler
 app.use(errorHandler);
 
-// Socket.io connection
+// Socket.io connection with JWT authentication
+io.use((socket, next) => {
+  try {
+    // Accept token from auth param or cookie
+    const token = socket.handshake.auth?.token
+      || socket.handshake.headers?.cookie
+        ?.split('; ')
+        .find((c: string) => c.startsWith('access_token='))
+        ?.split('=')[1];
+
+    if (!token) {
+      if (isProduction()) {
+        return next(new Error('Authentication required'));
+      }
+      // In development, allow unauthenticated connections for easier testing
+      return next();
+    }
+
+    // Actually verify the JWT (not just check presence)
+    const jwtSecret = env.JWT_SECRET;
+    if (!jwtSecret) {
+      return next(new Error('Server misconfigured: JWT_SECRET missing'));
+    }
+    const decoded = jwt.verify(token, jwtSecret) as { userId: string; role: string };
+    (socket as any).user = decoded;
+    next();
+  } catch (err) {
+    if (isProduction()) {
+      return next(new Error('Invalid authentication token'));
+    }
+    // In development, allow even with invalid token
+    next();
+  }
+});
+
 io.on('connection', (socket) => {
   logger.info('Client connected', { socketId: socket.id });
   
