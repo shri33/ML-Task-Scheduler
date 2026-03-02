@@ -423,8 +423,8 @@ Tests:      48 passed, 48 total
 | Name | Role | Student ID |
 |------|------|------------|
 | Shri Srivastava | Lead | 2023ebcs593 |
-| Ichha Dwivedi | 2023ebcs125 |
-| Aditi Singh | | 2023ebcs498 |
+| Ichha Dwivedi|         | 2023ebcs125 |
+| Aditi Singh |          | 2023ebcs498 |
 
 ## 📐 Reproducing Paper Experiments (Figures 5–8)
 
