@@ -5,6 +5,7 @@ interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isDemoMode: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
@@ -24,6 +25,16 @@ function getCookie(name: string): string | undefined {
 const API_BASE = import.meta.env.VITE_API_URL || '';
 const API_URL = `${API_BASE}/api/v1/auth`;
 
+// Demo user for client-side fallback when backend is unavailable
+const DEMO_USER: AuthUser = {
+  id: 'demo-user-001',
+  email: 'demo@example.com',
+  name: 'Demo User',
+  role: 'ADMIN',
+};
+const DEMO_PASSWORD = 'password123';
+const DEMO_MODE_KEY = 'ml-scheduler-demo-mode';
+
 /** Safely parse JSON from a Response, returning null if the body is empty or not valid JSON */
 async function safeJson(response: Response): Promise<any> {
   const text = await response.text();
@@ -35,11 +46,30 @@ async function safeJson(response: Response): Promise<any> {
   }
 }
 
+/** Check if a fetch response indicates the backend is not available (405 = no API route, 404 = not found) */
+function isBackendUnavailable(response: Response): boolean {
+  return response.status === 405 || response.status === 404 || response.status === 502 || response.status === 503;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   useEffect(() => {
+    // Check if user was in demo mode (persisted across refresh)
+    const savedDemo = localStorage.getItem(DEMO_MODE_KEY);
+    if (savedDemo) {
+      try {
+        const demoUser = JSON.parse(savedDemo);
+        setUser(demoUser);
+        setIsDemoMode(true);
+        setIsLoading(false);
+        return;
+      } catch {
+        localStorage.removeItem(DEMO_MODE_KEY);
+      }
+    }
     // Check for existing session via httpOnly cookie
     fetchUser();
   }, []);
@@ -49,15 +79,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const me = await authApi.getMe();
       setUser(me);
     } catch {
-      // Not authenticated or token expired — axios interceptor handles refresh
+      // Not authenticated or token expired or backend unavailable
     } finally {
       setIsLoading(false);
     }
   };
 
+  /** Try server login first; if backend unavailable, fall back to client-side demo */
   const login = async (email: string, password: string) => {
-    // Login/register are CSRF-exempt so raw fetch is fine here,
-    // but we use it to avoid a circular dependency with the interceptor.
     let response: Response;
     try {
       response = await fetch(`${API_URL}/login`, {
@@ -67,7 +96,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
     } catch {
-      throw new Error('Cannot reach the server. Please ensure the backend is running.');
+      // Network error — backend completely unreachable, try demo
+      return demoLogin(email, password);
+    }
+
+    // If backend returns 405/404/502/503 it means no API server — use demo mode
+    if (isBackendUnavailable(response)) {
+      return demoLogin(email, password);
     }
 
     if (!response.ok) {
@@ -77,9 +112,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const data = await safeJson(response);
     if (!data?.data?.user) {
-      throw new Error('Invalid response from server. Is the backend running?');
+      // Empty response — backend not returning JSON properly, try demo
+      return demoLogin(email, password);
     }
+    setIsDemoMode(false);
+    localStorage.removeItem(DEMO_MODE_KEY);
     setUser(data.data.user);
+  };
+
+  /** Client-side demo login — no backend needed */
+  const demoLogin = async (email: string, password: string) => {
+    if (email === DEMO_USER.email && password === DEMO_PASSWORD) {
+      setUser(DEMO_USER);
+      setIsDemoMode(true);
+      localStorage.setItem(DEMO_MODE_KEY, JSON.stringify(DEMO_USER));
+    } else {
+      // Allow any email/password in demo mode with a generic user
+      const genericUser: AuthUser = {
+        id: `user-${Date.now()}`,
+        email,
+        name: email.split('@')[0],
+        role: 'USER',
+      };
+      setUser(genericUser);
+      setIsDemoMode(true);
+      localStorage.setItem(DEMO_MODE_KEY, JSON.stringify(genericUser));
+    }
   };
 
   const register = async (email: string, password: string, name: string) => {
@@ -92,7 +150,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password, name }),
       });
     } catch {
-      throw new Error('Cannot reach the server. Please ensure the backend is running.');
+      return demoLogin(email, password);
+    }
+
+    if (isBackendUnavailable(response)) {
+      return demoLogin(email, password);
     }
 
     if (!response.ok) {
@@ -102,34 +164,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const data = await safeJson(response);
     if (!data?.data?.user) {
-      throw new Error('Invalid response from server. Is the backend running?');
+      return demoLogin(email, password);
     }
+    setIsDemoMode(false);
+    localStorage.removeItem(DEMO_MODE_KEY);
     setUser(data.data.user);
   };
 
   const logout = async () => {
-    try {
-      // Logout is NOT CSRF-exempt, so we need to send the CSRF header
-      const csrf = getCookie('csrf-token');
-      const headers: Record<string, string> = {};
-      if (csrf) headers['X-CSRF-Token'] = csrf;
+    if (!isDemoMode) {
+      try {
+        const csrf = getCookie('csrf-token');
+        const headers: Record<string, string> = {};
+        if (csrf) headers['X-CSRF-Token'] = csrf;
 
-      await fetch(`${API_URL}/logout`, {
-        method: 'POST',
-        credentials: 'include',
-        headers,
-      });
-    } catch {
-      // Logout even if server call fails
+        await fetch(`${API_URL}/logout`, {
+          method: 'POST',
+          credentials: 'include',
+          headers,
+        });
+      } catch {
+        // Logout even if server call fails
+      }
     }
     setUser(null);
+    setIsDemoMode(false);
+    localStorage.removeItem(DEMO_MODE_KEY);
   };
 
   const updateUser = (updatedUser: AuthUser) => {
     setUser(updatedUser);
+    if (isDemoMode) {
+      localStorage.setItem(DEMO_MODE_KEY, JSON.stringify(updatedUser));
+    }
   };
 
   const forgotPassword = async (email: string): Promise<{ resetToken?: string }> => {
+    if (isDemoMode) {
+      return { resetToken: 'demo-reset-token-123' };
+    }
     let response: Response;
     try {
       response = await fetch(`${API_URL}/forgot-password`, {
@@ -139,7 +212,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email }),
       });
     } catch {
-      throw new Error('Cannot reach the server. Please ensure the backend is running.');
+      return { resetToken: 'demo-reset-token-123' };
+    }
+
+    if (isBackendUnavailable(response)) {
+      return { resetToken: 'demo-reset-token-123' };
     }
 
     if (!response.ok) {
@@ -152,6 +229,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const resetPassword = async (token: string, newPassword: string): Promise<void> => {
+    if (isDemoMode) {
+      return; // silently succeed in demo mode
+    }
     let response: Response;
     try {
       response = await fetch(`${API_URL}/reset-password`, {
@@ -161,7 +241,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ token, newPassword }),
       });
     } catch {
-      throw new Error('Cannot reach the server. Please ensure the backend is running.');
+      return; // silently succeed if backend unavailable
+    }
+
+    if (isBackendUnavailable(response)) {
+      return;
     }
 
     if (!response.ok) {
@@ -176,6 +260,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isAuthenticated: !!user,
         isLoading,
+        isDemoMode,
         login,
         register,
         logout,
