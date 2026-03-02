@@ -21,7 +21,8 @@ function getCookie(name: string): string | undefined {
   return match ? decodeURIComponent(match[1]) : undefined;
 }
 
-const API_URL = '/api/v1/auth';
+const API_BASE = import.meta.env.VITE_API_URL || '';
+const API_URL = `${API_BASE}/api/v1/auth`;
 
 /** Safely parse JSON from a Response, returning null if the body is empty or not valid JSON */
 async function safeJson(response: Response): Promise<any> {
