@@ -186,10 +186,29 @@ const demoTasks: Task[] = [
 ];
 
 const demoResources: Resource[] = [
-  { id: 'r1', name: 'GPU Server Alpha', capacity: 100, currentLoad: 78, status: 'BUSY', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  { id: 'r2', name: 'CPU Cluster Beta', capacity: 200, currentLoad: 35, status: 'AVAILABLE', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  { id: 'r3', name: 'Edge Node Gamma', capacity: 50, currentLoad: 12, status: 'AVAILABLE', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  { id: 'r4', name: 'ML Worker Delta', capacity: 80, currentLoad: 0, status: 'OFFLINE', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'r1', name: 'GPU Server Alpha', capacity: 100, currentLoad: 78, status: 'BUSY', createdAt: new Date(Date.now() - 86400000 * 30).toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'r2', name: 'CPU Cluster Beta', capacity: 200, currentLoad: 35, status: 'AVAILABLE', createdAt: new Date(Date.now() - 86400000 * 25).toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'r3', name: 'Edge Node Gamma', capacity: 50, currentLoad: 12, status: 'AVAILABLE', createdAt: new Date(Date.now() - 86400000 * 20).toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'r4', name: 'ML Worker Delta', capacity: 80, currentLoad: 0, status: 'OFFLINE', createdAt: new Date(Date.now() - 86400000 * 18).toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'r5', name: 'Inference Node Epsilon', capacity: 120, currentLoad: 62, status: 'BUSY', createdAt: new Date(Date.now() - 86400000 * 15).toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'r6', name: 'Storage Server Zeta', capacity: 500, currentLoad: 48, status: 'AVAILABLE', createdAt: new Date(Date.now() - 86400000 * 12).toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'r7', name: 'HPC Cluster Eta', capacity: 400, currentLoad: 91, status: 'BUSY', createdAt: new Date(Date.now() - 86400000 * 10).toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'r8', name: 'Fog Gateway Theta', capacity: 60, currentLoad: 22, status: 'AVAILABLE', createdAt: new Date(Date.now() - 86400000 * 5).toISOString(), updatedAt: new Date().toISOString() },
+];
+
+const demoDevices: Device[] = [
+  { id: 'd1', name: 'Assembly Line Camera A1', type: 'CAMERA', status: 'ONLINE', ipAddress: '192.168.1.101', port: 8080, location: 'Factory Floor - Zone A', description: 'High-res camera for quality inspection on assembly line 1', lastHeartbeat: new Date(Date.now() - 30000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 60).toISOString(), _count: { deviceLogs: 1248, deviceMetrics: 8640 } },
+  { id: 'd2', name: 'Robotic Arm RA-07', type: 'ROBOT_ARM', status: 'ONLINE', ipAddress: '192.168.1.102', port: 9090, location: 'Factory Floor - Zone B', description: '6-axis robotic arm for component placement', lastHeartbeat: new Date(Date.now() - 15000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 55).toISOString(), _count: { deviceLogs: 3456, deviceMetrics: 12500 } },
+  { id: 'd3', name: 'Temperature Sensor TS-12', type: 'IOT_SENSOR', status: 'ONLINE', ipAddress: '192.168.2.50', port: 1883, location: 'Server Room A', description: 'Monitors ambient temperature and humidity levels', lastHeartbeat: new Date(Date.now() - 10000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 90).toISOString(), _count: { deviceLogs: 520, deviceMetrics: 43200 } },
+  { id: 'd4', name: 'Edge Compute Node EC-03', type: 'EDGE_SERVER', status: 'ONLINE', ipAddress: '192.168.1.200', port: 443, location: 'Edge Rack - Building 2', description: 'Local inference server with NVIDIA Jetson for real-time ML', lastHeartbeat: new Date(Date.now() - 5000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 45).toISOString(), _count: { deviceLogs: 7892, deviceMetrics: 15000 } },
+  { id: 'd5', name: 'Conveyor Actuator CA-01', type: 'ACTUATOR', status: 'MAINTENANCE', ipAddress: '192.168.1.110', port: 502, location: 'Factory Floor - Zone A', description: 'Controls conveyor belt speed and direction', lastHeartbeat: new Date(Date.now() - 3600000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 80).toISOString(), _count: { deviceLogs: 2100, deviceMetrics: 9800 } },
+  { id: 'd6', name: 'Warehouse Camera C2', type: 'CAMERA', status: 'ONLINE', ipAddress: '192.168.3.15', port: 8080, location: 'Warehouse - Section C', description: 'Tracking camera for inventory management', lastHeartbeat: new Date(Date.now() - 20000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 40).toISOString(), _count: { deviceLogs: 980, deviceMetrics: 7200 } },
+  { id: 'd7', name: 'Vibration Sensor VS-04', type: 'IOT_SENSOR', status: 'ONLINE', ipAddress: '192.168.2.55', port: 1883, location: 'Factory Floor - Zone C', description: 'Monitors machine vibration for predictive maintenance', lastHeartbeat: new Date(Date.now() - 8000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 70).toISOString(), _count: { deviceLogs: 340, deviceMetrics: 25000 } },
+  { id: 'd8', name: 'Robotic Arm RA-12', type: 'ROBOT_ARM', status: 'OFFLINE', ipAddress: '192.168.1.115', port: 9090, location: 'Factory Floor - Zone D', description: 'Welding arm - currently undergoing firmware update', lastHeartbeat: new Date(Date.now() - 7200000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 50).toISOString(), _count: { deviceLogs: 4200, deviceMetrics: 11000 } },
+  { id: 'd9', name: 'Edge Compute Node EC-07', type: 'EDGE_SERVER', status: 'ONLINE', ipAddress: '192.168.1.205', port: 443, location: 'Edge Rack - Building 5', description: 'Fog computing gateway for Zone D sensors', lastHeartbeat: new Date(Date.now() - 12000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 30).toISOString(), _count: { deviceLogs: 5600, deviceMetrics: 18000 } },
+  { id: 'd10', name: 'Pressure Sensor PS-08', type: 'IOT_SENSOR', status: 'ERROR', ipAddress: '192.168.2.60', port: 1883, location: 'Pipeline - Section E', description: 'Hydraulic pressure monitoring - sensor calibration error', lastHeartbeat: new Date(Date.now() - 1800000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 65).toISOString(), _count: { deviceLogs: 890, deviceMetrics: 30000 } },
+  { id: 'd11', name: 'HVAC Actuator HA-02', type: 'ACTUATOR', status: 'ONLINE', ipAddress: '192.168.1.120', port: 502, location: 'Server Room B', description: 'Controls cooling system for server room', lastHeartbeat: new Date(Date.now() - 25000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 85).toISOString(), _count: { deviceLogs: 1560, deviceMetrics: 14400 } },
+  { id: 'd12', name: 'Loading Dock Camera C5', type: 'CAMERA', status: 'ONLINE', ipAddress: '192.168.3.20', port: 8080, location: 'Loading Dock - Bay 3', description: 'License plate recognition and truck monitoring', lastHeartbeat: new Date(Date.now() - 18000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 35).toISOString(), _count: { deviceLogs: 750, deviceMetrics: 6000 } },
 ];
 
 /** Generate mock response matching ApiResponse<T> shape */
@@ -209,7 +228,7 @@ function getDemoResponse(url: string, method: string): any {
   if (url.includes('/v1/tasks')) return mockResponse(demoTasks);
 
   // Resources
-  if (url.match(/\/v1\/resources\/stats/)) return mockResponse({ total: 4, available: 2, busy: 1, offline: 1, avgLoad: 31.25 });
+  if (url.match(/\/v1\/resources\/stats/)) return mockResponse({ total: 8, available: 4, busy: 3, offline: 1, avgLoad: 43.5 });
   if (url.match(/\/v1\/resources\/.+/) && method === 'get') return mockResponse(demoResources[0]);
   if (url.includes('/v1/resources')) return mockResponse(demoResources);
 
@@ -231,13 +250,16 @@ function getDemoResponse(url: string, method: string): any {
   ]);
   if (url.includes('/v1/metrics')) return mockResponse({
     tasks: { total: 6, pending: 2, scheduled: 1, running: 1, completed: 2, failed: 0 },
-    resources: { total: 4, available: 2, busy: 1, offline: 1, avgLoad: 31.25 },
+    resources: { total: 8, available: 4, busy: 3, offline: 1, avgLoad: 43.5 },
     performance: { avgExecutionTime: 35.65, mlAccuracy: 91.5, totalScheduled: 120 },
   });
 
   // Devices
-  if (url.includes('/v1/devices/stats')) return mockResponse({ total: 3, active: 2, inactive: 1, error: 0, maintenance: 0, online: 2, offline: 1, byType: { sensor: 1, gateway: 1, edge: 1 } });
-  if (url.includes('/v1/devices')) return mockResponse([]);
+  if (url.includes('/v1/devices/stats')) return mockResponse({ total: 12, online: 9, offline: 1, error: 1, maintenance: 1, byType: { CAMERA: 3, ROBOT_ARM: 2, IOT_SENSOR: 3, EDGE_SERVER: 2, ACTUATOR: 2 } });
+  if (url.match(/\/v1\/devices\/.+\/metrics/) && method === 'get') return mockResponse([]);
+  if (url.match(/\/v1\/devices\/.+\/logs/) && method === 'get') return mockResponse([]);
+  if (url.match(/\/v1\/devices\/.+/) && method === 'get') return mockResponse(demoDevices[0]);
+  if (url.includes('/v1/devices')) return mockResponse(demoDevices);
 
   // Fog Computing
   if (url.includes('/v1/fog/metrics')) return mockResponse({ metrics: [
