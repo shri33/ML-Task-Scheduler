@@ -23,6 +23,17 @@ function getCookie(name: string): string | undefined {
 
 const API_URL = '/api/v1/auth';
 
+/** Safely parse JSON from a Response, returning null if the body is empty or not valid JSON */
+async function safeJson(response: Response): Promise<any> {
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,36 +57,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     // Login/register are CSRF-exempt so raw fetch is fine here,
     // but we use it to avoid a circular dependency with the interceptor.
-    const response = await fetch(`${API_URL}/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Login failed');
+    let response: Response;
+    try {
+      response = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
+      });
+    } catch {
+      throw new Error('Cannot reach the server. Please ensure the backend is running.');
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      const error = await safeJson(response);
+      throw new Error(error?.error || `Login failed (${response.status})`);
+    }
+
+    const data = await safeJson(response);
+    if (!data?.data?.user) {
+      throw new Error('Invalid response from server. Is the backend running?');
+    }
     setUser(data.data.user);
   };
 
   const register = async (email: string, password: string, name: string) => {
-    const response = await fetch(`${API_URL}/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ email, password, name }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Registration failed');
+    let response: Response;
+    try {
+      response = await fetch(`${API_URL}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password, name }),
+      });
+    } catch {
+      throw new Error('Cannot reach the server. Please ensure the backend is running.');
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      const error = await safeJson(response);
+      throw new Error(error?.error || `Registration failed (${response.status})`);
+    }
+
+    const data = await safeJson(response);
+    if (!data?.data?.user) {
+      throw new Error('Invalid response from server. Is the backend running?');
+    }
     setUser(data.data.user);
   };
 
@@ -102,33 +129,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const forgotPassword = async (email: string): Promise<{ resetToken?: string }> => {
-    const response = await fetch(`${API_URL}/forgot-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ email }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to send reset email');
+    let response: Response;
+    try {
+      response = await fetch(`${API_URL}/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email }),
+      });
+    } catch {
+      throw new Error('Cannot reach the server. Please ensure the backend is running.');
     }
 
-    const data = await response.json();
-    return { resetToken: data.resetToken };
+    if (!response.ok) {
+      const error = await safeJson(response);
+      throw new Error(error?.error || `Failed to send reset email (${response.status})`);
+    }
+
+    const data = await safeJson(response);
+    return { resetToken: data?.resetToken };
   };
 
   const resetPassword = async (token: string, newPassword: string): Promise<void> => {
-    const response = await fetch(`${API_URL}/reset-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ token, newPassword }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${API_URL}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ token, newPassword }),
+      });
+    } catch {
+      throw new Error('Cannot reach the server. Please ensure the backend is running.');
+    }
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to reset password');
+      const error = await safeJson(response);
+      throw new Error(error?.error || `Failed to reset password (${response.status})`);
     }
   };
 
