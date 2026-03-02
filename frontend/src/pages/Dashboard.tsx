@@ -73,8 +73,8 @@ export default function Dashboard() {
       {/* Header Actions */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <h2 className="page-title">Dashboard</h2>
+          <p className="page-subtitle">
             Overview of task scheduling and resource allocation
           </p>
         </div>
@@ -273,15 +273,23 @@ function StatCard({
     amber: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
   };
 
+  const borderColors = {
+    blue: 'border-l-blue-500',
+    green: 'border-l-green-500',
+    purple: 'border-l-purple-500',
+    emerald: 'border-l-emerald-500',
+    amber: 'border-l-amber-500',
+  };
+
   return (
-    <div className="card">
+    <div className={clsx('card border-l-4 hover:shadow-md transition-shadow', borderColors[color])}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{title}</p>
+          <p className="kpi-value text-gray-900 dark:text-white mt-2">{value}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">{subtitle}</p>
         </div>
-        <div className={clsx('p-3 rounded-lg', colors[color])}>
+        <div className={clsx('p-3 rounded-xl', colors[color])}>
           <Icon className="h-6 w-6" />
         </div>
       </div>

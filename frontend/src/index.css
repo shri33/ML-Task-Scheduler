@@ -4,7 +4,7 @@
 
 /* Light mode (default) */
 body {
-  @apply bg-gray-50 text-gray-900;
+  @apply bg-gray-50 text-gray-900 font-sans;
 }
 
 /* Dark mode */
@@ -13,36 +13,75 @@ body {
   @apply bg-gray-900 text-gray-100;
 }
 
+/* Page title - strong display heading */
+.page-title {
+  @apply text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white;
+}
+
+.page-subtitle {
+  @apply text-sm text-gray-500 dark:text-gray-400 mt-1;
+}
+
+/* KPI hero number styling */
+.kpi-value {
+  @apply text-4xl font-extrabold tracking-tight font-mono;
+}
+
 .card {
-  @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6;
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-7;
 }
 
 .btn {
-  @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+  @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200;
 }
 
 .btn-primary {
-  @apply bg-primary-600 text-white hover:bg-primary-700;
+  @apply bg-primary-600 text-white hover:bg-primary-700 hover:shadow-md active:scale-[0.98];
 }
 
 .btn-secondary {
-  @apply bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600;
+  @apply bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-[0.98];
 }
 
 .btn-danger {
-  @apply bg-red-600 text-white hover:bg-red-700;
+  @apply bg-red-600 text-white hover:bg-red-700 hover:shadow-md active:scale-[0.98];
 }
 
 .input {
-  @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  @apply w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow;
 }
 
 .select {
-  @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  @apply w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow;
 }
 
 .label {
-  @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+  @apply block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-1.5;
+}
+
+/* Status left-border accent strips for cards */
+.status-strip-available {
+  @apply border-l-4 border-l-green-500;
+}
+.status-strip-busy {
+  @apply border-l-4 border-l-amber-500;
+}
+.status-strip-offline {
+  @apply border-l-4 border-l-gray-400;
+}
+.status-strip-online {
+  @apply border-l-4 border-l-green-500;
+}
+.status-strip-error {
+  @apply border-l-4 border-l-red-500;
+}
+.status-strip-maintenance {
+  @apply border-l-4 border-l-yellow-500;
+}
+
+/* "Not set" placeholder text */
+.not-set {
+  @apply text-gray-400 dark:text-gray-500 italic;
 }
 
 /* Animations */

@@ -51,6 +51,13 @@ function isBackendUnavailable(response: Response): boolean {
   return response.status === 405 || response.status === 404 || response.status === 502 || response.status === 503;
 }
 
+/** Fetch with a timeout (ms). Rejects with AbortError if exceeded. */
+function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 8000): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(id));
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,14 +96,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     let response: Response;
     try {
-      response = await fetch(`${API_URL}/login`, {
+      response = await fetchWithTimeout(`${API_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ email, password }),
-      });
+      }, 8000);
     } catch {
-      // Network error — backend completely unreachable, try demo
+      // Network error or timeout — backend unreachable, try demo
       return demoLogin(email, password);
     }
 
@@ -143,12 +150,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (email: string, password: string, name: string) => {
     let response: Response;
     try {
-      response = await fetch(`${API_URL}/register`, {
+      response = await fetchWithTimeout(`${API_URL}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ email, password, name }),
-      });
+      }, 8000);
     } catch {
       return demoLogin(email, password);
     }
@@ -178,11 +185,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const headers: Record<string, string> = {};
         if (csrf) headers['X-CSRF-Token'] = csrf;
 
-        await fetch(`${API_URL}/logout`, {
+        await fetchWithTimeout(`${API_URL}/logout`, {
           method: 'POST',
           credentials: 'include',
           headers,
-        });
+        }, 5000);
       } catch {
         // Logout even if server call fails
       }
@@ -205,12 +212,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     let response: Response;
     try {
-      response = await fetch(`${API_URL}/forgot-password`, {
+      response = await fetchWithTimeout(`${API_URL}/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ email }),
-      });
+      }, 8000);
     } catch {
       return { resetToken: 'demo-reset-token-123' };
     }
@@ -234,12 +241,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     let response: Response;
     try {
-      response = await fetch(`${API_URL}/reset-password`, {
+      response = await fetchWithTimeout(`${API_URL}/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ token, newPassword }),
-      });
+      }, 8000);
     } catch {
       return; // silently succeed if backend unavailable
     }

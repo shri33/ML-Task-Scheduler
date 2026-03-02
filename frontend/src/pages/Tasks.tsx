@@ -127,8 +127,8 @@ export default function Tasks() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Tasks</h2>
-          <p className="text-gray-600 dark:text-gray-400">Manage and schedule tasks</p>
+          <h2 className="page-title">Tasks</h2>
+          <p className="page-subtitle">Manage and schedule tasks</p>
         </div>
         <div className="flex items-center gap-2">
           <CSVExport />
@@ -246,21 +246,21 @@ export default function Tasks() {
                           <>
                             <button
                               onClick={() => handleScheduleTask(task.id, task.name)}
-                              className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded text-blue-600 dark:text-blue-400"
+                              className="p-1.5 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400 transition-colors"
                               title="Schedule"
                             >
                               <Play className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => setEditingTask(task)}
-                              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-400"
+                              className="p-1.5 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
                               title="Edit"
                             >
                               <Edit2 className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteTask(task.id, task.name)}
-                              className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-red-600 dark:text-red-400"
+                              className="p-1.5 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-red-600 dark:text-red-400 transition-colors"
                               title="Delete"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -270,11 +270,14 @@ export default function Tasks() {
                         {task.status === 'RUNNING' && (
                           <button
                             onClick={() => handleCompleteTask(task)}
-                            className="p-1.5 hover:bg-green-100 dark:hover:bg-green-900/30 rounded text-green-600 dark:text-green-400"
+                            className="p-1.5 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg text-green-600 dark:text-green-400 transition-colors"
                             title="Mark Complete"
                           >
                             <CheckCircle className="h-4 w-4" />
                           </button>
+                        )}
+                        {(task.status === 'SCHEDULED' || task.status === 'COMPLETED' || task.status === 'FAILED') && (
+                          <span className="text-xs text-gray-400 dark:text-gray-500 italic py-1.5 px-1.5">—</span>
                         )}
                       </div>
                     </td>

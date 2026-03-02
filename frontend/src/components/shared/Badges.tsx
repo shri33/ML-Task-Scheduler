@@ -45,7 +45,7 @@ export const StatusBadge = memo(function StatusBadge({ status }: { status: strin
   const colors: Record<string, string> = {
     PENDING: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
     SCHEDULED: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
-    RUNNING: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
+    RUNNING: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 animate-status-pulse',
     COMPLETED: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
     FAILED: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
     AVAILABLE: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
@@ -54,10 +54,32 @@ export const StatusBadge = memo(function StatusBadge({ status }: { status: strin
     OFFLINE: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
     MAINTENANCE: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
   };
+
+  const dotColors: Record<string, string> = {
+    PENDING: 'bg-gray-400',
+    SCHEDULED: 'bg-blue-500',
+    RUNNING: 'bg-yellow-500',
+    COMPLETED: 'bg-green-500',
+    FAILED: 'bg-red-500',
+    AVAILABLE: 'bg-green-500',
+    BUSY: 'bg-yellow-500',
+    ONLINE: 'bg-green-500',
+    OFFLINE: 'bg-gray-400',
+    MAINTENANCE: 'bg-orange-500',
+  };
+
   return (
     <span
-      className={clsx('px-2 py-1 rounded text-xs font-medium', colors[status])}
+      className={clsx('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold', colors[status])}
     >
+      {status === 'RUNNING' ? (
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+        </span>
+      ) : (
+        <span className={clsx('inline-flex rounded-full h-2 w-2', dotColors[status])} />
+      )}
       {status}
     </span>
   );

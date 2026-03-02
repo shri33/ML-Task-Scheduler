@@ -198,14 +198,14 @@ export default function FogComputing() {
   return (
     <div className="p-4 lg:p-6 space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-6 text-white">
-        <h1 className="text-2xl lg:text-3xl font-bold">Fog Computing Task Scheduler</h1>
-        <p className="mt-2 opacity-90">
-          Hybrid Heuristic (HH) Algorithm - Combining IPSO & IACO for optimal task scheduling
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm border-l-4 border-l-purple-500">
+        <h1 className="page-title">Fog Computing Task Scheduler</h1>
+        <p className="page-subtitle mt-1">
+          Hybrid Heuristic (HH) Algorithm — Combining IPSO & IACO for optimal task scheduling
         </p>
-        <div className="mt-4 flex flex-wrap gap-4 text-sm">
-          <span className="bg-white/20 px-3 py-1 rounded-full">IPSO: Improved Particle Swarm Optimization</span>
-          <span className="bg-white/20 px-3 py-1 rounded-full">IACO: Improved Ant Colony Optimization</span>
+        <div className="mt-4 flex flex-wrap gap-3 text-sm">
+          <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-3 py-1.5 rounded-full font-medium">IPSO: Improved Particle Swarm Optimization</span>
+          <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-full font-medium">IACO: Improved Ant Colony Optimization</span>
         </div>
       </div>
 
@@ -280,23 +280,23 @@ export default function FogComputing() {
       {/* Schedule Result */}
       {scheduleResult && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Schedule Result - {scheduleResult.algorithm}</h2>
+          <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Schedule Result — {scheduleResult.algorithm}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Delay</p>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{scheduleResult.metrics.totalDelay.toFixed(2)}s</p>
+            <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-xl border-l-4 border-l-blue-500">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">Total Delay</p>
+              <p className="text-3xl font-extrabold font-mono text-blue-600 dark:text-blue-400 mt-1">{scheduleResult.metrics.totalDelay.toFixed(2)}s</p>
             </div>
-            <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Energy</p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">{scheduleResult.metrics.totalEnergy.toFixed(2)}J</p>
+            <div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-xl border-l-4 border-l-green-500">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">Total Energy</p>
+              <p className="text-3xl font-extrabold font-mono text-green-600 dark:text-green-400 mt-1">{scheduleResult.metrics.totalEnergy.toFixed(2)}J</p>
             </div>
-            <div className="bg-purple-50 dark:bg-purple-900/30 p-3 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Reliability</p>
-              <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{scheduleResult.metrics.reliability}%</p>
+            <div className="bg-purple-50 dark:bg-purple-900/30 p-4 rounded-xl border-l-4 border-l-purple-500">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">Reliability</p>
+              <p className="text-3xl font-extrabold font-mono text-purple-600 dark:text-purple-400 mt-1">{scheduleResult.metrics.reliability}%</p>
             </div>
-            <div className="bg-orange-50 dark:bg-orange-900/30 p-3 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Execution Time</p>
-              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{scheduleResult.metrics.executionTimeMs}ms</p>
+            <div className="bg-orange-50 dark:bg-orange-900/30 p-4 rounded-xl border-l-4 border-l-orange-500">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">Execution Time</p>
+              <p className="text-3xl font-extrabold font-mono text-orange-600 dark:text-orange-400 mt-1">{scheduleResult.metrics.executionTimeMs}ms</p>
             </div>
           </div>
         </div>

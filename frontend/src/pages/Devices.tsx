@@ -21,11 +21,11 @@ import { clsx } from 'clsx';
 import { deviceApi, Device, DeviceStats } from '../lib/api';
 
 const deviceTypeIcons: Record<string, React.ReactNode> = {
-  CAMERA: <Camera className="h-5 w-5" />,
-  ROBOT_ARM: <Bot className="h-5 w-5" />,
-  IOT_SENSOR: <Cpu className="h-5 w-5" />,
-  EDGE_SERVER: <Server className="h-5 w-5" />,
-  ACTUATOR: <Activity className="h-5 w-5" />,
+  CAMERA: <Camera className="h-7 w-7" />,
+  ROBOT_ARM: <Bot className="h-7 w-7" />,
+  IOT_SENSOR: <Cpu className="h-7 w-7" />,
+  EDGE_SERVER: <Server className="h-7 w-7" />,
+  ACTUATOR: <Activity className="h-7 w-7" />,
 };
 
 const deviceTypeLabels: Record<string, string> = {
@@ -34,6 +34,14 @@ const deviceTypeLabels: Record<string, string> = {
   IOT_SENSOR: 'IoT Sensor',
   EDGE_SERVER: 'Edge Server',
   ACTUATOR: 'Actuator',
+};
+
+const deviceTypeColors: Record<string, string> = {
+  CAMERA: 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400',
+  ROBOT_ARM: 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400',
+  IOT_SENSOR: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400',
+  EDGE_SERVER: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400',
+  ACTUATOR: 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400',
 };
 
 const statusColors: Record<string, string> = {
@@ -195,8 +203,8 @@ export default function Devices() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">IoT Devices</h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <h1 className="page-title">IoT Devices</h1>
+          <p className="page-subtitle">
             Manage cameras, robot arms, sensors, and edge servers
           </p>
         </div>
@@ -212,25 +220,25 @@ export default function Devices() {
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Total Devices</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Total Devices</p>
+            <p className="text-3xl font-extrabold font-mono text-gray-900 dark:text-white mt-1">{stats.total}</p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-            <p className="text-sm text-green-600 dark:text-green-400">Online</p>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.online}</p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700 border-l-4 border-l-green-500">
+            <p className="text-xs font-semibold uppercase tracking-wider text-green-600 dark:text-green-400">Online</p>
+            <p className="text-3xl font-extrabold font-mono text-green-600 dark:text-green-400 mt-1">{stats.online}</p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Offline</p>
-            <p className="text-2xl font-bold text-gray-600 dark:text-gray-400">{stats.offline}</p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700 border-l-4 border-l-gray-400">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Offline</p>
+            <p className="text-3xl font-extrabold font-mono text-gray-600 dark:text-gray-400 mt-1">{stats.offline}</p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-            <p className="text-sm text-yellow-600 dark:text-yellow-400">Maintenance</p>
-            <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{stats.maintenance}</p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700 border-l-4 border-l-yellow-500">
+            <p className="text-xs font-semibold uppercase tracking-wider text-yellow-600 dark:text-yellow-400">Maintenance</p>
+            <p className="text-3xl font-extrabold font-mono text-yellow-600 dark:text-yellow-400 mt-1">{stats.maintenance}</p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-            <p className="text-sm text-red-600 dark:text-red-400">Error</p>
-            <p className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.error}</p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700 border-l-4 border-l-red-500">
+            <p className="text-xs font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">Error</p>
+            <p className="text-3xl font-extrabold font-mono text-red-600 dark:text-red-400 mt-1">{stats.error}</p>
           </div>
         </div>
       )}
@@ -301,28 +309,39 @@ export default function Devices() {
           {devices.map((device) => (
             <div
               key={device.id}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow"
+              className={clsx(
+                'bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 dark:border-gray-700',
+                device.status === 'ONLINE' && 'status-strip-online',
+                device.status === 'OFFLINE' && 'status-strip-offline',
+                device.status === 'ERROR' && 'status-strip-error',
+                device.status === 'MAINTENANCE' && 'status-strip-maintenance',
+              )}
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className={clsx(
-                    'p-2 rounded-lg',
-                    device.status === 'ONLINE' ? 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400' :
-                    device.status === 'ERROR' ? 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400' :
-                    'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                    'p-3 rounded-xl',
+                    deviceTypeColors[device.type] || 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                   )}>
                     {deviceTypeIcons[device.type]}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">{device.name}</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{deviceTypeLabels[device.type]}</p>
+                    <h3 className="font-bold text-gray-900 dark:text-white">{device.name}</h3>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{deviceTypeLabels[device.type]}</p>
                   </div>
                 </div>
                 <span className={clsx(
-                  'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
+                  'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold',
                   statusColors[device.status]
                 )}>
-                  {statusIcons[device.status]}
+                  {device.status === 'ONLINE' ? (
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </span>
+                  ) : (
+                    statusIcons[device.status]
+                  )}
                   {device.status}
                 </span>
               </div>

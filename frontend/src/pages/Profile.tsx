@@ -119,8 +119,8 @@ export default function Profile() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Account Settings</h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <h2 className="page-title">Account Settings</h2>
+          <p className="page-subtitle">
             Manage your account information and preferences
           </p>
         </div>
@@ -157,16 +157,24 @@ export default function Profile() {
       <div className="card">
         {/* Avatar Section */}
         <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="relative">
-            <div className="w-24 h-24 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
-              <span className="text-3xl font-bold text-primary-600 dark:text-primary-400">
+          <div className="relative group">
+            <div className="w-28 h-28 bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/30 dark:to-primary-800/30 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 shadow-md">
+              <span className="text-4xl font-extrabold text-primary-600 dark:text-primary-400">
                 {profile.name ? profile.name.charAt(0).toUpperCase() : 'U'}
               </span>
             </div>
             {isEditing && (
-              <button className="absolute bottom-0 right-0 p-2 bg-primary-600 rounded-full text-white hover:bg-primary-700 transition-colors">
-                <Camera className="h-4 w-4" />
+              <button className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="text-center">
+                  <Camera className="h-5 w-5 text-white mx-auto" />
+                  <span className="text-xs text-white font-medium">Upload</span>
+                </div>
               </button>
+            )}
+            {!isEditing && (
+              <div className="absolute -bottom-1 -right-1 p-1.5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800">
+                <span className="block w-2 h-2" />
+              </div>
             )}
           </div>
           <div className="text-center sm:text-left">
@@ -203,7 +211,7 @@ export default function Profile() {
                 placeholder="Enter your full name"
               />
             ) : (
-              <p className="text-gray-900 dark:text-white py-2">{profile.name || '-'}</p>
+              <p className="text-gray-900 dark:text-white py-2">{profile.name || <span className="not-set">Not set</span>}</p>
             )}
           </div>
 
@@ -222,7 +230,7 @@ export default function Profile() {
                 placeholder="Enter your email"
               />
             ) : (
-              <p className="text-gray-900 dark:text-white py-2">{profile.email || '-'}</p>
+              <p className="text-gray-900 dark:text-white py-2">{profile.email || <span className="not-set">Not set</span>}</p>
             )}
           </div>
 
@@ -241,7 +249,7 @@ export default function Profile() {
                 placeholder="Enter your phone number"
               />
             ) : (
-              <p className="text-gray-900 dark:text-white py-2">{profile.phone || '-'}</p>
+              <p className="text-gray-900 dark:text-white py-2">{profile.phone || <span className="not-set">Not set</span>}</p>
             )}
           </div>
 
@@ -260,7 +268,7 @@ export default function Profile() {
                 placeholder="Enter your organization"
               />
             ) : (
-              <p className="text-gray-900 dark:text-white py-2">{profile.organization || '-'}</p>
+              <p className="text-gray-900 dark:text-white py-2">{profile.organization || <span className="not-set">Not set</span>}</p>
             )}
           </div>
 
@@ -279,7 +287,7 @@ export default function Profile() {
                 placeholder="Enter your address"
               />
             ) : (
-              <p className="text-gray-900 dark:text-white py-2">{profile.address || '-'}</p>
+              <p className="text-gray-900 dark:text-white py-2">{profile.address || <span className="not-set">Not set</span>}</p>
             )}
           </div>
 
@@ -443,9 +451,9 @@ export default function Profile() {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 text-center">
-      <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
-      <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
+    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-5 text-center">
+      <p className="text-3xl font-extrabold font-mono text-gray-900 dark:text-white">{value}</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1.5">{label}</p>
     </div>
   );
 }

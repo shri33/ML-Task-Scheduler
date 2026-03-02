@@ -82,6 +82,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true, // send httpOnly cookies with every request
+  timeout: 10000, // 10s timeout to prevent hanging when backend is unresponsive
 });
 
 // Token management
@@ -133,6 +134,16 @@ api.interceptors.response.use(
     const shouldSkipRefresh = skipRefreshPaths.some(p => requestUrl.includes(p));
 
     if (error.response?.status === 401 && !originalRequest._retry && !shouldSkipRefresh) {
+      // In demo mode, don't try to refresh real tokens — serve mock data instead
+      if (isDemoMode()) {
+        const url = originalRequest?.url || '';
+        const method = (originalRequest?.method || 'get').toLowerCase();
+        const demoData = getDemoResponse(url, method);
+        if (demoData) return demoData;
+        // No mock data for this endpoint — just reject silently (don't redirect)
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -148,7 +159,7 @@ api.interceptors.response.use(
 
       try {
         // Refresh via httpOnly cookie — server reads refresh token from cookie
-        await axios.post('/api/v1/auth/refresh', {}, { withCredentials: true });
+        await axios.post('/api/v1/auth/refresh', {}, { withCredentials: true, timeout: 5000 });
         processQueue(null, '');
         return api(originalRequest);
       } catch (refreshError) {
@@ -320,9 +331,9 @@ api.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
-    // If in demo mode OR backend returns 405/404/502/503, serve mock data
+    // If in demo mode OR backend returns 401/405/404/502/503, serve mock data
     const status = error.response?.status;
-    const isUnavailable = !error.response || status === 405 || status === 404 || status === 502 || status === 503;
+    const isUnavailable = !error.response || status === 401 || status === 405 || status === 404 || status === 502 || status === 503;
 
     if (isUnavailable) {
       const url = error.config?.url || '';

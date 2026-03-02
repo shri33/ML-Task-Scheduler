@@ -7,6 +7,10 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        mono: ['DM Mono', 'monospace'],
+      },
       colors: {
         primary: {
           50: '#eff6ff',
@@ -20,7 +24,26 @@ export default {
           800: '#1e40af',
           900: '#1e3a8a',
         }
-      }
+      },
+      keyframes: {
+        'pulse-dot': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.4' },
+        },
+        'status-pulse': {
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(234, 179, 8, 0.4)' },
+          '50%': { boxShadow: '0 0 0 4px rgba(234, 179, 8, 0)' },
+        },
+        'fade-in-up': {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'pulse-dot': 'pulse-dot 2s ease-in-out infinite',
+        'status-pulse': 'status-pulse 2s ease-in-out infinite',
+        'fade-in-up': 'fade-in-up 0.3s ease-out',
+      },
     },
   },
   plugins: [],

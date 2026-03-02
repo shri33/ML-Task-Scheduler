@@ -70,8 +70,8 @@ export default function Analytics() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Analytics</h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <h2 className="page-title">Analytics</h2>
+          <p className="page-subtitle">
             Performance metrics and ML model effectiveness
           </p>
         </div>
@@ -117,8 +117,8 @@ export default function Analytics() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Analytics</h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <h2 className="page-title">Analytics</h2>
+          <p className="page-subtitle">
             Performance metrics and ML model effectiveness
           </p>
         </div>
@@ -161,9 +161,10 @@ export default function Analytics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Timeline Chart */}
         <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
             Scheduling Performance Over Time
           </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Tasks scheduled and ML accuracy over the last 14 days</p>
           {timeline.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={timeline}>
@@ -198,9 +199,10 @@ export default function Analytics() {
 
         {/* Comparison Chart */}
         <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
             ML vs Heuristic Comparison
           </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Average execution time and error rate comparison</p>
           {comparisonChartData.length > 0 &&
           (comparison?.withML.count || 0) + (comparison?.withoutML.count || 0) > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
@@ -224,9 +226,15 @@ export default function Analytics() {
 
       {/* Chart.js Visualizations Section */}
       <div className="mt-8">
-        <div className="flex items-center gap-2 mb-6">
-          <BarChart3 className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Advanced Analytics (Chart.js)</h3>
+        <div className="relative flex items-center gap-3 mb-8">
+          <div className="p-2.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+            <BarChart3 className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <div>
+            <h3 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">Advanced Analytics</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Detailed Chart.js visualizations with interactive features</p>
+          </div>
+          <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700 ml-4" />
         </div>
         
         {/* Gauge Charts */}
@@ -418,15 +426,23 @@ function SummaryCard({
     gray: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
   };
 
+  const borderColors = {
+    blue: 'border-l-blue-500',
+    green: 'border-l-green-500',
+    purple: 'border-l-purple-500',
+    amber: 'border-l-amber-500',
+    gray: 'border-l-gray-400',
+  };
+
   return (
-    <div className="card">
+    <div className={clsx('card border-l-4 hover:shadow-md transition-shadow', borderColors[color])}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{title}</p>
+          <p className="kpi-value text-gray-900 dark:text-white mt-2">{value}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">{subtitle}</p>
         </div>
-        <div className={clsx('p-3 rounded-lg', colors[color])}>
+        <div className={clsx('p-3 rounded-xl', colors[color])}>
           <Icon className="h-6 w-6" />
         </div>
       </div>
