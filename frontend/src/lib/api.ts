@@ -229,7 +229,11 @@ function getDemoResponse(url: string, method: string): any {
     { date: new Date(Date.now() - 86400000).toISOString().split('T')[0], tasksScheduled: 25, avgExecutionTime: 24, mlAccuracy: 94 },
     { date: new Date().toISOString().split('T')[0], tasksScheduled: 8, avgExecutionTime: 22, mlAccuracy: 95 },
   ]);
-  if (url.includes('/v1/metrics')) return mockResponse({ totalTasks: 6, completedTasks: 2, avgExecutionTime: 35.65, mlAccuracy: 91.5, schedulerUptime: 99.8, resourceUtilization: 31.25 });
+  if (url.includes('/v1/metrics')) return mockResponse({
+    tasks: { total: 6, pending: 2, scheduled: 1, running: 1, completed: 2, failed: 0 },
+    resources: { total: 4, available: 2, busy: 1, offline: 1, avgLoad: 31.25 },
+    performance: { avgExecutionTime: 35.65, mlAccuracy: 91.5, totalScheduled: 120 },
+  });
 
   // Devices
   if (url.includes('/v1/devices/stats')) return mockResponse({ total: 3, active: 2, inactive: 1, error: 0, maintenance: 0, online: 2, offline: 1, byType: { sensor: 1, gateway: 1, edge: 1 } });
@@ -273,7 +277,26 @@ function getDemoResponse(url: string, method: string): any {
 
 // Demo mode interceptor — returns mock data when backend is unavailable
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // On Vercel, SPA rewrite returns 200 OK with HTML for API routes.
+    // Detect this and swap in mock data instead of letting HTML propagate.
+    const contentType = response.headers?.['content-type'] || '';
+    const isHtml = contentType.includes('text/html') || (typeof response.data === 'string' && response.data.trimStart().startsWith('<!'));
+    if (isHtml && response.config?.url?.includes('/v1/')) {
+      const url = response.config.url || '';
+      const method = (response.config.method || 'get').toLowerCase();
+      const demoData = getDemoResponse(url, method);
+      if (demoData) {
+        if (!isDemoMode()) {
+          localStorage.setItem(DEMO_MODE_KEY, JSON.stringify({
+            id: 'demo-user-001', email: 'demo@example.com', name: 'Demo User', role: 'ADMIN'
+          }));
+        }
+        return demoData;
+      }
+    }
+    return response;
+  },
   async (error: AxiosError) => {
     // If in demo mode OR backend returns 405/404/502/503, serve mock data
     const status = error.response?.status;
