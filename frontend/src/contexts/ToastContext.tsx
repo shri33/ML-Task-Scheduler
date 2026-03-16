@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+
+import { create } from 'zustand';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -11,7 +12,7 @@ interface Toast {
   message?: string;
 }
 
-interface ToastContextType {
+interface ToastState {
   toasts: Toast[];
   addToast: (type: ToastType, title: string, message?: string) => void;
   removeToast: (id: string) => void;
@@ -21,53 +22,56 @@ interface ToastContextType {
   warning: (title: string, message?: string) => void;
 }
 
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
-
-export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([]);
-
-  const addToast = useCallback((type: ToastType, title: string, message?: string) => {
+export const useToastStore = create<ToastState>((set) => ({
+  toasts: [],
+  addToast: (type, title, message) => {
     const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, type, title, message }]);
+    set((state) => ({
+      toasts: [...state.toasts, { id, type, title, message }],
+    }));
 
     // Auto remove after 5 seconds
     setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
+      set((state) => ({
+        toasts: state.toasts.filter((t) => t.id !== id),
+      }));
     }, 5000);
-  }, []);
+  },
+  removeToast: (id) =>
+    set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
+  success: (title, message) => set((state) => { state.addToast('success', title, message); return {}; }),
+  error: (title, message) => set((state) => { state.addToast('error', title, message); return {}; }),
+  info: (title, message) => set((state) => { state.addToast('info', title, message); return {}; }),
+  warning: (title, message) => set((state) => { state.addToast('warning', title, message); return {}; }),
+}));
 
-  const removeToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
-
-  const success = useCallback((title: string, message?: string) => addToast('success', title, message), [addToast]);
-  const error = useCallback((title: string, message?: string) => addToast('error', title, message), [addToast]);
-  const info = useCallback((title: string, message?: string) => addToast('info', title, message), [addToast]);
-  const warning = useCallback((title: string, message?: string) => addToast('warning', title, message), [addToast]);
-
-  return (
-    <ToastContext.Provider value={{ toasts, addToast, removeToast, success, error, info, warning }}>
-      {children}
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
-    </ToastContext.Provider>
-  );
-}
-
+// Backward compatibility hook so we don't need to refactor every component using useToast
 export function useToast() {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToast must be used within a ToastProvider');
-  }
-  return context;
+  const store = useToastStore();
+  return store;
 }
 
-function ToastContainer({ toasts, removeToast }: { toasts: Toast[]; removeToast: (id: string) => void }) {
+// Global Toast Container (should be rendered near root)
+export function ToastContainer() {
+  const toasts = useToastStore((state) => state.toasts);
+  const removeToast = useToastStore((state) => state.removeToast);
+
   return (
     <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-sm">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
       ))}
     </div>
+  );
+}
+
+// Keep the provider export but just return children + container to avoid breaking App.tsx
+export function ToastProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      {children}
+      <ToastContainer />
+    </>
   );
 }
 
@@ -86,14 +90,14 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
     warning: 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800',
   };
 
-  const iconColors = {
+  const iconColors: Record<ToastType, string> = {
     success: 'text-green-500',
     error: 'text-red-500',
     info: 'text-blue-500',
     warning: 'text-yellow-500',
   };
 
-  const Icon = icons[toast.type];
+  const Icon = icons[toast.type] as React.ElementType;
 
   return (
     <div

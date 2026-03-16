@@ -50,7 +50,7 @@ model Task {
   createdAt     DateTime   @default(now())
   scheduledAt   DateTime?
   completedAt   DateTime?
-  deletedAt     DateTime?  // Soft delete
+  deletedAt     DateTime? // Soft delete
 
   scheduleHistory ScheduleHistory[]
   predictions     Prediction[]
@@ -58,7 +58,7 @@ model Task {
   @@index([status])
   @@index([resourceId])
   @@index([dueDate])
-  @@index([status, priority])  // Composite: scheduler queries
+  @@index([status, priority]) // Composite: scheduler queries
   @@index([resourceId, status]) // Composite: resource task lookup
   @@index([deletedAt])
 }
@@ -71,7 +71,7 @@ model Resource {
   status      ResourceStatus @default(AVAILABLE)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
-  deletedAt   DateTime?      // Soft delete
+  deletedAt   DateTime? // Soft delete
 
   tasks           Task[]
   scheduleHistory ScheduleHistory[]
@@ -97,6 +97,7 @@ model ScheduleHistory {
 
   @@index([taskId])
   @@index([resourceId])
+  @@index([createdAt])
 }
 
 model Prediction {
@@ -110,6 +111,7 @@ model Prediction {
   createdAt     DateTime @default(now())
 
   @@index([taskId])
+  @@index([createdAt])
 }
 
 model SystemMetrics {
@@ -130,16 +132,16 @@ enum UserRole {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  password      String
-  name          String
-  role          UserRole  @default(USER)
-  isActive      Boolean   @default(true)
-  lastLogin     DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deletedAt     DateTime? // Soft delete
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  name      String
+  role      UserRole  @default(USER)
+  isActive  Boolean   @default(true)
+  lastLogin DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft delete
 
   refreshTokens RefreshToken[]
   notifications NotificationPreference?
@@ -159,6 +161,7 @@ model RefreshToken {
 
   @@index([userId])
   @@index([token])
+  @@index([expiresAt])
 }
 
 model NotificationPreference {
@@ -182,7 +185,7 @@ enum ModelStatus {
 model MlModel {
   id                String      @id @default(uuid())
   version           String      @unique
-  modelType         String      // random_forest, xgboost, gradient_boosting
+  modelType         String // random_forest, xgboost, gradient_boosting
   status            ModelStatus @default(TRAINING)
   r2Score           Float?
   maeScore          Float?
@@ -200,7 +203,7 @@ model MlModel {
 model TrainingJob {
   id            String      @id @default(uuid())
   status        ModelStatus @default(TRAINING)
-  triggerType   String      // manual, auto, scheduled
+  triggerType   String // manual, auto, scheduled
   triggerReason String?
   dataPointsNew Int?
   startedAt     DateTime    @default(now())
@@ -212,15 +215,15 @@ model TrainingJob {
 }
 
 model AutoRetrainConfig {
-  id                      String   @id @default(uuid())
-  enabled                 Boolean  @default(false)
-  minDataPointsThreshold  Int      @default(100)
-  maxDataPointsThreshold  Int      @default(1000)
-  r2ScoreThreshold        Float    @default(0.8)
-  lastCheckedAt           DateTime?
-  dataPointsSinceRetrain  Int      @default(0)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  id                     String    @id @default(uuid())
+  enabled                Boolean   @default(false)
+  minDataPointsThreshold Int       @default(100)
+  maxDataPointsThreshold Int       @default(1000)
+  r2ScoreThreshold       Float     @default(0.8)
+  lastCheckedAt          DateTime?
+  dataPointsSinceRetrain Int       @default(0)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 }
 
 // IoT Device Management
@@ -248,8 +251,8 @@ model Device {
   port          Int?
   location      String?
   description   String?
-  capabilities  Json?        // Device-specific capabilities
-  configuration Json?        // Device configuration settings
+  capabilities  Json? // Device-specific capabilities
+  configuration Json? // Device configuration settings
   lastHeartbeat DateTime?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -257,16 +260,16 @@ model Device {
   deviceLogs    DeviceLog[]
   deviceMetrics DeviceMetric[]
 
+  @@unique([ipAddress, port])
   @@index([type])
   @@index([status])
-  @@unique([ipAddress, port])
 }
 
 model DeviceLog {
   id        String   @id @default(uuid())
   deviceId  String
   device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  level     String   // info, warning, error
+  level     String // info, warning, error
   message   String
   metadata  Json?
   timestamp DateTime @default(now())
@@ -276,13 +279,13 @@ model DeviceLog {
 }
 
 model DeviceMetric {
-  id        String   @id @default(uuid())
-  deviceId  String
-  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  metricName String   // cpu_usage, memory_usage, temperature, etc.
-  value     Float
-  unit      String?
-  timestamp DateTime @default(now())
+  id         String   @id @default(uuid())
+  deviceId   String
+  device     Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  metricName String // cpu_usage, memory_usage, temperature, etc.
+  value      Float
+  unit       String?
+  timestamp  DateTime @default(now())
 
   @@index([deviceId])
   @@index([metricName])
@@ -302,9 +305,9 @@ enum FogNodeStatus {
 model FogNode {
   id                String        @id @default(uuid())
   name              String        @unique
-  computingResource Float         // Hz
-  storageCapacity   Float         // GB
-  networkBandwidth  Float         // Mbps
+  computingResource Float // Hz
+  storageCapacity   Float // GB
+  networkBandwidth  Float // Mbps
   currentLoad       Float         @default(0) // 0-1
   status            FogNodeStatus @default(ACTIVE)
   createdAt         DateTime      @default(now())
@@ -316,17 +319,16 @@ model FogNode {
 }
 
 model FogTaskAssignment {
-  id               String   @id @default(uuid())
-  fogNodeId        String
-  fogNode          FogNode  @relation(fields: [fogNodeId], references: [id], onDelete: Cascade)
-  taskName         String
-  algorithm        String   // HH, IPSO, IACO, FCFS, RR, MIN_MIN
-  completionTime   Float?
-  energyConsumed   Float?
-  reliable         Boolean  @default(true)
-  assignedAt       DateTime @default(now())
+  id             String   @id @default(uuid())
+  fogNodeId      String
+  fogNode        FogNode  @relation(fields: [fogNodeId], references: [id], onDelete: Cascade)
+  taskName       String
+  algorithm      String // HH, IPSO, IACO, FCFS, RR, MIN_MIN
+  completionTime Float?
+  energyConsumed Float?
+  reliable       Boolean  @default(true)
+  assignedAt     DateTime @default(now())
 
   @@index([fogNodeId])
   @@index([algorithm])
 }
-

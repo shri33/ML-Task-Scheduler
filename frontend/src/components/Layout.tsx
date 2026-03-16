@@ -18,7 +18,6 @@ import {
   FlaskConical,
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import socketService from '../lib/socket';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -69,24 +68,20 @@ export default function Layout({ children }: LayoutProps) {
     navigate('/profile');
   }, [navigate]);
 
-  // Track socket connection status via events instead of polling
+  // Track backend status via REST health poll (replaces WebSocket)
   useEffect(() => {
-    const socket = socketService.getSocket();
-    if (!socket) {
-      setIsConnected(false);
-      return;
-    }
-
-    const onConnect = () => setIsConnected(true);
-    const onDisconnect = () => setIsConnected(false);
-
-    setIsConnected(socket.connected);
-    socket.on('connect', onConnect);
-    socket.on('disconnect', onDisconnect);
-    return () => {
-      socket.off('connect', onConnect);
-      socket.off('disconnect', onDisconnect);
+    let mounted = true;
+    const checkHealth = async () => {
+      try {
+        const res = await fetch('/api/health', { credentials: 'include' });
+        if (mounted) setIsConnected(res.ok);
+      } catch {
+        if (mounted) setIsConnected(false);
+      }
     };
+    checkHealth();
+    const interval = setInterval(checkHealth, 30000); // poll every 30s
+    return () => { mounted = false; clearInterval(interval); };
   }, []);
 
   return (

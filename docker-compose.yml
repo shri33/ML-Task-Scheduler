@@ -117,6 +117,9 @@ services:
     environment:
       PORT: 5001
       FLASK_ENV: ${FLASK_ENV:-production}
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/${DB_NAME:-task_scheduler}?schema=public
+      ML_API_KEY: ${ML_API_KEY:-ml-secret-key-change-in-production}
+      FRONTEND_URL: http://localhost:3000
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5001/api/health')\""]
       interval: 10s

@@ -4,59 +4,59 @@
 
 /* Light mode (default) */
 body {
-  @apply bg-gray-50 text-gray-900 font-sans;
+  @apply text-gray-900 font-sans min-h-screen bg-slate-50 bg-gradient-to-br from-indigo-50/50 via-white to-blue-50/50 selection:bg-indigo-100;
 }
 
 /* Dark mode */
 .dark body,
 .dark {
-  @apply bg-gray-900 text-gray-100;
+  @apply text-gray-100 bg-gray-950 bg-gradient-to-br from-gray-950 via-gray-900 to-slate-900 selection:bg-indigo-900;
 }
 
 /* Page title - strong display heading */
 .page-title {
-  @apply text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white;
+  @apply text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-cyan-600 dark:from-indigo-400 dark:to-cyan-400;
 }
 
 .page-subtitle {
-  @apply text-sm text-gray-500 dark:text-gray-400 mt-1;
+  @apply text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium;
 }
 
 /* KPI hero number styling */
 .kpi-value {
-  @apply text-4xl font-extrabold tracking-tight font-mono;
+  @apply text-5xl font-extrabold tracking-tight font-mono bg-clip-text text-transparent bg-gradient-to-br from-gray-900 to-gray-600 dark:from-white dark:to-gray-400;
 }
 
 .card {
-  @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-7;
+  @apply bg-white/70 dark:bg-gray-800/60 backdrop-blur-md rounded-2xl shadow-xl shadow-indigo-100/20 dark:shadow-none border border-white/40 dark:border-gray-700/50 p-7 hover:shadow-2xl hover:border-indigo-100/50 dark:hover:border-indigo-500/30 transition-all duration-300 ease-out;
 }
 
 .btn {
-  @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200;
+  @apply px-4 py-2.5 rounded-xl font-semibold transition-all duration-300 transform flex items-center justify-center;
 }
 
 .btn-primary {
-  @apply bg-primary-600 text-white hover:bg-primary-700 hover:shadow-md active:scale-[0.98];
+  @apply bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:from-indigo-500 hover:to-blue-500 hover:shadow-lg hover:shadow-indigo-500/30 active:scale-[0.97] hover:-translate-y-0.5 border border-indigo-500/50;
 }
 
 .btn-secondary {
-  @apply bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-[0.98];
+  @apply bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-md active:scale-[0.97] hover:-translate-y-0.5;
 }
 
 .btn-danger {
-  @apply bg-red-600 text-white hover:bg-red-700 hover:shadow-md active:scale-[0.98];
+  @apply bg-gradient-to-r from-red-600 to-rose-600 text-white hover:from-red-500 hover:to-rose-500 hover:shadow-lg hover:shadow-red-500/30 active:scale-[0.97] hover:-translate-y-0.5 border border-red-500/50;
 }
 
 .input {
-  @apply w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow;
+  @apply w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-200 shadow-sm hover:border-gray-300 dark:hover:border-gray-600;
 }
 
 .select {
-  @apply w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow;
+  @apply w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-200 shadow-sm hover:border-gray-300 dark:hover:border-gray-600 appearance-none;
 }
 
 .label {
-  @apply block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-1.5;
+  @apply block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5 tracking-wide;
 }
 
 /* Status left-border accent strips for cards */

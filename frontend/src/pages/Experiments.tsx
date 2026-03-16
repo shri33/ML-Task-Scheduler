@@ -165,7 +165,7 @@ export default function Experiments() {
         {result && (
           <div className="mt-3 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
             <span>Runtime: <strong>{result.runtimeSeconds}s</strong></span>
-            <span>Files exported: <strong>{result.exportedFiles.length}</strong></span>
+            <span>Files exported: <strong>{result.exportedFiles?.length || 0}</strong></span>
           </div>
         )}
       </div>

@@ -237,39 +237,41 @@ export default function FogComputing() {
               <option value="min-min">Min-Min</option>
             </select>
           </div>
-          <button
-            onClick={runSchedule}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? 'Running...' : 'Run Schedule'}
-          </button>
-          <button
-            onClick={runComparison}
-            disabled={loading}
-            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
-          >
-            Compare All
-          </button>
-          <button
-            onClick={resetSimulation}
-            disabled={loading}
-            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50"
-          >
-            Reset
-          </button>
-          <div className="border-l border-gray-300 dark:border-gray-600 pl-4 flex gap-2">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={runSchedule}
+              disabled={loading}
+              className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium h-[42px] flex items-center"
+            >
+              {loading ? 'Running...' : 'Run Schedule'}
+            </button>
+            <button
+              onClick={runComparison}
+              disabled={loading}
+              className="px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors font-medium h-[42px] flex items-center"
+            >
+              Compare All
+            </button>
+            <button
+              onClick={resetSimulation}
+              disabled={loading}
+              className="px-4 py-2.5 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors font-medium h-[42px] flex items-center"
+            >
+              Reset
+            </button>
+          </div>
+          <div className="border-l border-gray-200 dark:border-gray-700 pl-4 py-1 flex gap-3 h-[42px] items-center">
             <a
               href="/api/fog/export/csv?type=all"
               download
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+              className="px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm h-full flex items-center gap-2"
             >
               📊 Export CSV
             </a>
             <a
               href="/api/fog/export/json"
               download
-              className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-sm"
+              className="px-4 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium text-sm h-full flex items-center gap-2"
             >
               📋 Export JSON
             </a>
@@ -390,7 +392,7 @@ export default function FogComputing() {
                 <XAxis dataKey="tasks" label={{ value: 'Tasks', position: 'bottom' }} />
                 <YAxis label={{ value: 'Time (s)', angle: -90, position: 'insideLeft' }} />
                 <Tooltip />
-                <Legend />
+                <Legend wrapperStyle={{ paddingTop: '20px' }} />
                 <Line type="monotone" dataKey="HH" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 6 }} />
                 <Line type="monotone" dataKey="IPSO" stroke="#6366f1" strokeWidth={2} />
                 <Line type="monotone" dataKey="IACO" stroke="#06b6d4" strokeWidth={2} />
@@ -411,7 +413,7 @@ export default function FogComputing() {
                 <XAxis dataKey="tasks" />
                 <YAxis label={{ value: 'Energy (J)', angle: -90, position: 'insideLeft' }} />
                 <Tooltip />
-                <Legend />
+                <Legend wrapperStyle={{ paddingTop: '20px' }} />
                 <Bar dataKey="HH" fill="#8b5cf6" />
                 <Bar dataKey="IPSO" fill="#6366f1" />
                 <Bar dataKey="IACO" fill="#06b6d4" />
@@ -435,7 +437,7 @@ export default function FogComputing() {
                 <XAxis dataKey="tasks" label={{ value: 'Tasks', position: 'bottom' }} />
                 <YAxis domain={[0, 100]} label={{ value: 'Reliability (%)', angle: -90, position: 'insideLeft' }} />
                 <Tooltip />
-                <Legend />
+                <Legend wrapperStyle={{ paddingTop: '20px' }} />
                 <Line type="monotone" dataKey="HH" stroke="#8b5cf6" strokeWidth={3} />
                 <Line type="monotone" dataKey="IPSO" stroke="#6366f1" strokeWidth={2} />
                 <Line type="monotone" dataKey="IACO" stroke="#06b6d4" strokeWidth={2} />
@@ -456,7 +458,7 @@ export default function FogComputing() {
                 <XAxis dataKey="time" label={{ value: 'Max Tolerance Time (s)', position: 'bottom' }} />
                 <YAxis domain={[0, 100]} label={{ value: 'Reliability (%)', angle: -90, position: 'insideLeft' }} />
                 <Tooltip />
-                <Legend />
+                <Legend wrapperStyle={{ paddingTop: '20px' }} />
                 <Line type="monotone" dataKey="HH" stroke="#8b5cf6" strokeWidth={3} />
                 <Line type="monotone" dataKey="IPSO" stroke="#6366f1" strokeWidth={2} />
                 <Line type="monotone" dataKey="IACO" stroke="#06b6d4" strokeWidth={2} />

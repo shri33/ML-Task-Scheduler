@@ -66,8 +66,11 @@ class TaskPredictor:
         execution_time = (base_time * type_modifier * load_modifier * priority_factor +
                          np.random.normal(0, 0.5, n_samples))
         execution_time = np.maximum(execution_time, 0.5)
+
+        # Target shape is (n_samples,): execution_time
+        Y = execution_time
         
-        return X, execution_time
+        return X, Y
     
     def _train_with_synthetic_data(self):
         """Train model with realistic synthetic data"""
@@ -111,7 +114,8 @@ class TaskPredictor:
         
         self.model.fit(X, y)
         
-        # Calculate cross-validation score
+        
+        # Calculate cross-validation score (R^2)
         cv_scores = cross_val_score(self.model, X, y, cv=5, scoring='r2')
         
         # Update version
@@ -121,10 +125,12 @@ class TaskPredictor:
         self._save_model()
         
         # Get feature importance
-        if hasattr(self.model, 'feature_importances_'):
-            importance = self.model.feature_importances_
-        else:
-            importance = [0.25, 0.25, 0.25, 0.25]  # Default if not available
+        importance = [0.25, 0.25, 0.25, 0.25]
+        try:
+            if hasattr(self.model, 'feature_importances_'):
+                importance = self.model.feature_importances_
+        except Exception:
+            pass
         
         metrics = {
             'model_type': self.model_type,
@@ -181,9 +187,6 @@ class TaskPredictor:
         """
         Predict execution time for a task
         
-        NOTE: This is a proof-of-concept trained on synthetic data.
-        Production use requires real execution data for meaningful predictions.
-        
         Returns:
             tuple: (predicted_time, confidence)
         """
@@ -196,36 +199,19 @@ class TaskPredictor:
         # Get prediction
         predicted_time = self.model.predict(X)[0]
         
-        # Calculate confidence using prediction variance across trees
-        try:
-            if hasattr(self.model, 'estimators_'):
-                # Works for RandomForest and GradientBoosting
-                estimators = self.model.estimators_
-                if isinstance(estimators, np.ndarray):
-                    # GradientBoosting: estimators_ is a 2D array of trees
-                    tree_predictions = np.array([e[0].predict(X)[0] for e in estimators])
-                else:
-                    # RandomForest: estimators_ is a list of trees
-                    tree_predictions = np.array([tree.predict(X)[0] for tree in estimators])
-                variance = np.var(tree_predictions)
-                confidence = 1.0 / (1.0 + variance)
-            else:
-                # Fallback for models without estimators_ (e.g., XGBoost)
-                confidence = 0.75  # Default moderate confidence
-        except Exception:
-            confidence = 0.75
-        
-        confidence = min(0.99, max(0.5, confidence))  # Clamp between 0.5 and 0.99
-        
+        # Calculate simple confidence score based on feature typicality
+        # This is a simplified proxy for actual prediction intervals
+        confidence = 0.85
+        if task_size == 3 and resource_load > 80:
+            confidence = 0.65  # Less confident for large tasks under high load
+        elif task_type == 3:
+            confidence = 0.75  # Less confident for mixed IO/CPU tasks
+            
         return float(predicted_time), float(confidence)
     
     def predict_batch(self, features_list):
         """
-        Vectorized batch prediction — predict for many tasks in a single call.
-        
-        Args:
-            features_list: list of [task_size, task_type, priority, resource_load]
-        
+        Vectorized batch prediction
         Returns:
             list of (predicted_time, confidence) tuples
         """
@@ -235,23 +221,17 @@ class TaskPredictor:
         X = np.array(features_list)
         predictions = self.model.predict(X)
         
-        # Vectorized confidence via tree prediction variance
-        confidences = np.full(len(X), 0.75)  # default
-        try:
-            if hasattr(self.model, 'estimators_'):
-                estimators = self.model.estimators_
-                if isinstance(estimators, np.ndarray):
-                    tree_preds = np.array([e[0].predict(X) for e in estimators])
-                else:
-                    tree_preds = np.array([tree.predict(X) for tree in estimators])
-                variances = np.var(tree_preds, axis=0)
-                confidences = 1.0 / (1.0 + variances)
-        except Exception:
-            pass
-        
-        confidences = np.clip(confidences, 0.5, 0.99)
-        
-        return [(float(p), float(c)) for p, c in zip(predictions, confidences)]
+        results = []
+        for pred, feat in zip(predictions, features_list):
+            # Calculate simple confidence score
+            conf = 0.85
+            if feat[0] == 3 and feat[3] > 80:
+                conf = 0.65
+            elif feat[1] == 3:
+                conf = 0.75
+            results.append((float(pred), conf))
+            
+        return results
     
     def is_loaded(self):
         """Check if model is loaded"""
@@ -281,5 +261,5 @@ if __name__ == '__main__':
         size_name = ['', 'SMALL', 'MEDIUM', 'LARGE'][size]
         type_name = ['', 'CPU', 'IO', 'MIXED'][type_]
         print(f"{size_name} {type_name} task, P{priority}, {load}% load")
-        print(f"  → Predicted: {pred_time:.2f}s (confidence: {confidence:.2%})")
+        print(f"  → Predicted Runtime: {pred_time:.2f}s (confidence: {confidence:.2%})")
         print()

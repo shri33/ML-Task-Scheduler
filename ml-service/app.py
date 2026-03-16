@@ -77,7 +77,8 @@ except ImportError:
     logger.info("OpenTelemetry packages not installed — tracing disabled")
 
 app = Flask(__name__)
-CORS(app)
+frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+CORS(app, resources={r"/api/*": {"origins": frontend_url}})
 
 # Auto-instrument Flask routes if OTel is available
 try:
@@ -454,6 +455,61 @@ def model_info():
         'description': 'Predicts task execution time based on task characteristics and resource load'
     })
 
+
+@app.route('/api/model/registry', methods=['GET'])
+def model_registry():
+    """
+    Lightweight model registry — lists all trained model versions
+    with their metadata, metrics, and training configuration.
+    Acts as a simple MLflow alternative for model versioning.
+
+    Response:
+    {
+        "activeVersion": "v20260308...",
+        "activeModelType": "xgboost",
+        "versions": [
+            {
+                "version": "v20260308...",
+                "trainedAt": "2026-03-08T...",
+                "modelType": "xgboost",
+                "dataSource": "synthetic",
+                "samples": 2000,
+                "metrics": { "r2_score": 0.95, "mae": 0.45, ... }
+            },
+            ...
+        ],
+        "totalVersions": int
+    }
+    """
+    import json as json_mod
+    metadata_dir = os.path.join(os.path.dirname(__file__), 'models', 'metadata')
+    versions = []
+
+    if os.path.exists(metadata_dir):
+        for fname in sorted(os.listdir(metadata_dir), reverse=True):
+            if fname.endswith('.json'):
+                try:
+                    with open(os.path.join(metadata_dir, fname), 'r') as f:
+                        meta = json_mod.load(f)
+                    versions.append({
+                        'version': meta.get('version', fname.replace('.json', '')),
+                        'trainedAt': meta.get('trained_at', ''),
+                        'modelType': meta.get('model_type', 'unknown'),
+                        'dataSource': meta.get('data_source', 'unknown'),
+                        'samples': meta.get('training_samples', 0),
+                        'metrics': meta.get('cross_validation', meta.get('metrics', {})),
+                        'features': meta.get('feature_names', []),
+                    })
+                except Exception:
+                    continue
+
+    return jsonify({
+        'activeVersion': predictor.get_version(),
+        'activeModelType': predictor.model_type,
+        'versions': versions,
+        'totalVersions': len(versions),
+    })
+
 @app.route('/api/model/switch', methods=['POST'])
 def switch_model():
     """
@@ -580,6 +636,122 @@ def retrain():
         
     except Exception as e:
         record_metric('errors_total')
+        return jsonify({'error': safe_error(e)}), 500
+
+
+@app.route('/api/retrain/from-db', methods=['POST'])
+@require_api_key
+def retrain_from_db():
+    """
+    Pull real completed task data from PostgreSQL and retrain the model.
+    This is the production endpoint for real-world device integration.
+
+    When real IoT devices (cameras, sensors, robot arms, edge servers) 
+    complete tasks, the backend stores actualTime in the database.
+    This endpoint reads that data and retrains the model to be accurate
+    for your specific hardware and environment.
+
+    Optional request body:
+    {
+        "model_type": "xgboost" | "random_forest" | "gradient_boosting",
+        "min_samples": 20     // minimum rows required to retrain (default 20)
+    }
+
+    Response:
+    {
+        "success": true,
+        "dataSource": "postgresql",
+        "rowsUsed": int,
+        "metrics": { "r2_score": ..., "samples_trained": ... },
+        "modelVersion": "v..."
+    }
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        model_type = data.get('model_type', predictor.model_type)
+        min_samples = int(data.get('min_samples', 20))
+
+        db_url = os.getenv('DATABASE_URL')
+        if not db_url:
+            return jsonify({'error': 'DATABASE_URL not configured on ML service'}), 503
+
+        # Strip Prisma-specific query params (?schema=public) that psycopg2 doesn't understand
+        if '?' in db_url:
+            db_url = db_url.split('?')[0]
+
+        # Connect to PostgreSQL and pull real completed tasks
+        try:
+            import psycopg2
+        except ImportError:
+            return jsonify({'error': 'psycopg2 not installed in ML service container'}), 503
+
+        try:
+            conn = psycopg2.connect(db_url)
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT
+                    CASE t.size WHEN 'SMALL' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END AS "taskSize",
+                    CASE t.type WHEN 'CPU' THEN 1 WHEN 'IO' THEN 2 ELSE 3 END AS "taskType",
+                    t.priority,
+                    COALESCE(r."currentLoad", 50) AS "resourceLoad",
+                    t."actualTime"
+                FROM "Task" t
+                LEFT JOIN "Resource" r ON t."resourceId" = r.id
+                WHERE t."actualTime" IS NOT NULL
+                  AND t."deletedAt" IS NULL
+                ORDER BY t."completedAt" DESC
+            """)
+            rows = cursor.fetchall()
+            conn.close()
+        except Exception as db_err:
+            logger.error(f"Database query failed: {db_err}")
+            return jsonify({
+                'error': f'Failed to query database: {safe_error(db_err)}',
+                'hint': 'Make sure DATABASE_URL points to the correct PostgreSQL instance'
+            }), 503
+
+        if len(rows) < min_samples:
+            return jsonify({
+                'error': f'Not enough real data to retrain. Found {len(rows)} completed tasks, need at least {min_samples}.',
+                'hint': 'Complete more tasks with real devices, then try again.',
+                'currentRows': len(rows),
+                'requiredRows': min_samples
+            }), 400
+
+        # Convert to numpy arrays
+        import numpy as np_local
+        X = np_local.array([[r[0], r[1], r[2], r[3]] for r in rows])
+        y = np_local.array([r[4] for r in rows])
+
+        logger.info(f"Retraining on {len(rows)} real completed tasks from PostgreSQL")
+
+        # Switch model type if requested
+        if model_type != predictor.model_type:
+            predictor.model_type = model_type
+
+        # Retrain with real production data
+        start = time.time()
+        metrics = predictor.retrain(X, y, incremental=False)
+        train_time = time.time() - start
+        record_metric('train_requests_total')
+        record_metric('train_latency_sum', train_time)
+        record_metric('train_latency_count')
+
+        logger.info(f"Retrained on real data: R²={metrics['r2_score']}, {len(rows)} samples, {train_time:.2f}s")
+
+        return jsonify({
+            'success': True,
+            'message': f'Model retrained on {len(rows)} real completed tasks from PostgreSQL',
+            'dataSource': 'postgresql',
+            'rowsUsed': len(rows),
+            'trainingTimeSeconds': round(train_time, 2),
+            'metrics': metrics,
+            'modelVersion': predictor.get_version()
+        })
+
+    except Exception as e:
+        record_metric('errors_total')
+        logger.error(f"Retrain from DB failed: {e}")
         return jsonify({'error': safe_error(e)}), 500
 
 @app.route('/metrics', methods=['GET'])
