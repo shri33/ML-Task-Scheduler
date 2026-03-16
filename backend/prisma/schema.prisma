@@ -50,6 +50,9 @@ model Task {
   createdAt     DateTime   @default(now())
   scheduledAt   DateTime?
   completedAt   DateTime?
+  memoryRequirement Float?     @default(0) // In MB
+  vramRequirement   Float?     @default(0) // In MB
+  startupOverhead   Float?     @default(0) // In seconds
   deletedAt     DateTime? // Soft delete
 
   scheduleHistory ScheduleHistory[]
@@ -310,6 +313,10 @@ model FogNode {
   networkBandwidth  Float // Mbps
   currentLoad       Float         @default(0) // 0-1
   status            FogNodeStatus @default(ACTIVE)
+  totalMemory       Float         @default(8192) // default 8GB
+  totalVram         Float         @default(0)
+  baseLatency       Float         @default(0.005) // default 5ms
+  egressCostPerMb   Float         @default(0.0001)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 

@@ -11,6 +11,7 @@ interface PredictionRequest {
   taskType: number;  // 1=CPU, 2=IO, 3=MIXED
   priority: number;  // 1-5
   resourceLoad: number;  // 0-100
+  startupOverhead: number; // In seconds
 }
 
 interface PredictionResponse {
@@ -25,6 +26,7 @@ interface BatchPredictionItem {
   taskType: number;
   priority: number;
   resourceLoad: number;
+  startupOverhead: number;
 }
 
 interface BatchPredictionResult {
@@ -51,7 +53,7 @@ export class MLService {
   // Cache helpers
   // ---------------------------------------------------------------------------
   private cacheKey(req: PredictionRequest): string {
-    const raw = `${req.taskSize}:${req.taskType}:${req.priority}:${Math.round(req.resourceLoad)}`;
+    const raw = `${req.taskSize}:${req.taskType}:${req.priority}:${Math.round(req.resourceLoad)}:${req.startupOverhead}`;
     return `ml:pred:${crypto.createHash('md5').update(raw).digest('hex')}`;
   }
 
@@ -63,6 +65,19 @@ export class MLService {
     await redisService.setJSON(key, value, PREDICTION_CACHE_TTL);
   }
 
+  /** Clear all prediction cache entries. */
+  async clearAllPredictions(): Promise<void> {
+    // In a production environment with many keys, use SCAN instead of KEYS
+    const client = redisService.getClient();
+    if (client) {
+      const keys = await client.keys('ml:pred:*');
+      if (keys.length > 0) {
+        await client.del(...keys);
+      }
+      logger.info(`Cleared ${keys.length} ML prediction cache entries`);
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Single prediction (with cache)
   // ---------------------------------------------------------------------------
@@ -70,13 +85,15 @@ export class MLService {
     taskSize: string,
     taskType: string,
     priority: number,
-    resourceLoad: number
+    resourceLoad: number,
+    startupOverhead: number = 1.0
   ): Promise<PredictionResponse> {
     const request: PredictionRequest = {
       taskSize: sizeMap[taskSize] || 2,
       taskType: typeMap[taskType] || 1,
       priority,
-      resourceLoad
+      resourceLoad,
+      startupOverhead
     };
 
     // Check Redis cache first
@@ -125,7 +142,8 @@ export class MLService {
         taskSize: item.taskSize,
         taskType: item.taskType,
         priority: item.priority,
-        resourceLoad: item.resourceLoad
+        resourceLoad: item.resourceLoad,
+        startupOverhead: item.startupOverhead
       };
       const key = this.cacheKey(req);
       const itemKey = item.taskId || `${item.taskSize}:${item.taskType}:${item.priority}:${item.resourceLoad}`;
@@ -162,7 +180,8 @@ export class MLService {
             taskSize: u.taskSize,
             taskType: u.taskType,
             priority: u.priority,
-            resourceLoad: u.resourceLoad
+            resourceLoad: u.resourceLoad,
+            startupOverhead: u.startupOverhead
           }))
         },
         { timeout: 15000 }

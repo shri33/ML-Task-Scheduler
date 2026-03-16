@@ -51,6 +51,9 @@ export interface Task {
   expectedCompletionTime: number; // Ti,exp - expected completion time (s)
   terminalDeviceId: string;
   priority: number;
+  memoryRequirement: number; // Mi - memory requirement (MB)
+  vramRequirement: number;   // Vi - VRAM requirement (MB)
+  startupOverhead: number;   // Si - startup overhead (s)
 }
 
 export interface FogNode {
@@ -60,6 +63,10 @@ export interface FogNode {
   storageCapacity: number;    // Kj - storage capacity (GB)
   networkBandwidth: number;   // Bj - network bandwidth (Mbps)
   currentLoad: number;        // Current utilization (0-1)
+  totalMemory: number;        // Total memory (MB)
+  totalVram: number;          // Total VRAM (MB)
+  baseLatency: number;        // Local network base latency (s)
+  egressCostPerMb: number;    // Egress cost per Mb ($)
 }
 
 // Cloud Layer - for offloading when fog capacity is exceeded
@@ -70,6 +77,8 @@ export interface CloudNode {
   networkBandwidth: number;   // WAN bandwidth (Mbps)
   latencyPenalty: number;     // Additional latency for cloud (ms)
   costPerUnit: number;        // Cost per computation unit
+  baseLatency: number;        // Global network base latency (s)
+  egressCostPerMb: number;    // Egress cost per Mb ($)
   available: boolean;
 }
 
@@ -119,16 +128,19 @@ export function calculateExecutionTime(task: Task, fogNode: FogNode): number {
  * TRij = Di / rij
  * where rij = B * log2(1 + h*p/σ) - simplified to Di / Bj
  */
-export function calculateTransmissionTime(task: Task, fogNode: FogNode): number {
-  return task.dataSize / fogNode.networkBandwidth;
+export function calculateTransmissionTime(task: Task, fogNode: FogNode | CloudNode): number {
+  // TRij = baseLatency + (Di / Bj)
+  return fogNode.baseLatency + (task.dataSize / fogNode.networkBandwidth);
 }
 
 /**
  * Calculate total delay
  * Tij = TRij + TEij
  */
-export function calculateTotalDelay(task: Task, fogNode: FogNode): number {
-  return calculateTransmissionTime(task, fogNode) + calculateExecutionTime(task, fogNode);
+export function calculateTotalDelay(task: Task, fogNode: FogNode | CloudNode): number {
+  // Tij = TRij + TEij + Si
+  const baseDelay = calculateTransmissionTime(task, fogNode) + calculateExecutionTime(task, fogNode as FogNode);
+  return baseDelay + task.startupOverhead;
 }
 
 /**
@@ -146,6 +158,14 @@ export function calculateEnergyConsumption(
 }
 
 /**
+ * Calculate egress cost
+ * Cost = Di * egressCostPerMb
+ */
+export function calculateEgressCost(task: Task, fogNode: FogNode | CloudNode): number {
+  return task.dataSize * fogNode.egressCostPerMb;
+}
+
+/**
  * Calculate objective function value
  * f = Σ(wit * Tij + wie * Eij)
  */
@@ -157,6 +177,7 @@ export function calculateObjectiveFunction(
 ): { totalDelay: number; totalEnergy: number; fitness: number } {
   let totalDelay = 0;
   let totalEnergy = 0;
+  let totalEgressCost = 0;
 
   const fogNodeMap = new Map(fogNodes.map(f => [f.id, f]));
   const deviceMap = new Map(devices.map(d => [d.id, d]));
@@ -171,12 +192,16 @@ export function calculateObjectiveFunction(
 
     const delay = calculateTotalDelay(task, fogNode);
     const energy = calculateEnergyConsumption(task, fogNode, device);
+    const egressCost = calculateEgressCost(task, fogNode);
 
     totalDelay += device.delayWeight * delay;
     totalEnergy += device.energyWeight * energy;
+    totalEgressCost += egressCost;
   }
 
-  const objectiveValue = totalDelay + totalEnergy;
+  // Final objective combines delay, energy, and financial cost
+  // We normalize egress cost with a weight (e.g., 0.5)
+  const objectiveValue = totalDelay + totalEnergy + (totalEgressCost * 10); // weight cost heavily
   const fitness = objectiveValue > 0 ? 1 / objectiveValue : Infinity;
 
   return { totalDelay, totalEnergy, fitness };
@@ -666,7 +691,11 @@ export class HybridHeuristicScheduler {
       const delay = calculateTotalDelay(task, fogNode);
       const energy = calculateEnergyConsumption(task, fogNode, device);
 
-      if (delay <= task.maxToleranceTime && energy <= device.residualEnergy) {
+      const meetsHardwareRequirements = 
+        fogNode.totalMemory >= task.memoryRequirement && 
+        fogNode.totalVram >= task.vramRequirement;
+
+      if (delay <= task.maxToleranceTime && energy <= device.residualEnergy && meetsHardwareRequirements) {
         successfulTasks++;
       }
     }
@@ -1034,7 +1063,10 @@ export function generateSampleTasks(count: number, devices: TerminalDevice[]): T
       maxToleranceTime: 5 + rng() * 45, // 5-50 seconds
       expectedCompletionTime: 2 + rng() * 8, // 2-10 seconds
       terminalDeviceId: devices[i % devices.length].id,
-      priority: Math.floor(rng() * 5) + 1 // 1-5
+      priority: Math.floor(rng() * 5) + 1, // 1-5
+      memoryRequirement: 128 + rng() * 1024, // 128MB - 1GB
+      vramRequirement: rng() > 0.7 ? 512 + rng() * 2048 : 0, // Occasional GPU task
+      startupOverhead: 0.5 + rng() * 2.5 // 0.5 - 3s
     });
   }
   
@@ -1054,7 +1086,11 @@ export function generateSampleFogNodes(count: number): FogNode[] {
       computingResource: (1 + rng()) * 1e9, // 1-2 GHz
       storageCapacity: 50 + rng() * 150, // 50-200 GB
       networkBandwidth: 50 + rng() * 50, // 50-100 Mbps
-      currentLoad: rng() * 0.5 // 0-50% initial load
+      currentLoad: rng() * 0.5, // 0-50% initial load
+      totalMemory: 4096 + rng() * 12288, // 4-16 GB
+      totalVram: rng() > 0.5 ? 4096 + rng() * 4096 : 0, // Occasional GPU node
+      baseLatency: 0.002 + rng() * 0.01, // 2-12ms
+      egressCostPerMb: 0.0001 // $0.0001 per Mb
     });
   }
   
@@ -1117,6 +1153,8 @@ export const defaultCloudNode: CloudNode = {
   networkBandwidth: 100,       // 100 Mbps WAN
   latencyPenalty: 50,          // 50ms additional latency
   costPerUnit: 0.001,          // $0.001 per computation unit
+  baseLatency: 0.05,           // 50ms base latency
+  egressCostPerMb: 0.01,       // $0.01 per Mb (100x higher than fog)
   available: true
 };
 
@@ -1317,14 +1355,15 @@ export function scheduleWith3LayerOffloading(
  */
 export function generateSampleCloudNode(overrides: Partial<CloudNode> = {}): CloudNode {
   return {
-    id: 'cloud-1',
-    name: 'AWS Cloud',
-    computingResource: 100e9,
-    networkBandwidth: 100,
-    latencyPenalty: 50,
-    costPerUnit: 0.001,
-    available: true,
-    ...overrides
+    id: overrides.id ?? 'cloud-1',
+    name: overrides.name ?? 'AWS Cloud',
+    computingResource: overrides.computingResource ?? 100e9,
+    networkBandwidth: overrides.networkBandwidth ?? 100,
+    latencyPenalty: overrides.latencyPenalty ?? 50,
+    costPerUnit: overrides.costPerUnit ?? 0.001,
+    baseLatency: overrides.baseLatency ?? 0.05,
+    egressCostPerMb: overrides.egressCostPerMb ?? 0.01,
+    available: overrides.available ?? true
   };
 }
 

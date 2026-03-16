@@ -53,8 +53,9 @@ class TaskPredictor:
         task_type = np.random.choice([1, 2, 3], n_samples)
         priority = np.random.choice([1, 2, 3, 4, 5], n_samples)
         resource_load = np.random.uniform(0, 100, n_samples)
+        startup_overhead = np.random.uniform(0.5, 5.0, n_samples) # 0.5s to 5s overhead
         
-        X = np.column_stack([task_size, task_type, priority, resource_load])
+        X = np.column_stack([task_size, task_type, priority, resource_load, startup_overhead])
         
         # Generate realistic execution times
         base_time = task_size * 2
@@ -64,7 +65,13 @@ class TaskPredictor:
         priority_factor = 1 - (priority - 3) * 0.02
         
         execution_time = (base_time * type_modifier * load_modifier * priority_factor +
+                         startup_overhead + # Startup overhead directly adds to time
                          np.random.normal(0, 0.5, n_samples))
+        
+        # Add "unreliability" factor (latency spikes)
+        latency_spikes = np.random.choice([0, 1], n_samples, p=[0.95, 0.05]) * np.random.uniform(1, 5, n_samples)
+        execution_time += latency_spikes
+        
         execution_time = np.maximum(execution_time, 0.5)
 
         # Target shape is (n_samples,): execution_time
@@ -141,7 +148,8 @@ class TaskPredictor:
                 'taskSize': round(float(importance[0]), 4),
                 'taskType': round(float(importance[1]), 4),
                 'priority': round(float(importance[2]), 4),
-                'resourceLoad': round(float(importance[3]), 4)
+                'resourceLoad': round(float(importance[3]), 4),
+                'startupOverhead': round(float(importance[4]), 4)
             }
         }
         
@@ -183,7 +191,7 @@ class TaskPredictor:
         self._train_with_synthetic_data()
         return {'model_type': self.model_type, 'version': self.version}
     
-    def predict(self, task_size, task_type, priority, resource_load):
+    def predict(self, task_size, task_type, priority, resource_load, startup_overhead=1.0):
         """
         Predict execution time for a task
         
@@ -194,7 +202,7 @@ class TaskPredictor:
             raise ValueError("Model not loaded")
         
         # Prepare features
-        X = np.array([[task_size, task_type, priority, resource_load]])
+        X = np.array([[task_size, task_type, priority, resource_load, startup_overhead]])
         
         # Get prediction
         predicted_time = self.model.predict(X)[0]
@@ -218,6 +226,7 @@ class TaskPredictor:
         if self.model is None:
             raise ValueError("Model not loaded")
         
+        # features_list expected to have 5 elements per item now
         X = np.array(features_list)
         predictions = self.model.predict(X)
         
@@ -249,17 +258,17 @@ if __name__ == '__main__':
     
     # Test predictions
     test_cases = [
-        (1, 1, 3, 25),  # Small CPU task, medium priority, 25% load
-        (2, 2, 4, 50),  # Medium IO task, high priority, 50% load
-        (3, 3, 5, 75),  # Large Mixed task, critical priority, 75% load
+        (1, 1, 3, 25, 0.5),  # Small CPU task, medium priority, 25% load, 0.5s overhead
+        (2, 2, 4, 50, 1.2),  # Medium IO task, high priority, 50% load, 1.2s overhead
+        (3, 3, 5, 75, 2.5),  # Large Mixed task, critical priority, 75% load, 2.5s overhead
     ]
     
     print("\nTest Predictions:")
     print("-" * 60)
-    for size, type_, priority, load in test_cases:
-        pred_time, confidence = predictor.predict(size, type_, priority, load)
+    for size, type_, priority, load, overhead in test_cases:
+        pred_time, confidence = predictor.predict(size, type_, priority, load, overhead)
         size_name = ['', 'SMALL', 'MEDIUM', 'LARGE'][size]
         type_name = ['', 'CPU', 'IO', 'MIXED'][type_]
-        print(f"{size_name} {type_name} task, P{priority}, {load}% load")
+        print(f"{size_name} {type_name} task, P{priority}, {load}% load, {overhead}s overhead")
         print(f"  → Predicted Runtime: {pred_time:.2f}s (confidence: {confidence:.2%})")
         print()
