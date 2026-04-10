@@ -32,11 +32,11 @@ interface DemoScenario {
  */
 function createSmartFactoryScenario(): DemoScenario {
   const fogNodes: FogNode[] = [
-    { id: 'fog-assembly', name: 'Assembly Line Server', computingResource: 2.5e9, storageCapacity: 256, networkBandwidth: 100, currentLoad: 0.3 },
-    { id: 'fog-quality', name: 'Quality Control Node', computingResource: 2.0e9, storageCapacity: 128, networkBandwidth: 80, currentLoad: 0.2 },
-    { id: 'fog-packaging', name: 'Packaging Unit', computingResource: 1.5e9, storageCapacity: 64, networkBandwidth: 60, currentLoad: 0.4 },
-    { id: 'fog-warehouse', name: 'Warehouse Gateway', computingResource: 1.8e9, storageCapacity: 512, networkBandwidth: 100, currentLoad: 0.15 },
-    { id: 'fog-main', name: 'Main Control Hub', computingResource: 3.0e9, storageCapacity: 1024, networkBandwidth: 150, currentLoad: 0.5 },
+    { id: 'fog-assembly', name: 'Assembly Line Server', computingResource: 2.5e9, storageCapacity: 256, networkBandwidth: 100, currentLoad: 0.3, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 },
+    { id: 'fog-quality', name: 'Quality Control Node', computingResource: 2.0e9, storageCapacity: 128, networkBandwidth: 80, currentLoad: 0.2, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 },
+    { id: 'fog-packaging', name: 'Packaging Unit', computingResource: 1.5e9, storageCapacity: 64, networkBandwidth: 60, currentLoad: 0.4, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 },
+    { id: 'fog-warehouse', name: 'Warehouse Gateway', computingResource: 1.8e9, storageCapacity: 512, networkBandwidth: 100, currentLoad: 0.15, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 },
+    { id: 'fog-main', name: 'Main Control Hub', computingResource: 3.0e9, storageCapacity: 1024, networkBandwidth: 150, currentLoad: 0.5, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 },
   ];
 
   const devices: TerminalDevice[] = [
@@ -51,16 +51,16 @@ function createSmartFactoryScenario(): DemoScenario {
   ];
 
   const tasks: Task[] = [
-    { id: 'task-fault-detect', name: 'Real-time Fault Detection', dataSize: 35, computationIntensity: 400, maxToleranceTime: 5, expectedCompletionTime: 2, terminalDeviceId: 'dev-sensor1', priority: 5 },
-    { id: 'task-quality-check', name: 'Quality Inspection Analysis', dataSize: 45, computationIntensity: 350, maxToleranceTime: 10, expectedCompletionTime: 5, terminalDeviceId: 'dev-camera1', priority: 4 },
-    { id: 'task-inventory', name: 'Inventory Management Update', dataSize: 20, computationIntensity: 200, maxToleranceTime: 30, expectedCompletionTime: 10, terminalDeviceId: 'dev-tablet1', priority: 2 },
-    { id: 'task-robot-path', name: 'Robot Path Optimization', dataSize: 15, computationIntensity: 500, maxToleranceTime: 3, expectedCompletionTime: 1, terminalDeviceId: 'dev-robot1', priority: 5 },
-    { id: 'task-agv-route', name: 'AGV Route Planning', dataSize: 25, computationIntensity: 350, maxToleranceTime: 8, expectedCompletionTime: 3, terminalDeviceId: 'dev-agv1', priority: 4 },
-    { id: 'task-temp-monitor', name: 'Temperature Anomaly Detection', dataSize: 10, computationIntensity: 250, maxToleranceTime: 2, expectedCompletionTime: 1, terminalDeviceId: 'dev-sensor1', priority: 5 },
-    { id: 'task-production-sched', name: 'Production Schedule Update', dataSize: 30, computationIntensity: 300, maxToleranceTime: 15, expectedCompletionTime: 8, terminalDeviceId: 'dev-tablet1', priority: 3 },
-    { id: 'task-cnc-adjust', name: 'CNC Parameter Adjustment', dataSize: 12, computationIntensity: 280, maxToleranceTime: 5, expectedCompletionTime: 2, terminalDeviceId: 'dev-cnc1', priority: 4 },
-    { id: 'task-maintenance-pred', name: 'Predictive Maintenance Analysis', dataSize: 40, computationIntensity: 450, maxToleranceTime: 20, expectedCompletionTime: 12, terminalDeviceId: 'dev-robot2', priority: 3 },
-    { id: 'task-energy-opt', name: 'Energy Consumption Optimization', dataSize: 28, computationIntensity: 320, maxToleranceTime: 25, expectedCompletionTime: 15, terminalDeviceId: 'dev-agv2', priority: 2 },
+    { id: 'task-fault-detect', name: 'Real-time Fault Detection', dataSize: 35, computationIntensity: 400, maxToleranceTime: 5, expectedCompletionTime: 2, terminalDeviceId: 'dev-sensor1', priority: 5, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-quality-check', name: 'Quality Inspection Analysis', dataSize: 45, computationIntensity: 350, maxToleranceTime: 10, expectedCompletionTime: 5, terminalDeviceId: 'dev-camera1', priority: 4, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-inventory', name: 'Inventory Management Update', dataSize: 20, computationIntensity: 200, maxToleranceTime: 30, expectedCompletionTime: 10, terminalDeviceId: 'dev-tablet1', priority: 2, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-robot-path', name: 'Robot Path Optimization', dataSize: 15, computationIntensity: 500, maxToleranceTime: 3, expectedCompletionTime: 1, terminalDeviceId: 'dev-robot1', priority: 5, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-agv-route', name: 'AGV Route Planning', dataSize: 25, computationIntensity: 350, maxToleranceTime: 8, expectedCompletionTime: 3, terminalDeviceId: 'dev-agv1', priority: 4, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-temp-monitor', name: 'Temperature Anomaly Detection', dataSize: 10, computationIntensity: 250, maxToleranceTime: 2, expectedCompletionTime: 1, terminalDeviceId: 'dev-sensor1', priority: 5, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-production-sched', name: 'Production Schedule Update', dataSize: 30, computationIntensity: 300, maxToleranceTime: 15, expectedCompletionTime: 8, terminalDeviceId: 'dev-tablet1', priority: 3, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-cnc-adjust', name: 'CNC Parameter Adjustment', dataSize: 12, computationIntensity: 280, maxToleranceTime: 5, expectedCompletionTime: 2, terminalDeviceId: 'dev-cnc1', priority: 4, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-maintenance-pred', name: 'Predictive Maintenance Analysis', dataSize: 40, computationIntensity: 450, maxToleranceTime: 20, expectedCompletionTime: 12, terminalDeviceId: 'dev-robot2', priority: 3, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-energy-opt', name: 'Energy Consumption Optimization', dataSize: 28, computationIntensity: 320, maxToleranceTime: 25, expectedCompletionTime: 15, terminalDeviceId: 'dev-agv2', priority: 2, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
   ];
 
   return {
@@ -78,11 +78,11 @@ function createSmartFactoryScenario(): DemoScenario {
  */
 function createHealthcareScenario(): DemoScenario {
   const fogNodes: FogNode[] = [
-    { id: 'fog-icu', name: 'ICU Monitoring Hub', computingResource: 2.8e9, storageCapacity: 256, networkBandwidth: 120, currentLoad: 0.6 },
-    { id: 'fog-emergency', name: 'Emergency Response Node', computingResource: 3.0e9, storageCapacity: 128, networkBandwidth: 150, currentLoad: 0.4 },
-    { id: 'fog-pharmacy', name: 'Pharmacy Management', computingResource: 1.5e9, storageCapacity: 512, networkBandwidth: 80, currentLoad: 0.2 },
-    { id: 'fog-imaging', name: 'Medical Imaging Server', computingResource: 4.0e9, storageCapacity: 2048, networkBandwidth: 200, currentLoad: 0.3 },
-    { id: 'fog-records', name: 'Patient Records Gateway', computingResource: 2.0e9, storageCapacity: 1024, networkBandwidth: 100, currentLoad: 0.35 },
+    { id: 'fog-icu', name: 'ICU Monitoring Hub', computingResource: 2.8e9, storageCapacity: 256, networkBandwidth: 120, currentLoad: 0.6, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 },
+    { id: 'fog-emergency', name: 'Emergency Response Node', computingResource: 3.0e9, storageCapacity: 128, networkBandwidth: 150, currentLoad: 0.4, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 },
+    { id: 'fog-pharmacy', name: 'Pharmacy Management', computingResource: 1.5e9, storageCapacity: 512, networkBandwidth: 80, currentLoad: 0.2, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 },
+    { id: 'fog-imaging', name: 'Medical Imaging Server', computingResource: 4.0e9, storageCapacity: 2048, networkBandwidth: 200, currentLoad: 0.3, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 },
+    { id: 'fog-records', name: 'Patient Records Gateway', computingResource: 2.0e9, storageCapacity: 1024, networkBandwidth: 100, currentLoad: 0.35, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 },
   ];
 
   const devices: TerminalDevice[] = [
@@ -95,12 +95,12 @@ function createHealthcareScenario(): DemoScenario {
   ];
 
   const tasks: Task[] = [
-    { id: 'task-cardiac-alert', name: 'Cardiac Event Detection', dataSize: 8, computationIntensity: 500, maxToleranceTime: 1, expectedCompletionTime: 0.5, terminalDeviceId: 'dev-ecg1', priority: 5 },
-    { id: 'task-vitals-analysis', name: 'Vital Signs Analysis', dataSize: 15, computationIntensity: 300, maxToleranceTime: 3, expectedCompletionTime: 1, terminalDeviceId: 'dev-wearable1', priority: 5 },
-    { id: 'task-drug-interaction', name: 'Drug Interaction Check', dataSize: 5, computationIntensity: 400, maxToleranceTime: 2, expectedCompletionTime: 1, terminalDeviceId: 'dev-infusion', priority: 5 },
-    { id: 'task-xray-analysis', name: 'X-Ray Image Analysis', dataSize: 50, computationIntensity: 600, maxToleranceTime: 30, expectedCompletionTime: 15, terminalDeviceId: 'dev-xray', priority: 3 },
-    { id: 'task-patient-history', name: 'Patient History Retrieval', dataSize: 25, computationIntensity: 200, maxToleranceTime: 5, expectedCompletionTime: 2, terminalDeviceId: 'dev-wearable2', priority: 4 },
-    { id: 'task-anomaly-detect', name: 'Health Anomaly Detection', dataSize: 12, computationIntensity: 450, maxToleranceTime: 2, expectedCompletionTime: 1, terminalDeviceId: 'dev-ecg2', priority: 5 },
+    { id: 'task-cardiac-alert', name: 'Cardiac Event Detection', dataSize: 8, computationIntensity: 500, maxToleranceTime: 1, expectedCompletionTime: 0.5, terminalDeviceId: 'dev-ecg1', priority: 5, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-vitals-analysis', name: 'Vital Signs Analysis', dataSize: 15, computationIntensity: 300, maxToleranceTime: 3, expectedCompletionTime: 1, terminalDeviceId: 'dev-wearable1', priority: 5, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-drug-interaction', name: 'Drug Interaction Check', dataSize: 5, computationIntensity: 400, maxToleranceTime: 2, expectedCompletionTime: 1, terminalDeviceId: 'dev-infusion', priority: 5, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-xray-analysis', name: 'X-Ray Image Analysis', dataSize: 50, computationIntensity: 600, maxToleranceTime: 30, expectedCompletionTime: 15, terminalDeviceId: 'dev-xray', priority: 3, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-patient-history', name: 'Patient History Retrieval', dataSize: 25, computationIntensity: 200, maxToleranceTime: 5, expectedCompletionTime: 2, terminalDeviceId: 'dev-wearable2', priority: 4, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-anomaly-detect', name: 'Health Anomaly Detection', dataSize: 12, computationIntensity: 450, maxToleranceTime: 2, expectedCompletionTime: 1, terminalDeviceId: 'dev-ecg2', priority: 5, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
   ];
 
   return {
@@ -118,11 +118,11 @@ function createHealthcareScenario(): DemoScenario {
  */
 function createSmartCityScenario(): DemoScenario {
   const fogNodes: FogNode[] = [
-    { id: 'fog-intersection1', name: 'Intersection Hub North', computingResource: 2.0e9, storageCapacity: 128, networkBandwidth: 100, currentLoad: 0.45 },
-    { id: 'fog-intersection2', name: 'Intersection Hub South', computingResource: 2.0e9, storageCapacity: 128, networkBandwidth: 100, currentLoad: 0.5 },
-    { id: 'fog-parking', name: 'Smart Parking Gateway', computingResource: 1.5e9, storageCapacity: 256, networkBandwidth: 80, currentLoad: 0.3 },
-    { id: 'fog-emergency', name: 'Emergency Services Hub', computingResource: 3.0e9, storageCapacity: 512, networkBandwidth: 150, currentLoad: 0.2 },
-    { id: 'fog-central', name: 'Central Traffic Control', computingResource: 4.0e9, storageCapacity: 1024, networkBandwidth: 200, currentLoad: 0.55 },
+    { id: 'fog-intersection1', name: 'Intersection Hub North', computingResource: 2.0e9, storageCapacity: 128, networkBandwidth: 100, currentLoad: 0.45, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 },
+    { id: 'fog-intersection2', name: 'Intersection Hub South', computingResource: 2.0e9, storageCapacity: 128, networkBandwidth: 100, currentLoad: 0.5, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 },
+    { id: 'fog-parking', name: 'Smart Parking Gateway', computingResource: 1.5e9, storageCapacity: 256, networkBandwidth: 80, currentLoad: 0.3, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 },
+    { id: 'fog-emergency', name: 'Emergency Services Hub', computingResource: 3.0e9, storageCapacity: 512, networkBandwidth: 150, currentLoad: 0.2, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 },
+    { id: 'fog-central', name: 'Central Traffic Control', computingResource: 4.0e9, storageCapacity: 1024, networkBandwidth: 200, currentLoad: 0.55, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 },
   ];
 
   const devices: TerminalDevice[] = [
@@ -134,11 +134,11 @@ function createSmartCityScenario(): DemoScenario {
   ];
 
   const tasks: Task[] = [
-    { id: 'task-congestion', name: 'Congestion Prediction', dataSize: 30, computationIntensity: 400, maxToleranceTime: 5, expectedCompletionTime: 2, terminalDeviceId: 'dev-camera1', priority: 4 },
-    { id: 'task-signal-opt', name: 'Traffic Signal Optimization', dataSize: 20, computationIntensity: 350, maxToleranceTime: 3, expectedCompletionTime: 1, terminalDeviceId: 'dev-sensor1', priority: 5 },
-    { id: 'task-emergency-route', name: 'Emergency Vehicle Routing', dataSize: 15, computationIntensity: 500, maxToleranceTime: 2, expectedCompletionTime: 1, terminalDeviceId: 'dev-ambulance', priority: 5 },
-    { id: 'task-parking-avail', name: 'Parking Availability Update', dataSize: 10, computationIntensity: 200, maxToleranceTime: 10, expectedCompletionTime: 5, terminalDeviceId: 'dev-parking', priority: 2 },
-    { id: 'task-accident-detect', name: 'Accident Detection', dataSize: 25, computationIntensity: 450, maxToleranceTime: 2, expectedCompletionTime: 1, terminalDeviceId: 'dev-camera2', priority: 5 },
+    { id: 'task-congestion', name: 'Congestion Prediction', dataSize: 30, computationIntensity: 400, maxToleranceTime: 5, expectedCompletionTime: 2, terminalDeviceId: 'dev-camera1', priority: 4, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-signal-opt', name: 'Traffic Signal Optimization', dataSize: 20, computationIntensity: 350, maxToleranceTime: 3, expectedCompletionTime: 1, terminalDeviceId: 'dev-sensor1', priority: 5, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-emergency-route', name: 'Emergency Vehicle Routing', dataSize: 15, computationIntensity: 500, maxToleranceTime: 2, expectedCompletionTime: 1, terminalDeviceId: 'dev-ambulance', priority: 5, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-parking-avail', name: 'Parking Availability Update', dataSize: 10, computationIntensity: 200, maxToleranceTime: 10, expectedCompletionTime: 5, terminalDeviceId: 'dev-parking', priority: 2, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
+    { id: 'task-accident-detect', name: 'Accident Detection', dataSize: 25, computationIntensity: 450, maxToleranceTime: 2, expectedCompletionTime: 1, terminalDeviceId: 'dev-camera2', priority: 5, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1 },
   ];
 
   return {

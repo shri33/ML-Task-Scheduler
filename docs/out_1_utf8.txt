@@ -1,0 +1,329 @@
+﻿Study Project – Phase 2 Document
+(Design & Proof of Concept)
+Cover Page
+Course Title: BCS ZC241T – Study Project
+Project Title: Intelligent Task Allocation and Scheduling System with ML-Assisted Optimization
+Student Name(s): Shri Srivastava, Ichha Dwivedi, Aditi Singh
+Student ID(s): 2023ebcs593, 2023ebcs125, 2023ebcs498
+Group Number: 80
+Project Advisor / Supervisor: Swapnil Saurav
+Date of Submission: February 15, 2026
+1. Introduction
+1.1 Purpose of Phase 2
+The purpose of Phase 2 is to transform the problem statement and conceptual solution identified in Phase 1 into a detailed and structured system design. This phase focuses on defining the system requirements, architectural components, and data flow necessary for implementation. Additionally, Phase 2 aims to demonstrate the feasibility of the proposed solution through a simulation-based Proof of Concept (PoC), ensuring that the design is technically viable and ready for full implementation in Phase 3.
+1.2 Scope of Phase 2
+The scope of Phase 2 encompasses the detailed technical design and feasibility validation of the proposed intelligent task scheduling system. Specifically, this phase includes the following components:
+System design and architecture:Design of a modular and layered system architecture consisting of a web-based frontend for user interaction, a backend scheduling service responsible for task allocation, a machine learning prediction module for estimating execution time, and a relational database for persistent storage. The architecture is designed to simulate a fog-enabled distributed environment and supports containerized deployment to ensure modularity and scalability.
+Detailed functional and non-functional requirements:Identification and documentation of comprehensive functional requirements covering task submission, priority handling, resource simulation, execution time prediction, heuristic-based scheduling, performance comparison, data storage, and result visualization. In addition, non-functional requirements related to system performance, reliability, usability, scalability, and security are specified to define quality constraints and operational expectations.
+High-level database and data flow design:Design of a normalized relational database schema to manage task definitions, scheduling decisions, prediction outputs, and execution history. Detailed data flow descriptions are provided to explain the interaction between the frontend, scheduling logic, machine learning module, and database during task submission, prediction, scheduling, and result analysis.
+Simulation-based Proof of Concept (PoC):Development of a working Proof of Concept that demonstrates the feasibility of integrating machine learning-based execution time prediction with heuristic task scheduling algorithms in a simulated environment. The PoC validates core system functionality, logical correctness, and architectural soundness without involving real-world fog hardware or production deployment.
+2. System Overview
+The proposed system is a simulation-based intelligent task scheduling platform designed to evaluate efficient task allocation strategies in a fog-inspired distributed computing environment. The system integrates heuristic scheduling techniques with machine learning-based execution time prediction to improve decision-making during task scheduling. Rather than relying on physical fog or cloud infrastructure, the system simulates resources and workloads to study scheduling behavior under controlled conditions.
+The platform follows a modular design approach, enabling clear separation between user interaction, scheduling logic, prediction mechanisms, and data storage. This design ensures flexibility, scalability, and ease of future enhancement during Phase 3.
+2.1 Product Perspective
+The system is developed as a standalone academic simulation platform and does not depend on existing enterprise systems.
+It operates as a web-based application, where users interact through a browser-based interface while all processing is handled by backend services.
+The system architecture logically represents a fog computing environment, where computational resources are placed closer to task sources to reduce latency.
+Machine learning models are used as decision-support components, assisting heuristic algorithms rather than replacing them entirely.
+The system is designed to be extensible, allowing future integration with real fog or cloud environments if required.
+2.2 Major System Functions
+The proposed system provides a set of core functions that collectively enable intelligent task scheduling and performance evaluation in a simulated fog computing environment. Each function is designed to operate independently while contributing to the overall system workflow.
+Task Definition and SubmissionThe system allows users to define computational tasks by specifying key attributes such as task size, priority level, and resource requirements. These task definitions serve as the primary input to the scheduling system and are validated before being accepted for processing.
+Execution Time Prediction Using Machine LearningA dedicated machine learning module predicts the expected execution time for each submitted task. Predictions are generated using historical and simulated data, enabling the system to make informed scheduling decisions. This function enhances scheduling accuracy by reducing uncertainty associated with task execution duration.
+Heuristic-Based Task SchedulingThe scheduling module applies heuristic or hybrid heuristic algorithms to assign tasks to simulated resources. Scheduling decisions are influenced by task priority, predicted execution time, and resource availability. This function aims to minimize overall execution time and improve system efficiency.
+Fog Resource Simulation and ManagementThe system simulates multiple computational resources representing fog nodes with limited capacity and heterogeneous performance characteristics. Resource availability and workload distribution are dynamically managed to reflect realistic fog computing scenarios.
+Scheduling Performance EvaluationThe system records scheduling outcomes such as task completion time, waiting time, and resource utilization. These metrics are used to evaluate the effectiveness of the proposed scheduling approach and to compare it with baseline scheduling strategies.
+Data Logging and Result VisualizationAll task-related data, including predictions and scheduling results, are stored in a structured database. The system provides visualization and reporting features to help users analyze performance trends and system behavior.
+2.3 User Classes and Characteristics
+The proposed system is designed to support multiple user classes, each with distinct roles, responsibilities, and interaction patterns. Identifying these user classes ensures that system functionality, access control, and usability requirements are appropriately defined.
+End Users (Students / Researchers)End users primarily interact with the system to submit computational tasks and analyze scheduling outcomes. They are expected to have basic technical knowledge related to computing systems but do not require expertise in scheduling algorithms or machine learning.
+End users rely on the system to:
+Define and submit tasks with configurable parameters
+View predicted execution times and scheduling decisions
+Analyze performance metrics and comparison results
+Usability and clarity of output are critical for this user class, as they use the system for academic learning and evaluation purposes.
+System AdministratorThe system administrator is responsible for managing the overall configuration and operation of the simulation environment. This user class has advanced technical knowledge and interacts with administrative features of the system.
+End users rely on the system to:
+Configuration and management of simulated fog resources
+Monitoring system performance and scheduling behavior
+Managing user access and system parameters
+The administrator ensures that the system operates correctly and that simulation conditions reflect realistic computing scenarios.
+Internal System Components (Automated Services)In addition to human users, the system includes internal automated components that function as independent logical entities. These components include the machine learning prediction module, scheduling engine, resource manager, and database services.
+End users rely on the system to:
+Communicate with each other through defined interfaces
+Execute prediction and scheduling tasks automatically
+Maintain data consistency and system stability
+Their correct operation is essential for achieving reliable scheduling decisions and accurate performance evaluation.
+Each user class is associated with specific access privileges to maintain system security and integrity. Clear separation of responsibilities among user classes supports scalability, maintainability, and controlled system evolution in later phases.
+3. Functional Requirements
+This section describes the functional requirements of the proposed intelligent task scheduling system. These requirements define the specific actions and behaviors that the system must support to achieve its intended objectives. All functional requirements are defined considering a simulation-based fog computing environment and are independent of real-world hardware deployment.
+3.1 Task Management Requirements
+FR1: The system shall allow users to create and submit computational tasks through the user interface.
+FR2: The system shall allow users to specify task attributes such as workload size, priority level, and submission time.
+FR3: The system shall validate task inputs before accepting them for scheduling.
+FR4: The system shall maintain a queue of submitted tasks awaiting scheduling decisions.
+FR5: The system shall support modification or cancellation of tasks before execution begins.
+3.2 Resource Management and Simulation Requirements
+FR6: The system shall simulate multiple computational resources representing fog nodes.
+FR7: Each simulated resource shall have configurable parameters such as processing capacity and availability.
+FR8: The system shall dynamically track resource utilization during task execution.
+FR9: The system shall prevent over-allocation of tasks beyond available simulated resource capacity.
+3.3 Machine Learning Prediction Requirements
+FR10: The system shall predict the execution time of each task using a machine learning model.
+FR11: The prediction model shall use historical and simulated execution data as input features.
+FR12: The system shall provide predicted execution time values to the scheduling module.
+FR13: The system shall allow retraining or updating of the prediction model using newly generated data.
+3.4 Scheduling and Decision-Making Requirements
+FR14: The system shall schedule tasks using heuristic or hybrid heuristic scheduling algorithms.
+FR15: Scheduling decisions shall consider predicted execution time, task priority, and resource availability.
+FR16: The system shall support comparison between intelligent scheduling and baseline scheduling approaches.
+FR17: The system shall assign each task to exactly one simulated resource at a time.
+3.5 Monitoring, Logging, and Reporting Requirements
+FR18: The system shall record task execution details including start time, completion time, and resource usage.
+FR19: The system shall store scheduling decisions and prediction results in a persistent database.
+FR20: The system shall generate performance metrics such as average completion time and resource utilization.
+FR21: The system shall provide visual or tabular representations of scheduling performance for user analysis.
+4. Non-Functional Requirements
+This section defines the quality attributes and operational constraints of the proposed intelligent task scheduling system. Non-functional requirements ensure that the system not only performs the required functions but also meets expected standards of performance, reliability, usability, scalability, and maintainability. These requirements are specified with respect to a simulation-based environment.
+4.1 Performance Requirements
+NFR1: The system shall generate scheduling decisions within acceptable response time for simulated workloads.
+NFR2: The machine learning prediction module shall produce execution time predictions with minimal computational overhead.
+NFR3: The system shall support concurrent task submissions without significant degradation in performance.
+NFR4: The system shall efficiently handle increasing numbers of simulated tasks and resources during experimentation.
+NFR5: The system shall maintain consistent operation during continuous simulation runs.
+NFR6: Failure of one internal component (e.g., prediction module) shall not cause complete system failure.
+NFR7: The system shall ensure data consistency for task execution and scheduling records.
+4.2 Security Requirements
+NFR8: The system shall restrict access to authorized users only.
+NFR9: Administrative functionalities shall be protected using role-based access control.
+NFR10: The system shall prevent unauthorized modification of task and scheduling data.
+4.3 Usability Requirements
+NFR11: The user interface shall be simple and intuitive for academic users.
+NFR12: The system shall provide clear feedback for task submission, scheduling results, and errors.
+NFR13: The system shall present performance metrics in an easily understandable format.
+4.4 Scalability and Maintainability
+NFR14: The system architecture shall support scaling of simulated resources and task volumes.
+NFR15: The system design shall allow integration of additional scheduling algorithms in future phases.
+NFR16: The system shall support future extension to real fog or cloud environments if required.
+NFR17: The system shall follow a modular design to simplify maintenance and updates.
+NFR18: Code components shall be well-structured to support debugging and enhancement.
+NFR19: The system shall support easy replacement or improvement of the machine learning model without affecting other modules.
+5. System Architecture and Design
+5.1 System Architecture Overview
+The system follows a layered and modular architecture, consisting of the following major components:
+User Interface LayerThis layer provides a web-based interface through which users interact with the system. It enables task submission, visualization of scheduling decisions, and analysis of performance metrics. The interface communicates with backend services using well-defined APIs.
+Scheduling and Control LayerThis layer acts as the core decision-making component of the system. It receives task data from the user interface, invokes the machine learning prediction module, and applies heuristic or hybrid heuristic algorithms to determine optimal task-resource assignments.
+Machine Learning Prediction ModuleThis module is responsible for estimating task execution time based on historical and simulated data. It operates as an independent service and provides prediction results to the scheduling module. This separation allows the prediction logic to be updated or retrained without affecting the scheduling workflow.
+Resource Simulation LayerThis layer simulates fog computing resources with varying computational capacities and availability. It maintains the state of each simulated resource and provides real-time information to the scheduling module during decision-making.
+Data Management LayerThe data management layer handles persistent storage of task definitions, prediction results, scheduling decisions, and execution history. A relational database structure is used to support structured queries and performance evaluation.
+System Architecture Diagram:
+Interactive Architecture Diagram: https://drive.google.com/file/d/1UdPetzd3rntVsTS8_l92jlI5ryfQ8LNH/view?usp=sharing
+5.2 Module-wise Design
+This section describes the internal design of the major system modules. Each module is defined in terms of its responsibilities, inputs and outputs, and interactions with other modules to ensure clarity of system behavior and modular implementation.
+5.2.1 User Interface Module
+Responsibilities:
+The User Interface module provides an interactive platform for users to submit tasks, view scheduling results, and analyze system performance. It ensures usability and effective visualization of system outputs.
+Inputs:
+Task parameters (task size, priority, submission time)
+User requests for performance reports and analysis
+Outputs:
+Task submission requests to the backend
+Visualization of predicted execution times and scheduling decisions
+Interactions:
+Communicates with the Scheduling and Control module through API calls
+Receives processed results and performance data for display
+5.2.2 Scheduling and Control Module
+Responsibilities:
+This module acts as the core decision-making unit of the system. It coordinates task scheduling by integrating prediction results, heuristic algorithms, and resource availability.
+Inputs:
+Task details from the User Interface module
+Predicted execution times from the Machine Learning module
+Resource status information from the Resource Simulation module
+Outputs:
+Scheduling decisions assigning tasks to resources
+Requests to update resource states
+Interactions:
+Invokes the Machine Learning Prediction module
+Exchanges resource information with the Resource Simulation module
+Sends scheduling outcomes to the Data Management module
+5.2.3 Machine Learning Prediction Module
+Responsibilities:
+The Machine Learning module predicts task execution time using historical and simulated data. It enhances scheduling accuracy by reducing uncertainty in execution duration.
+Inputs:
+Task attributes such as workload size and resource requirements
+Historical execution data from the database
+Outputs:
+Predicted execution time for each task
+Interactions:
+Receives prediction requests from the Scheduling and Control module
+Retrieves training data from the Data Management module
+5.2.4 Resource Simulation Module
+Responsibilities:
+This module simulates fog computing resources with varying computational capabilities and availability. It maintains the dynamic state of each simulated resource.
+Inputs:
+Scheduling decisions from the Scheduling and Control module
+Resource configuration parameters
+Outputs:
+Updated resource status and utilization metrics
+Interactions:
+Provides real-time resource availability information to the Scheduling module
+Updates execution status in the Data Management module
+5.2.5 Data Management Module
+Responsibilities:
+The Data Management module is responsible for persistent storage and retrieval of all system data, including tasks, predictions, scheduling decisions, and execution history.
+Inputs:
+Task and scheduling data from the Scheduling module
+Execution results from the Resource Simulation module
+Outputs:
+Stored records for analysis and reporting
+Historical data for machine learning model training
+Interactions:
+Serves data requests from all other modules
+Ensures data consistency and integrity across the system
+5.3 Data Flow Design
+This section describes how data flows through the proposed intelligent task scheduling system, from initial input to processing, storage, and final output. The data flow is designed to ensure accuracy, consistency, and traceability of information across all system components in a simulation-based environment.
+5.3.1 Input Sources
+The system receives data from multiple input sources:
+User Input:Users provide task-related information such as task size, priority, and submission parameters through the user interface. These inputs serve as the primary triggers for system processing.
+System Configuration Input:Configuration parameters related to simulated fog resources, scheduling policies, and system settings are provided by the system administrator.
+Historical and Simulated Data:Previously stored task execution and prediction data are used as input for machine learning-based execution time prediction.
+5.3.2 Processing Stages
+The processing of data occurs in a sequential and well-defined manner:
+Task Validation and PreprocessingUser-submitted task data is validated to ensure completeness and correctness. Valid tasks are formatted and forwarded to the scheduling module.
+Execution Time PredictionThe validated task data is passed to the machine learning prediction module, where execution time is estimated based on historical and simulated datasets.
+Scheduling Decision MakingPredicted execution times, task priorities, and current resource availability are combined by the scheduling module. A heuristic or hybrid heuristic algorithm determines the optimal resource allocation.
+Execution SimulationThe selected simulated resource executes the task logically, updating resource utilization and task status within the simulation environment.
+Performance EvaluationSystem metrics such as task completion time, waiting time, and resource usage are computed for analysis and comparison.
+Data Flow Diagram:
+Interactive Data Flow Diagram: https://drive.google.com/file/d/12AmI-2eCI4ExONiefSWGg2Q9-Vx9IyNO/view?usp=sharing
+5.3.3 Data Storage and Retrieval
+Persistent StorageAll task definitions, prediction results, scheduling decisions, and execution outcomes are stored in a structured relational database. This ensures data consistency and long-term availability for analysis.
+Data RetrievalStored data is retrieved for performance reporting, visualization, and further training or refinement of the machine learning model.
+Feedback to UsersProcessed results and performance metrics are transmitted back to the user interface for display and interpretation.
+5.4 Database Design
+5.4.1 High-Level Database Schema
+The database follows a normalized relational schema designed to represent core system entities and their relationships. The schema supports task management, execution time prediction, scheduling history, and system performance monitoring. Each entity is uniquely identifiable and linked using primary and foreign key relationships.
+5.4.2 Key Entities and Relationships
+The primary entities in the database include:
+TaskRepresents individual computational tasks submitted by users.Each task is associated with scheduling decisions and prediction results.
+ResourceRepresents simulated fog computing resources.A resource may execute multiple tasks over time but handles limited tasks concurrently.
+ScheduleHistoryStores historical records of task scheduling decisions.This entity links tasks to resources and records execution timestamps.
+PredictionStores machine learning-based execution time predictions for tasks.Each prediction is associated with a specific task and model version.
+SystemMetricsCaptures performance-related data such as execution time, waiting time, and resource utilization.
+Relationships:
+A Task can have one or more Predictions.
+A Task is associated with exactly one ScheduleHistory record per execution.
+A Resource can be linked to multiple ScheduleHistory records.
+SystemMetrics are derived from execution and scheduling data linked to tasks and resources.
+5.4.3 Important Attributes
+Key attributes for major entities include:
+Task:TaskID, TaskSize, Priority, SubmissionTime, Status
+Resource:ResourceID, ProcessingCapacity, AvailabilityStatus
+ScheduleHistory:ScheduleID, TaskID, ResourceID, StartTime, EndTime
+Prediction:PredictionID, TaskID, PredictedExecutionTime, ModelVersion
+SystemMetrics:MetricID, TaskID, CompletionTime, WaitingTime, ResourceUtilization
+These attributes enable effective tracking, analysis, and evaluation of system performance while supporting future enhancement of scheduling and prediction logic.
+6. Technology Stack and Justification
+6.1 Frontend Technologies
+React 18 – Enables efficient, component-based UI development with responsive rendering for real-time scheduling visualization.
+TypeScript – Improves code reliability and maintainability through static type checking.
+Vite 7 – Provides fast builds and instant hot module replacement for rapid development.
+Tailwind CSS 3 – Allows quick, consistent, and responsive UI styling using utility-first classes.
+Zustand – Lightweight state management for handling task and scheduling data efficiently.
+React Router 6 – Supports smooth client-side navigation across application views.
+Chart.js & Recharts – Enables clear visualization of scheduling performance and prediction metrics.
+Socket.IO Client – Provides real-time updates between frontend and backend components.
+dnd-kit – Enables accessible and intuitive drag-and-drop task interaction.
+6.2 Backend Technologies
+Node.js + Express – Handles concurrent requests efficiently using a non-blocking event-driven model.
+TypeScript – Ensures consistent data models and reduces integration errors across services.
+Prisma ORM – Provides type-safe database access and simplified schema migrations.
+Socket.IO – Enables real-time bidirectional communication for scheduling updates.
+Zod – Validates API request data at runtime to prevent invalid inputs.
+JWT (jsonwebtoken) – Supports secure, stateless authentication across microservices.
+bcryptjs – Secures user credentials using salted password hashing.
+Helmet.js – Enhances backend security by applying standard HTTP security headers.
+express-rate-limit – Prevents API abuse by limiting excessive requests.
+Swagger – Generates interactive API documentation for easier testing and maintenance.
+PDFKit – Enables server-side generation of analytical and result reports.
+ioredis – Provides high-performance caching and supports rate-limiting mechanisms.
+6.3 Database Technologies
+PostgreSQL 15 – Ensures reliable, ACID-compliant storage for structured scheduling and performance data.
+Redis 7 – Improves response time through in-memory caching and rate-limiting support.
+6.4 Machine Learning Service Technologies
+Python 3 – Provides a mature ecosystem for efficient machine learning development.
+Flask – Enables lightweight and scalable deployment of the ML prediction service.
+scikit-learn 1.5 – Offers reliable regression models for execution time prediction.
+XGBoost – Improves prediction accuracy using advanced gradient boosting techniques.
+NumPy & Pandas – Supports efficient data preprocessing and feature engineering.
+joblib – Allows efficient model serialization and reuse across simulation runs.
+6.5 DevOps and Supporting Tools
+Docker & Docker Compose – Ensures consistent, reproducible multi-service simulation environments.
+Nginx – Acts as a high-performance reverse proxy for efficient request routing.
+7. Proof of Concept (PoC)
+The Proof of Concept (PoC) demonstrates the feasibility of the proposed intelligent task scheduling system within a simulation-based environment. The objective of the PoC is to validate the core system workflow, including task submission, execution time prediction, heuristic-based scheduling, and result visualization, without deploying real fog infrastructure.
+The PoC simulates task workloads and fog-like resources to evaluate how machine learning-assisted predictions can improve scheduling decisions. It verifies that the system architecture, module interactions, and data flow operate as intended under controlled conditions.
+7.1 PoC Implementation Overview
+Tasks are submitted through the user interface with configurable attributes.
+The machine learning service predicts execution time for each task.
+The scheduling module applies heuristic or hybrid heuristic logic to assign tasks to simulated resources.
+Execution and scheduling results are logged and visualized for analysis.
+7.2 PoC Outcomes
+Successful integration of ML prediction with scheduling logic.
+Correct simulation of resource allocation and task execution.
+Generation of meaningful performance metrics such as execution time and resource utilization.
+7.3 PoC Limitations
+The PoC operates entirely in a simulated environment and does not include real-time deployment on physical fog or cloud hardware. Performance results are indicative and intended for comparative analysis rather than production benchmarking.
+GitHub Repository: https://github.com/shri33/ML-Task-Scheduler
+Figma Design: https://www.figma.com/make/CnUR3FhpybWGLOF8CmnP0U/Implement-ML-for-Task-Scheduling?t=cQ7HAWxQjlc3vcgV-1
+8. Testing and Validation Strategy
+8.1 Unit Testing
+Individual modules such as task validation, prediction logic, and scheduling algorithms are tested independently.
+Ensures correctness of module-level functionality.
+8.2 Integration Testing
+Validates interaction between frontend, backend, machine learning service, and database.
+Ensures seamless data flow and correct module coordination.
+8.3 Functional Validation
+Confirms that system behavior aligns with defined functional requirements.
+Verifies task submission, prediction accuracy handling, and scheduling decisions.
+8.4 Performance Observation
+Observes system response time and behavior under increasing simulated workloads.
+Ensures acceptable performance for academic experimentation.
+9. Risks, Challenges, and Mitigation
+This section identifies potential risks associated with the system design and simulation, along with corresponding mitigation strategies.
+Risk
+Description
+Mitigation Strategy
+ML prediction inaccuracy
+Poor predictions may affect scheduling quality
+Periodic retraining and heuristic fallback mechanisms
+Integration complexity
+Multiple modules may cause integration issues
+Modular design and incremental integration
+Performance bottlenecks
+Increased tasks may slow simulation
+Efficient data handling and caching
+Scope overrun
+Feature expansion beyond Phase-2
+Strict scope definition and milestone tracking
+10. Phase 2 Outcomes and Readiness for Phase 3 
+Phase 2 successfully delivers a detailed system design, defined requirements, architectural blueprint, and a validated simulation-based Proof of Concept. The feasibility of integrating machine learning with heuristic scheduling in a fog-inspired environment has been demonstrated.
+The project is now prepared to transition into Phase 3, which will focus on:
+Full-scale implementation of system components
+Optimization of scheduling algorithms and ML models
+Extended performance evaluation and comparative analysis
+Enhanced visualization and reporting
+The outcomes of Phase 2 provide a solid technical foundation for successful project completion.
+11. Supervisor Review and Approval
+Advisor Feedback: The advisor reviewed the work and provided positive feedback, confirming that it is satisfactory and ready for submission. No additional changes were suggested.
+Supervisor Comments: The supervisor reviewed the submission and confirmed that it meets the requirements. No revisions were requested.
+Recommendations:
+The supervisor expressed satisfaction with the quality of the work and recommended proceeding with the final submission.
+Signature: Swapnil Saurav
+Date: 14-02-2026
+References
+Wang, J., & Li, D. (2019). "Task Scheduling Based on a Hybrid Heuristic Algorithm for Smart Production Line with Fog Computing." Sensors, 19(5), 1023. DOI: 10.3390/s19051023
+Buyya, R., Ranjan, R., & Calheiros, R. N. (2009). "Cloud computing: A taxonomy of platforms and infrastructure." Journal of Network and Computer Applications, 32(1), 11-24.
+Pedregosa, F., et al. (2011). "Scikit-learn: Machine learning in Python." Journal of Machine Learning Research, 12, 2825-2830.
+Prisma Documentation. (2024). Retrieved from https://www.prisma.io/docs
+Socket.IO Documentation. (2024). Retrieved from https://socket.io/docs/v4/

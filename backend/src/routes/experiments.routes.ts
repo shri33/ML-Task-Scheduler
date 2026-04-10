@@ -186,7 +186,7 @@ function runToleranceExperiment(): ToleranceRow[] {
         maxToleranceTime: maxTime,
         expectedCompletionTime: maxTime * 0.5,
         terminalDeviceId: devices[i % devices.length].id,
-        priority: Math.floor(Math.random() * 5) + 1,
+        priority: Math.floor(Math.random() * 5) + 1, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1,
       });
     }
 

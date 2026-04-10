@@ -54,7 +54,7 @@ const createMockTask = (overrides: Partial<Task> = {}): Task => ({
   maxToleranceTime: 30, // seconds
   expectedCompletionTime: 5,
   terminalDeviceId: 'device-1',
-  priority: 3,
+  priority: 3, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1,
   ...overrides
 });
 
@@ -64,7 +64,7 @@ const createMockFogNode = (overrides: Partial<FogNode> = {}): FogNode => ({
   computingResource: 1.5e9, // 1.5 GHz
   storageCapacity: 100,
   networkBandwidth: 75, // Mbps
-  currentLoad: 0.2,
+  currentLoad: 0.2, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05,
   ...overrides
 });
 
@@ -531,7 +531,7 @@ describe('Cloud Offloading (3-Layer Architecture)', () => {
     computingResource: 100e9,
     networkBandwidth: 100,
     latencyPenalty: 50,
-    costPerUnit: 0.001,
+    costPerUnit: 0.001, baseLatency: 10, egressCostPerMb: 0.05,
     available: true,
     ...overrides
   });
@@ -563,7 +563,7 @@ describe('Cloud Offloading (3-Layer Architecture)', () => {
   describe('calculateCloudCost', () => {
     it('should calculate cost based on computation units', () => {
       const task = createMockTask({ dataSize: 20, computationIntensity: 300 });
-      const cloud = createMockCloudNode({ costPerUnit: 0.001 });
+      const cloud = createMockCloudNode({ costPerUnit: 0.001, baseLatency: 10, egressCostPerMb: 0.05 });
 
       const cost = calculateCloudCost(task, cloud);
 
@@ -594,7 +594,7 @@ describe('Cloud Offloading (3-Layer Architecture)', () => {
         dataSize: 10 // Small task
       });
       const fogNodes = [createMockFogNode({ 
-        currentLoad: 0.1, 
+        currentLoad: 0.1, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05, 
         computingResource: 2e9,
         networkBandwidth: 100
       })];
@@ -610,8 +610,8 @@ describe('Cloud Offloading (3-Layer Architecture)', () => {
       const device = createMockDevice({ isMobile: true });
       const task = createMockTask({ maxToleranceTime: 30 });
       const fogNodes = [
-        createMockFogNode({ id: 'fog-1', currentLoad: 0.95 }),
-        createMockFogNode({ id: 'fog-2', currentLoad: 0.92 })
+        createMockFogNode({ id: 'fog-1', currentLoad: 0.95, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 }),
+        createMockFogNode({ id: 'fog-2', currentLoad: 0.92, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 })
       ];
       const cloud = createMockCloudNode();
 
@@ -636,8 +636,8 @@ describe('Cloud Offloading (3-Layer Architecture)', () => {
     it('should include cost estimate for cloud offloading', () => {
       const device = createMockDevice({ isMobile: true });
       const task = createMockTask();
-      const fogNodes = [createMockFogNode({ currentLoad: 0.95 })];
-      const cloud = createMockCloudNode({ costPerUnit: 0.01 });
+      const fogNodes = [createMockFogNode({ currentLoad: 0.95, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 })];
+      const cloud = createMockCloudNode({ costPerUnit: 0.01, baseLatency: 10, egressCostPerMb: 0.05 });
 
       const decision = makeOffloadDecision(task, device, fogNodes, cloud);
 
@@ -668,7 +668,7 @@ describe('Cloud Offloading (3-Layer Architecture)', () => {
       const tasks = generateSampleTasks(10, devices);
       const fogNodes = generateSampleFogNodes(2);
       fogNodes.forEach(f => f.currentLoad = 0.95); // Force cloud offloading
-      const cloud = createMockCloudNode({ costPerUnit: 0.01 });
+      const cloud = createMockCloudNode({ costPerUnit: 0.01, baseLatency: 10, egressCostPerMb: 0.05 });
 
       const result = scheduleWith3LayerOffloading(tasks, fogNodes, devices, cloud);
 
@@ -718,7 +718,7 @@ describe('Cloud Offloading (3-Layer Architecture)', () => {
     it('should allow overrides', () => {
       const cloud = generateSampleCloudNode({ 
         latencyPenalty: 100,
-        costPerUnit: 0.05 
+        costPerUnit: 0.05, baseLatency: 10, egressCostPerMb: 0.05 
       });
 
       expect(cloud.latencyPenalty).toBe(100);

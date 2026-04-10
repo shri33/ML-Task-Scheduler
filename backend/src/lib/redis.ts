@@ -209,6 +209,29 @@ class RedisService {
       return false;
     }
   }
+
+  // Basic distributed lock (advisory)
+  async lock(key: string, ttlSeconds: number): Promise<boolean> {
+    if (!this.isAvailable()) return true; // Fail open if Redis is down (prefer duplicate scheduling over dead stop in dev)
+    try {
+      const result = await this.client!.set(key, 'locked', 'EX', ttlSeconds, 'NX');
+      return result === 'OK';
+    } catch (error) {
+      logger.error('Redis LOCK error', error instanceof Error ? error : new Error(String(error)));
+      return true; // Fail open
+    }
+  }
+
+  async unlock(key: string): Promise<boolean> {
+    if (!this.isAvailable()) return true;
+    try {
+      await this.client!.del(key);
+      return true;
+    } catch (error) {
+      logger.error('Redis UNLOCK error', error instanceof Error ? error : new Error(String(error)));
+      return false;
+    }
+  }
 }
 
 export const redisService = new RedisService();

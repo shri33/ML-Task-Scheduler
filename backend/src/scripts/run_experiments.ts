@@ -178,7 +178,7 @@ function experimentReliabilityTolerance() {
         maxToleranceTime: mt,
         expectedCompletionTime: mt * 0.5,
         terminalDeviceId: devs[i % devs.length].id,
-        priority: Math.floor(Math.random() * 5) + 1,
+        priority: Math.floor(Math.random() * 5) + 1, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1,
       });
     }
 

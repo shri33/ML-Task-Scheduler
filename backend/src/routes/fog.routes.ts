@@ -47,7 +47,7 @@ async function initializeSampleData() {
         computingResource: n.computingResource,
         storageCapacity: n.storageCapacity,
         networkBandwidth: n.networkBandwidth,
-        currentLoad: n.currentLoad,
+        currentLoad: n.currentLoad, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05,
       })),
       skipDuplicates: true,
     });
@@ -57,7 +57,7 @@ async function initializeSampleData() {
 
 /** Convert a DB FogNode row to the in-memory format the algorithms expect. */
 function dbNodeToAlgo(n: { id: string; name: string; computingResource: number; storageCapacity: number; networkBandwidth: number; currentLoad: number }): FogNode {
-  return { id: n.id, name: n.name, computingResource: n.computingResource, storageCapacity: n.storageCapacity, networkBandwidth: n.networkBandwidth, currentLoad: n.currentLoad };
+  return { id: n.id, name: n.name, computingResource: n.computingResource, storageCapacity: n.storageCapacity, networkBandwidth: n.networkBandwidth, currentLoad: n.currentLoad, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05 };
 }
 
 // Validation schemas for fog endpoints
@@ -161,7 +161,7 @@ router.post('/nodes', async (req: Request, res: Response) => {
       computingResource: (computingResourceGHz || 1.5) * 1e9,
       storageCapacity: storageCapacity || 100,
       networkBandwidth: networkBandwidthMbps || 75,
-      currentLoad: 0,
+      currentLoad: 0, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05,
     },
   });
   
@@ -254,7 +254,7 @@ router.post('/tasks', async (req: Request, res: Response) => {
     maxToleranceTime: maxToleranceTime || 30,
     expectedCompletionTime: 5,
     terminalDeviceId: terminalDeviceId || terminalDevices[0]?.id,
-    priority: priority || 3
+    priority: priority || 3, memoryRequirement: 128, vramRequirement: 0, startupOverhead: 1
   };
   
   fogTasks.push(newTask);
@@ -364,6 +364,10 @@ router.post('/schedule', async (req: Request, res: Response) => {
   }
 });
 
+const compareSchema = z.object({
+  taskCount: z.number().int().positive().max(10000).optional()
+});
+
 /**
  * @route POST /api/fog/compare
  * @desc Compare all scheduling algorithms
@@ -372,7 +376,15 @@ router.post('/compare', async (req: Request, res: Response) => {
   try {
     await initializeSampleData();
     
-    const { taskCount = 50 } = req.body;
+    const validation = compareSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        error: validation.error.errors[0].message
+      });
+    }
+
+    const taskCount = validation.data.taskCount ?? 50;
     
     // Generate fresh test data
     const testDevices = generateSampleDevices(Math.min(taskCount, 20));
@@ -507,12 +519,19 @@ router.post('/compare', async (req: Request, res: Response) => {
   }
 });
 
+const metricsQuerySchema = z.object({
+  type: z.enum(['delay', 'energy', 'reliability', 'all']).optional()
+});
+
 /**
  * @route GET /api/fog/metrics
  * @desc Get performance metrics over different task counts
  */
 router.get('/metrics', async (req: Request, res: Response) => {
   try {
+    const validation = metricsQuerySchema.safeParse(req.query);
+    // Ignore validation errors, default to 'all' if invalid type is provided
+    const type = validation.success ? (validation.data.type || 'all') : 'all';
     // As per paper: 50, 100, 150, 200, 250, 300
     const taskCounts = [50, 100, 150, 200, 250, 300];
     const metrics: any[] = [];
@@ -598,12 +617,28 @@ router.get('/metrics', async (req: Request, res: Response) => {
   }
 });
 
+const resetSchema = z.object({
+  nodeCount: z.number().int().positive().max(100).optional(),
+  deviceCount: z.number().int().positive().max(1000).optional(),
+  taskCount: z.number().int().positive().max(10000).optional()
+});
+
 /**
  * @route POST /api/fog/reset
  * @desc Reset fog computing simulation data
  */
 router.post('/reset', adminOnly, async (req: Request, res: Response) => {
-  const { nodeCount = 10, deviceCount = 20, taskCount = 50 } = req.body;
+  const validation = resetSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({
+      success: false,
+      error: validation.error.errors[0].message
+    });
+  }
+
+  const nodeCount = validation.data.nodeCount ?? 10;
+  const deviceCount = validation.data.deviceCount ?? 20;
+  const taskCount = validation.data.taskCount ?? 50;
   
   // Clear DB fog data
   await prisma.fogTaskAssignment.deleteMany({});
@@ -617,7 +652,7 @@ router.post('/reset', adminOnly, async (req: Request, res: Response) => {
       computingResource: n.computingResource,
       storageCapacity: n.storageCapacity,
       networkBandwidth: n.networkBandwidth,
-      currentLoad: n.currentLoad,
+      currentLoad: n.currentLoad, totalMemory: 8192, totalVram: 0, baseLatency: 10, egressCostPerMb: 0.05,
     })),
   });
   
@@ -644,7 +679,8 @@ router.post('/reset', adminOnly, async (req: Request, res: Response) => {
  */
 router.get('/export/csv', async (req: Request, res: Response) => {
   try {
-    const { type = 'all' } = req.query;
+    const validation = metricsQuerySchema.safeParse(req.query);
+    const type = validation.success ? (validation.data.type || 'all') : 'all';
     
     // Generate benchmark data
     const taskCounts = [50, 100, 150, 200, 250, 300];

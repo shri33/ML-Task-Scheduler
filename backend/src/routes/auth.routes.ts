@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { verifyAccessToken, verifyRefreshToken, verifyTokenCustom } from '../utils/token.utils';
 import prisma from '../lib/prisma';
 import { authenticate, generateTokens, AuthRequest } from '../middleware/auth.middleware';
 import { authLimiter } from '../middleware/rateLimit.middleware';
@@ -9,9 +10,11 @@ import { setCsrfCookie } from '../middleware/csrf.middleware';
 import { z } from 'zod';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required');
+const JWT_SECRET = process.env.JWT_SECRET || process.env.ACCESS_TOKEN_SECRET;
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || JWT_SECRET;
+
+if (!JWT_SECRET || !REFRESH_TOKEN_SECRET) {
+  throw new Error('JWT_SECRET (or ACCESS_TOKEN_SECRET) and REFRESH_TOKEN_SECRET are required');
 }
 
 // Demo user for development without database (disabled in production)
@@ -235,11 +238,23 @@ router.post('/login', authLimiter, async (req: Request, res: Response, next: Nex
   }
 });
 
+const refreshSchema = z.object({
+  refreshToken: z.string().min(1, 'Refresh token is required').optional()
+});
+
 // Refresh token
 router.post('/refresh', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const validation = refreshSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        error: validation.error.errors[0].message
+      });
+    }
+
     // Read refresh token from body OR httpOnly cookie
-    const refreshToken = req.body.refreshToken || req.cookies?.[REFRESH_TOKEN_COOKIE];
+    const refreshToken = validation.data.refreshToken || req.cookies?.[REFRESH_TOKEN_COOKIE];
 
     if (!refreshToken) {
       return res.status(400).json({
@@ -251,7 +266,7 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
     // Verify refresh token
     let decoded: any;
     try {
-      decoded = jwt.verify(refreshToken, JWT_SECRET);
+      decoded = verifyRefreshToken(refreshToken);
     } catch {
       return res.status(401).json({
         success: false,
@@ -307,7 +322,8 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
 // Logout
 router.post('/logout', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const refreshToken = req.body.refreshToken || req.cookies?.[REFRESH_TOKEN_COOKIE];
+    const validation = refreshSchema.safeParse(req.body);
+    const refreshToken = validation.success ? validation.data.refreshToken : req.cookies?.[REFRESH_TOKEN_COOKIE];
 
     if (refreshToken) {
       // Delete specific refresh token
@@ -436,17 +452,22 @@ router.put('/profile', authenticate, async (req: AuthRequest, res: Response, nex
   }
 });
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email('Invalid email address')
+});
+
 // Forgot password - Request reset
 router.post('/forgot-password', authLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email } = req.body;
-
-    if (!email) {
+    const validation = forgotPasswordSchema.safeParse(req.body);
+    if (!validation.success) {
       return res.status(400).json({
         success: false,
-        error: 'Email is required'
+        error: validation.error.errors[0].message
       });
     }
+
+    const { email } = validation.data;
 
     // Check for demo user
     if (email === DEMO_USER.email) {
@@ -507,29 +528,28 @@ router.post('/forgot-password', authLimiter, async (req: Request, res: Response,
   }
 });
 
+const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters')
+});
+
 // Reset password with token
 router.post('/reset-password', authLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { token, newPassword } = req.body;
-
-    if (!token || !newPassword) {
+    const validation = resetPasswordSchema.safeParse(req.body);
+    if (!validation.success) {
       return res.status(400).json({
         success: false,
-        error: 'Token and new password are required'
+        error: validation.error.errors[0].message
       });
     }
 
-    if (newPassword.length < 8) {
-      return res.status(400).json({
-        success: false,
-        error: 'Password must be at least 8 characters'
-      });
-    }
+    const { token, newPassword } = validation.data;
 
     // Verify token
     let decoded: any;
     try {
-      decoded = jwt.verify(token, JWT_SECRET);
+      decoded = verifyTokenCustom(token, JWT_SECRET);
     } catch {
       return res.status(401).json({
         success: false,
@@ -586,24 +606,23 @@ router.post('/reset-password', authLimiter, async (req: Request, res: Response, 
   }
 });
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters')
+});
+
 // Change password
 router.put('/password', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
+    const validation = changePasswordSchema.safeParse(req.body);
+    if (!validation.success) {
       return res.status(400).json({
         success: false,
-        error: 'Current password and new password are required'
+        error: validation.error.errors[0].message
       });
     }
 
-    if (newPassword.length < 8) {
-      return res.status(400).json({
-        success: false,
-        error: 'New password must be at least 8 characters'
-      });
-    }
+    const { currentPassword, newPassword } = validation.data;
 
     const user = await prisma.user.findUnique({
       where: { id: req.user!.userId }

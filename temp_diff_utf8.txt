@@ -1,0 +1,129 @@
+﻿diff --git a/docs/IMPLEMENTATION_AUDIT.md b/docs/IMPLEMENTATION_AUDIT.md
+index 7bf78a7f..5d279064 100644
+--- a/docs/IMPLEMENTATION_AUDIT.md
++++ b/docs/IMPLEMENTATION_AUDIT.md
+@@ -6,9 +6,10 @@
+ ## 📊 EXECUTIVE SUMMARY
+ 
+ Your project is **FULLY IMPLEMENTED** with:
+-- ✅ ML Service (Random Forest, XGBoost, Gradient Boosting)
++- ✅ **Predictive GPU Task Scheduler** (VRAM-aware scheduling, Redis GPU Registry)
++- ✅ ML Service (Predicting Time + VRAM with Random Forest, XGBoost, etc.)
+ - ✅ 3 Advanced Scheduling Algorithms (IPSO, IACO, Hybrid HH)
+-- ✅ 7 Complete API Route Sets
++- ✅ 7 Complete API Route Sets + GPU endpoints
+ - ✅ Real Production Servers (Docker Compose with 5 containerized services)
+ - ✅ Database, Caching, and Microservices Architecture
+ 
+@@ -47,6 +48,7 @@ Input Features:
+ 
+ Output:
+ - predictedTime: float (seconds)
++- predictedVram: float (MB) - Critical for GPU scheduling
+ - confidence: float (0-1)
+ - modelVersion: string
+ ```
+@@ -118,32 +120,60 @@ Objective Function: f = Σ(wit * Tij + wie * Eij)
+ **Status:** ✅ **FULLY IMPLEMENTED**
+ 
+ #### Features:
+-- **ML Integration:** Real-time ML predictions for task execution time
+-- **Scoring Algorithm:** Multi-factor scoring (load, time, priority)
+-- **Resource Selection:** Intelligent best-resource selection
+-- **Explanation Generation:** Human-readable scheduling rationale
+-- **History Tracking:** Complete scheduling audit trail
+-
+-#### Scheduling Score Formula:
++- **ML Integration:** Real-time ML predictions for task execution time and required VRAM.
++- **GPU-Aware Scheduling:** Deterministic scheduler treating available VRAM as a hard constraint.
++- **Scoring Algorithm:** Multi-factor scoring prioritizing nodes with sufficient free VRAM, low utilization, and task priority.
++- **Resource Selection:** Intelligent best-resource selection across both PostgreSQL resources and Redis-registered GPU nodes.
++- **Explanation Generation:** Human-readable scheduling rationale including VRAM constraints.
++- **History Tracking:** Complete scheduling audit trail.
++
++#### Scheduling Score Logic:
+ ```
+-Score = (loadScore * 0.4) + (timeScore * 0.3) + (priorityBonus * 0.3)
++1. Hard Constraint: Free VRAM (vramTotal - vramUsed) >= predictedVram
++   If False -> Reject Node
++
++2. Score = (VramRatio * 0.4) + (UtilizationScore * 0.3) + (PriorityBonus * 0.3)
+ 
+ Where:
+-- loadScore = (100 - resourceLoad) / 100
+-- timeScore = max(0, 1 - (predictedTime / 20))
+-- priorityBonus = taskPriority / 5
++- VramRatio = freeVram / vramTotal
++- UtilizationScore = (100 - utilization) / 100
++- PriorityBonus = taskPriority / 5
+ ```
+ 
+ #### Methods:
+-- `schedule()` - Main scheduling algorithm
++- `schedule()` - Main scheduling algorithm (now VRAM-aware)
+ - `scheduleTask()` - Single task allocation
+-- `calculateScore()` - Multi-factor scoring
++- `calculateScore()` - VRAM-aware multi-factor scoring
+ - `recordHistory()` - Audit trail
+ - `getHistory()` - Retrieve scheduling history
+ - `getComparison()` - ML vs non-ML comparison
+ 
+ ---
+ 
++### 3. **GPU Node Registry** (`backend/src/services/gpuRegistry.service.ts`)
++**Status:** ✅ **FULLY IMPLEMENTED**
++
++#### Features:
++- **Redis-Backed Registry:** High-performance, temporary registration of GPU worker nodes in Redis.
++- **Node Telemetry:** Workers periodically report their `vramTotal`, `vramUsed`, and `utilization`.
++- **Heartbeat Monitoring:** Stale nodes are ignored during scheduling.
++
++#### GPU Node Model:
++```typescript
++interface GPUNode {
++  id: string;
++  host: string;
++  gpuType: string;
++  vramTotal: number;
++  vramUsed: number;
++  utilization: number;
++  queue: number;
++  lastHeartbeat: number;
++}
++```
++
++---
++
+ ## 📡 API IMPLEMENTATION
+ 
+ ### Complete REST API Routes
+@@ -222,6 +252,12 @@ Where:
+ | `/api/auth/refresh` | POST | Refresh JWT token |
+ | `/api/auth/verify` | GET | Verify token |
+ 
++### 8. **GPU Registry Routes** (`/api/gpu`)
++| Endpoint | Method | Purpose |
++|----------|--------|---------|
++| `/api/gpu/register` | POST | Register or update GPU node telemetry |
++| `/api/gpu/nodes` | GET | List active GPU nodes from Redis |
++
+ ### Additional Endpoints:
+ | Endpoint | Method | Purpose |
+ |----------|--------|---------|
+@@ -378,14 +414,14 @@ Frontend (React) ← Socket.io ← Backend (Express/Node)
+ - Resource history tracking
+ 
+ ### ✅ ML Predictions
+-- Real-time execution time prediction
++- Real-time execution time and **VRAM** prediction (2D output)
+ - Confidence scores for predictions
+ - Automatic fallback mode
+ - Model retraining capability
+ - Prediction accuracy tracking
+ 
+ ### ✅ Scheduling Algorithms
+-- **Default:** ML-Enhanced + Priority-based
++- **Deterministic GPU Scheduler:** VRAM-aware scheduling with hard constraints
+ - **Advanced:** Hybrid Heuristic (IPSO + IACO)
+ - **Comparison:** Side-by-side algorithm comparison
+ - **History:** Complete audit trail

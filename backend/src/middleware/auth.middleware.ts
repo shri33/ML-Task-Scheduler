@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { verifyAccessToken, JwtPayload } from '../utils/token.utils';
 import prisma from '../lib/prisma';
 import { ACCESS_TOKEN_COOKIE } from '../lib/cookies';
 
@@ -8,15 +9,12 @@ if (!JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required');
 }
 
-export interface JwtPayload {
-  userId: string;
-  email: string;
-  role: string;
-}
+// JwtPayload interface now imported from token.utils
 
 export interface AuthRequest extends Request {
   user?: JwtPayload;
 }
+export type { JwtPayload };
 
 // Verify JWT token middleware (reads from Authorization header OR httpOnly cookie)
 export const authenticate = async (
@@ -46,13 +44,33 @@ export const authenticate = async (
     }
 
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+      const decoded = verifyAccessToken(token);
       
+      // Skip database lookup for demo users (they don't exist in the DB)
+      const DEMO_ENABLED = process.env.NODE_ENV !== 'production';
+      if (DEMO_ENABLED && decoded.userId.startsWith('demo-')) {
+        req.user = decoded;
+        return next();
+      }
+
       // Verify user still exists and is active
-      const user = await prisma.user.findUnique({
-        where: { id: decoded.userId },
-        select: { id: true, isActive: true }
-      });
+      let user;
+      try {
+        user = await prisma.user.findUnique({
+          where: { id: decoded.userId },
+          select: { id: true, isActive: true }
+        });
+      } catch (dbError) {
+        // Database unavailable — if in dev mode, allow request through
+        if (DEMO_ENABLED) {
+          req.user = decoded;
+          return next();
+        }
+        return res.status(503).json({
+          success: false,
+          error: 'Database unavailable.'
+        });
+      }
 
       if (!user || !user.isActive) {
         return res.status(401).json({
@@ -96,7 +114,7 @@ export const optionalAuth = async (
 
     if (token) {
       try {
-        const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+        const decoded = verifyAccessToken(token);
         req.user = decoded;
       } catch {
         // Token invalid, but continue without user
@@ -142,7 +160,7 @@ export const generateTokens = (user: { id: string; email: string; role: string }
 
   const refreshToken = jwt.sign(
     { userId: user.id, type: 'refresh' },
-    JWT_SECRET,
+    process.env.REFRESH_TOKEN_SECRET || JWT_SECRET,
     { expiresIn: '7d' }
   );
 

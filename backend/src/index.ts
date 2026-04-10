@@ -23,7 +23,7 @@ import experimentsRoutes from './routes/experiments.routes';
 import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter, scheduleLimiter } from './middleware/rateLimit.middleware';
 import { csrfProtection } from './middleware/csrf.middleware';
-import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from './utils/token.utils';
 import prisma from './lib/prisma';
 import redisService from './lib/redis';
 import emailService from './services/email.service';
@@ -74,6 +74,11 @@ app.use(helmet({
     },
   },
   crossOriginEmbedderPolicy: false, // allow cross-origin for API
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
 }));
 app.use(cors({
   origin: corsOrigin,
@@ -192,11 +197,7 @@ io.use((socket, next) => {
     }
 
     // Actually verify the JWT (not just check presence)
-    const jwtSecret = env.JWT_SECRET;
-    if (!jwtSecret) {
-      return next(new Error('Server misconfigured: JWT_SECRET missing'));
-    }
-    const decoded = jwt.verify(token, jwtSecret) as { userId: string; role: string };
+    const decoded = verifyAccessToken(token);
     (socket as any).user = decoded;
     next();
   } catch (err) {

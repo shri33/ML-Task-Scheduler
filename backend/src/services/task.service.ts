@@ -1,29 +1,34 @@
 import prisma from '../lib/prisma';
 import { CreateTaskInput, UpdateTaskInput } from '../validators/task.validator';
+import { mlService } from './ml.service';
 
 type TaskStatus = 'PENDING' | 'SCHEDULED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 
 export class TaskService {
-  async create(data: CreateTaskInput) {
-    return prisma.task.create({
+  async create(data: CreateTaskInput, userId?: string) {
+    const task = await prisma.task.create({
       data: {
         name: data.name,
         type: data.type,
         size: data.size,
         priority: data.priority,
+        userId: userId,
         ...(data.dueDate ? { dueDate: new Date(data.dueDate) } : {})
       }
     });
+    await mlService.clearAllPredictions();
+    return task;
   }
 
-  async findAll(status?: TaskStatus, options?: { page?: number; limit?: number }) {
+  async findAll(status?: TaskStatus, options?: { page?: number; limit?: number }, userId?: string) {
     const page = Math.max(options?.page || 1, 1);
     const limit = Math.min(Math.max(options?.limit || 20, 1), 100);
     const skip = (page - 1) * limit;
 
     const where = {
       deletedAt: null,
-      ...(status ? { status } : {})
+      ...(status ? { status } : {}),
+      ...(userId ? { userId } : {})
     };
 
     const [items, total] = await Promise.all([
@@ -68,9 +73,13 @@ export class TaskService {
     });
   }
 
-  async findPending() {
+  async findPending(userId?: string) {
     return prisma.task.findMany({
-      where: { status: 'PENDING' },
+      where: {
+        status: 'PENDING',
+        deletedAt: null,
+        ...(userId ? { userId } : {})
+      },
       orderBy: [
         { priority: 'desc' },
         { createdAt: 'asc' }
@@ -79,10 +88,12 @@ export class TaskService {
   }
 
   async update(id: string, data: UpdateTaskInput) {
-    return prisma.task.update({
+    const task = await prisma.task.update({
       where: { id },
       data
     });
+    await mlService.clearAllPredictions();
+    return task;
   }
 
   async delete(id: string) {
@@ -93,7 +104,7 @@ export class TaskService {
     });
   }
 
-  async bulkCreate(tasks: CreateTaskInput[]) {
+  async bulkCreate(tasks: CreateTaskInput[], userId?: string) {
     const created = await prisma.$transaction(
       tasks.map(data =>
         prisma.task.create({
@@ -102,6 +113,7 @@ export class TaskService {
             type: data.type,
             size: data.size,
             priority: data.priority,
+            userId,
             ...(data.dueDate ? { dueDate: new Date(data.dueDate) } : {})
           }
         })

@@ -1,0 +1,237 @@
+{
+  "benchmark": {
+    "FIFO": {
+      "weighted_lateness": {
+        "mean": 0.9905,
+        "std": 2.3919,
+        "min": 0.0,
+        "max": 7.95
+      },
+      "completion_rate": {
+        "mean": 0.9714,
+        "std": 0.0571,
+        "min": 0.8571,
+        "max": 1.0
+      },
+      "avg_lateness": {
+        "mean": 0.0188,
+        "std": 0.0412,
+        "min": 0.0,
+        "max": 0.1319
+      },
+      "context_switches": {
+        "mean": 5.7,
+        "std": 2.1932,
+        "min": 2.0,
+        "max": 9.0
+      },
+      "makespan": {
+        "mean": 50.2866,
+        "std": 29.4997,
+        "min": 12.026,
+        "max": 119.26
+      },
+      "ndcg": {
+        "mean": 0.8816,
+        "std": 0.0447,
+        "min": 0.789,
+        "max": 0.9482
+      }
+    },
+    "EDF": {
+      "weighted_lateness": {
+        "mean": 0.9905,
+        "std": 2.3919,
+        "min": 0.0,
+        "max": 7.95
+      },
+      "completion_rate": {
+        "mean": 0.9714,
+        "std": 0.0571,
+        "min": 0.8571,
+        "max": 1.0
+      },
+      "avg_lateness": {
+        "mean": 0.0188,
+        "std": 0.0412,
+        "min": 0.0,
+        "max": 0.1319
+      },
+      "context_switches": {
+        "mean": 5.1,
+        "std": 1.9209,
+        "min": 3.0,
+        "max": 9.0
+      },
+      "makespan": {
+        "mean": 50.2866,
+        "std": 29.4997,
+        "min": 12.026,
+        "max": 119.26
+      },
+      "ndcg": {
+        "mean": 0.9128,
+        "std": 0.0544,
+        "min": 0.8116,
+        "max": 0.9828
+      }
+    },
+    "SJF": {
+      "weighted_lateness": {
+        "mean": 0.9905,
+        "std": 2.3919,
+        "min": 0.0,
+        "max": 7.95
+      },
+      "completion_rate": {
+        "mean": 0.9714,
+        "std": 0.0571,
+        "min": 0.8571,
+        "max": 1.0
+      },
+      "avg_lateness": {
+        "mean": 0.0188,
+        "std": 0.0412,
+        "min": 0.0,
+        "max": 0.1319
+      },
+      "context_switches": {
+        "mean": 5.7,
+        "std": 2.3685,
+        "min": 2.0,
+        "max": 10.0
+      },
+      "makespan": {
+        "mean": 50.2866,
+        "std": 29.4997,
+        "min": 12.026,
+        "max": 119.26
+      },
+      "ndcg": {
+        "mean": 0.9142,
+        "std": 0.0628,
+        "min": 0.8006,
+        "max": 0.9823
+      }
+    },
+    "Priority": {
+      "weighted_lateness": {
+        "mean": 0.9905,
+        "std": 2.3919,
+        "min": 0.0,
+        "max": 7.95
+      },
+      "completion_rate": {
+        "mean": 0.9714,
+        "std": 0.0571,
+        "min": 0.8571,
+        "max": 1.0
+      },
+      "avg_lateness": {
+        "mean": 0.0188,
+        "std": 0.0412,
+        "min": 0.0,
+        "max": 0.1319
+      },
+      "context_switches": {
+        "mean": 5.4,
+        "std": 2.245,
+        "min": 2.0,
+        "max": 10.0
+      },
+      "makespan": {
+        "mean": 50.2866,
+        "std": 29.4997,
+        "min": 12.026,
+        "max": 119.26
+      },
+      "ndcg": {
+        "mean": 1.0,
+        "std": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      }
+    },
+    "Random": {
+      "weighted_lateness": {
+        "mean": 0.9905,
+        "std": 2.3919,
+        "min": 0.0,
+        "max": 7.95
+      },
+      "completion_rate": {
+        "mean": 0.9714,
+        "std": 0.0571,
+        "min": 0.8571,
+        "max": 1.0
+      },
+      "avg_lateness": {
+        "mean": 0.0188,
+        "std": 0.0412,
+        "min": 0.0,
+        "max": 0.1319
+      },
+      "context_switches": {
+        "mean": 6.0,
+        "std": 2.2804,
+        "min": 2.0,
+        "max": 10.0
+      },
+      "makespan": {
+        "mean": 50.2866,
+        "std": 29.4997,
+        "min": 12.026,
+        "max": 119.26
+      },
+      "ndcg": {
+        "mean": 0.8923,
+        "std": 0.0745,
+        "min": 0.7558,
+        "max": 0.9961
+      }
+    },
+    "Weighted Score": {
+      "weighted_lateness": {
+        "mean": 0.9905,
+        "std": 2.3919,
+        "min": 0.0,
+        "max": 7.95
+      },
+      "completion_rate": {
+        "mean": 0.9714,
+        "std": 0.0571,
+        "min": 0.8571,
+        "max": 1.0
+      },
+      "avg_lateness": {
+        "mean": 0.0188,
+        "std": 0.0412,
+        "min": 0.0,
+        "max": 0.1319
+      },
+      "context_switches": {
+        "mean": 5.5,
+        "std": 2.5,
+        "min": 2.0,
+        "max": 11.0
+      },
+      "makespan": {
+        "mean": 50.2866,
+        "std": 29.4997,
+        "min": 12.026,
+        "max": 119.26
+      },
+      "ndcg": {
+        "mean": 0.9738,
+        "std": 0.019,
+        "min": 0.9315,
+        "max": 0.9977
+      }
+    }
+  },
+  "config": {
+    "n_batches": 10,
+    "seed": 42
+  },
+  "timestamp": "2026-04-10T03:03:49.556620Z"
+}

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "frontend-developer": {
+      "source": "rmyndharis/antigravity-skills",
+      "sourceType": "github",
+      "computedHash": "a5e913546be2ecc6769d44034d35bde367fe7f9fb5712b7d4121c17b0c5df92a"
+    }
+  }
+}

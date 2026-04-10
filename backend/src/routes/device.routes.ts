@@ -25,10 +25,24 @@ const updateDeviceSchema = createDeviceSchema.partial().extend({
   status: z.enum(DeviceStatuses).optional()
 });
 
+const deviceQuerySchema = z.object({
+  type: z.enum(DeviceTypes).optional(),
+  status: z.enum(DeviceStatuses).optional(),
+  search: z.string().optional()
+});
+
 // Get all devices
 router.get('/', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { type, status, search } = req.query;
+    const validation = deviceQuerySchema.safeParse(req.query);
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        error: validation.error.errors[0].message
+      });
+    }
+
+    const { type, status, search } = validation.data;
 
     const where: any = {};
     
@@ -247,11 +261,27 @@ router.delete('/:id', authenticate, adminOnly, async (req: AuthRequest, res: Res
   }
 });
 
+const heartbeatSchema = z.object({
+  metrics: z.array(z.object({
+    name: z.string().min(1),
+    value: z.number(),
+    unit: z.string().optional()
+  })).optional()
+});
+
 // Device heartbeat endpoint
 router.post('/:id/heartbeat', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { metrics } = req.body;
+    const validation = heartbeatSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        error: validation.error.errors[0].message
+      });
+    }
+
+    const { metrics } = validation.data;
 
     const device = await prisma.device.findUnique({ where: { id } });
     if (!device) {
@@ -363,11 +393,25 @@ router.get('/:id/logs', authenticate, async (req: AuthRequest, res: Response, ne
   }
 });
 
+const deviceCommandSchema = z.object({
+  command: z.string().min(1, 'Command is required'),
+  parameters: z.record(z.any()).optional()
+});
+
 // Send command to device
 router.post('/:id/command', authenticate, authorize('ADMIN', 'USER'), async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { command, parameters } = req.body;
+    
+    const validation = deviceCommandSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        error: validation.error.errors[0].message
+      });
+    }
+
+    const { command, parameters } = validation.data;
 
     const device = await prisma.device.findUnique({ where: { id } });
     if (!device) {

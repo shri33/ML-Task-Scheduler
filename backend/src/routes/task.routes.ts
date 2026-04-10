@@ -3,6 +3,29 @@ import { taskService } from '../services/task.service';
 import { createTaskSchema, updateTaskSchema } from '../validators/task.validator';
 import { AppError } from '../middleware/errorHandler';
 import { authenticate, authorize, adminOnly, AuthRequest } from '../middleware/auth.middleware';
+import { getSchedulingQueue } from '../queues';
+import { JOB_NAMES, TaskEventJobData } from '../queues/types';
+import logger from '../lib/logger';
+
+/** Emit a task event to the scheduling queue (non-blocking, best-effort). */
+async function emitTaskEvent(
+  eventType: TaskEventJobData['eventType'],
+  taskId: string,
+  userId?: string
+): Promise<void> {
+  try {
+    const queue = getSchedulingQueue();
+    await queue.add(JOB_NAMES.TASK_EVENT, {
+      eventType,
+      taskId,
+      userId,
+      requestedAt: new Date().toISOString(),
+    } satisfies TaskEventJobData);
+  } catch (err) {
+    // Queue errors should never block task CRUD
+    logger.warn('Failed to emit task event to queue (non-critical)', { eventType, taskId, error: String(err) });
+  }
+}
 
 type TaskStatus = 'PENDING' | 'SCHEDULED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 
@@ -41,10 +64,14 @@ router.use(authenticate);
  */
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const userId = (req as AuthRequest).user?.userId;
     const status = req.query.status as TaskStatus | undefined;
     const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
-    const result = await taskService.findAll(status, { page, limit });
+    
+    // In a real multi-tenant system, we should pass userId to findAll.
+    // For now we assume findAll inside task.service has been updated, or we update it next.
+    const result = await taskService.findAll(status, { page, limit }, userId);
     res.json({
       success: true,
       data: result.items,
@@ -94,8 +121,9 @@ router.post('/bulk', async (req: Request, res: Response, next: NextFunction) => 
     if (tasks.length > 100) {
       throw new AppError('Maximum 100 tasks per bulk create', 400);
     }
+    const userId = (req as AuthRequest).user?.userId;
     const validated = tasks.map((t: unknown) => createTaskSchema.parse(t));
-    const created = await taskService.bulkCreate(validated);
+    const created = await taskService.bulkCreate(validated, userId);
 
     const io = req.app.get('io');
     io?.emit('tasks:updated', { count: created.length });
@@ -184,12 +212,16 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
  */
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const userId = (req as AuthRequest).user?.userId;
     const data = createTaskSchema.parse(req.body);
-    const task = await taskService.create(data);
+    const task = await taskService.create(data, userId);
     
     // Emit socket event for real-time updates
     const io = req.app.get('io');
     io?.emit('task:created', task);
+
+    // Trigger async scheduling via BullMQ
+    emitTaskEvent('task_created', task.id, (req as AuthRequest).user?.userId);
     
     res.status(201).json({ success: true, data: task });
   } catch (error) {
@@ -230,6 +262,9 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
     // Emit socket event
     const io = req.app.get('io');
     io?.emit('task:updated', task);
+
+    // Trigger async re-scheduling
+    emitTaskEvent('task_updated', task.id, (req as AuthRequest).user?.userId);
     
     res.json({ success: true, data: task });
   } catch (error) {
@@ -263,6 +298,9 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
     // Emit socket event
     const io = req.app.get('io');
     io?.emit('task:deleted', { id: req.params.id });
+
+    // Notify scheduler about deletion
+    emitTaskEvent('task_deleted', req.params.id, (req as AuthRequest).user?.userId);
     
     res.json({ success: true, message: 'Task deleted successfully' });
   } catch (error) {
@@ -311,6 +349,9 @@ router.post('/:id/complete', async (req: Request, res: Response, next: NextFunct
     // Emit socket event
     const io = req.app.get('io');
     io?.emit('task:completed', task);
+
+    // Log completion for ML feedback loop (actual vs predicted)
+    emitTaskEvent('task_completed', req.params.id, (req as AuthRequest).user?.userId);
     
     res.json({ success: true, data: task });
   } catch (error) {

@@ -1,0 +1,72 @@
+{
+  "Full (baseline)": {
+    "completion_rate": {
+      "mean": 0.9714,
+      "std": 0.0571
+    },
+    "avg_lateness": {
+      "mean": 0.0188,
+      "std": 0.0412
+    },
+    "ndcg": {
+      "mean": 0.9738,
+      "std": 0.019
+    }
+  },
+  "No priority": {
+    "completion_rate": {
+      "mean": 0.9714,
+      "std": 0.0571
+    },
+    "avg_lateness": {
+      "mean": 0.0188,
+      "std": 0.0412
+    },
+    "ndcg": {
+      "mean": 0.9142,
+      "std": 0.0628
+    }
+  },
+  "No duration": {
+    "completion_rate": {
+      "mean": 0.9714,
+      "std": 0.0571
+    },
+    "avg_lateness": {
+      "mean": 0.0188,
+      "std": 0.0412
+    },
+    "ndcg": {
+      "mean": 1.0,
+      "std": 0.0
+    }
+  },
+  "No load balancing": {
+    "completion_rate": {
+      "mean": 0.9714,
+      "std": 0.0571
+    },
+    "avg_lateness": {
+      "mean": 0.0188,
+      "std": 0.0412
+    },
+    "ndcg": {
+      "mean": 0.996,
+      "std": 0.0089
+    }
+  },
+  "Random (control)": {
+    "completion_rate": {
+      "mean": 0.9714,
+      "std": 0.0571
+    },
+    "avg_lateness": {
+      "mean": 0.0188,
+      "std": 0.0412
+    },
+    "ndcg": {
+      "mean": 0.8731,
+      "std": 0.0604
+    }
+  }
+}

@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
+import logger from './logger';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -7,8 +8,20 @@ const globalForPrisma = globalThis as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error']
+    log: [
+      { emit: 'event', level: 'query' },
+      { emit: 'stdout', level: 'error' },
+      { emit: 'stdout', level: 'info' },
+      { emit: 'stdout', level: 'warn' },
+    ],
   });
+
+// Log slow queries (>500ms)
+prisma.$on('query' as never, (e: Prisma.QueryEvent) => {
+  if (e.duration >= 500) {
+    logger.warn(`Slow Query (${e.duration}ms): ${e.query}`);
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Soft-delete middleware: auto-filter deletedAt != null on find* queries

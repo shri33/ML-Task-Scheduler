@@ -47,6 +47,8 @@ model Task {
   actualTime    Float?
   resourceId    String?
   resource      Resource?  @relation(fields: [resourceId], references: [id])
+  userId        String?    // Added for multi-tenancy & partitioning
+  user          User?      @relation(fields: [userId], references: [id])
   createdAt     DateTime   @default(now())
   scheduledAt   DateTime?
   completedAt   DateTime?
@@ -61,6 +63,9 @@ model Task {
   @@index([status])
   @@index([resourceId])
   @@index([dueDate])
+  @@index([userId]) // "Partition key"
+  @@index([userId, status, priority]) // Super-index for fast queue fetching
+  @@index([userId, dueDate]) // Super-index for EDF heuristic
   @@index([status, priority]) // Composite: scheduler queries
   @@index([resourceId, status]) // Composite: resource task lookup
   @@index([deletedAt])
@@ -90,6 +95,8 @@ model ScheduleHistory {
   task          Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   resourceId    String
   resource      Resource @relation(fields: [resourceId], references: [id])
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id])
   algorithm     String
   mlEnabled     Boolean  @default(true)
   predictedTime Float?
@@ -98,6 +105,7 @@ model ScheduleHistory {
   explanation   String?
   createdAt     DateTime @default(now())
 
+  @@index([userId])
   @@index([taskId])
   @@index([resourceId])
   @@index([createdAt])
@@ -146,8 +154,12 @@ model User {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Soft delete
 
-  refreshTokens RefreshToken[]
-  notifications NotificationPreference?
+  refreshTokens     RefreshToken[]
+  tasks             Task[]
+  scheduleHistories ScheduleHistory[]
+  notifications     NotificationPreference?
+  behaviorProfile   UserBehaviorProfile?
+  taskEvents        TaskEvent[]
 
   @@index([email])
   @@index([role, isActive]) // Composite: user management queries
@@ -338,4 +350,45 @@ model FogTaskAssignment {
 
   @@index([fogNodeId])
   @@index([algorithm])
+}
+
+// ---------------------------------------------------------------------------
+// Behavioral Tracking — ML Feedback Loop
+// ---------------------------------------------------------------------------
+
+/// Event sourcing for task lifecycle. Every task action is logged here for
+/// downstream ML feature engineering and user behavior analysis.
+model TaskEvent {
+  id        String   @id @default(uuid())
+  taskId    String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventType String   // created, started, paused, resumed, completed, reordered, failed
+  metadata  Json?    // Additional context (e.g., old/new priority, actual_time, etc.)
+  timestamp DateTime @default(now())
+
+  @@index([userId, timestamp])
+  @@index([taskId])
+  @@index([eventType])
+}
+
+/// Aggregated user behavior profile. Updated periodically from TaskEvents.
+/// Used as input features for personalized ML scheduling.
+model UserBehaviorProfile {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avgCompletionRate   Float    @default(0) // fraction of tasks completed on time
+  avgLateness         Float    @default(0) // average seconds late
+  avgDuration         Float    @default(0) // average actual task duration
+  preferredTimeOfDay  Int?     // hour 0-23 when user is most productive
+  productivityPattern String?  // burst | consistent | procrastinator | efficient | overwhelmed
+  totalTasksCompleted Int      @default(0)
+  totalTasksFailed    Int      @default(0)
+  lastActiveAt        DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([userId])
+  @@index([productivityPattern])
 }

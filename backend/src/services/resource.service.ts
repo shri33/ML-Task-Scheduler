@@ -1,5 +1,6 @@
 import prisma from '../lib/prisma';
 import { CreateResourceInput, UpdateResourceInput } from '../validators/resource.validator';
+import { mlService } from './ml.service';
 
 type ResourceStatus = 'AVAILABLE' | 'BUSY' | 'OFFLINE';
 
@@ -15,12 +16,14 @@ interface ResourceWithLoad {
 
 export class ResourceService {
   async create(data: CreateResourceInput) {
-    return prisma.resource.create({
+    const resource = await prisma.resource.create({
       data: {
         name: data.name,
         capacity: data.capacity
       }
     });
+    await mlService.clearAllPredictions();
+    return resource;
   }
 
   async findAll(status?: ResourceStatus, options?: { page?: number; limit?: number }) {
@@ -79,10 +82,12 @@ export class ResourceService {
   }
 
   async update(id: string, data: UpdateResourceInput) {
-    return prisma.resource.update({
+    const resource = await prisma.resource.update({
       where: { id },
       data
     });
+    await mlService.clearAllPredictions();
+    return resource;
   }
 
   async delete(id: string) {
@@ -103,13 +108,15 @@ export class ResourceService {
   async updateLoad(id: string, load: number) {
     const status = load >= 100 ? 'BUSY' : 'AVAILABLE';
     
-    return prisma.resource.update({
+    const resource = await prisma.resource.update({
       where: { id },
       data: {
         currentLoad: Math.min(100, Math.max(0, load)),
         status
       }
     });
+    await mlService.clearAllPredictions();
+    return resource;
   }
 
   async getStats() {
