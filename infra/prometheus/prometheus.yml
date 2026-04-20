@@ -37,7 +37,7 @@ scrape_configs:
   # Fallback for single API instance
   - job_name: 'api-static'
     static_configs:
-      - targets: ['api:3001']
+      - targets: ['backend:3001']
     metrics_path: /metrics
 
   # Redis metrics (via redis_exporter if deployed)
@@ -56,6 +56,6 @@ scrape_configs:
   # Node.js process metrics
   - job_name: 'nodejs'
     static_configs:
-      - targets: ['api:3001']
+      - targets: ['backend:3001']
     metrics_path: /metrics
     scrape_interval: 30s

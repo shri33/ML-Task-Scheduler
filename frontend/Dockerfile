@@ -38,7 +38,7 @@ RUN npm run build
 # -----------------------------------------------------------------------------
 # Stage 3: Production Runtime (Nginx)
 # -----------------------------------------------------------------------------
-FROM nginx:1.25-alpine AS runner
+FROM nginx:1.25-alpine AS production
 
 # Install curl for healthcheck and update packages
 RUN apk add --no-cache curl && \

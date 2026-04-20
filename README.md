@@ -95,24 +95,38 @@ PROJECT/                       # 16,000+ lines of source code
 
 ### Option 1: Docker (Recommended)
 
+The easiest way to run the entire ecosystem is using the provided PowerShell helper script (for Windows) or standard Docker commands.
+
+**Windows:**
+```powershell
+./docker-run.ps1
+```
+
+**Linux / Generic:**
 ```bash
-# Start all 5 services
-docker compose up -d
+# Start all 7 services (DB, Redis, Backend, ML, Frontend, Prometheus, Grafana)
+docker compose up -d --build
 
 # Verify all healthy
 docker ps --format "table {{.Names}}\t{{.Status}}"
 
 # Seed database with users
 docker exec task-scheduler-backend npx prisma db seed
-
-# View logs
-docker compose logs -f
-
-# Stop services
-docker compose down
 ```
 
-Access: **http://localhost:3000**
+### 📊 Observability Dashboards
+
+Access the research-grade telemetry pipeline:
+
+| Service | URL | Note |
+|---------|-----|------|
+| **Frontend** | [http://localhost:3000](http://localhost:3000) | Main UI |
+| **API Health** | [http://localhost:3001/api/health](http://localhost:3001/api/health) | Backend Status |
+| **Prometheus** | [http://localhost:9090](http://localhost:9090) | Metrics Explorer |
+| **Grafana** | [http://localhost:3002](http://localhost:3002) | Dashboards (admin/admin) |
+| **ML Health** | [http://localhost:5001/api/health](http://localhost:5001/api/health) | ML Model Status |
+
+---
 
 ### Default Users
 | Email | Password | Role |

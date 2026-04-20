@@ -28,7 +28,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # -----------------------------------------------------------------------------
 # Stage 2: Production Runtime
 # -----------------------------------------------------------------------------
-FROM python:3.11-slim AS runner
+FROM python:3.11-slim AS production
 
 WORKDIR /app
 

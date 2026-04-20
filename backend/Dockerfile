@@ -45,7 +45,7 @@ RUN npm prune --production
 # -----------------------------------------------------------------------------
 # Stage 3: Production Runtime
 # -----------------------------------------------------------------------------
-FROM node:20-alpine AS runner
+FROM node:20-alpine AS production
 
 WORKDIR /app
 
