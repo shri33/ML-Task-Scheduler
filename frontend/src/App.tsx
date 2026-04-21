@@ -11,6 +11,7 @@ import { useDocumentTitle } from './hooks/useDocumentTitle';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
 
 // Lazy load pages for code splitting
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Tasks = lazy(() => import('./pages/Tasks'));
 const Resources = lazy(() => import('./pages/Resources'));
@@ -63,7 +64,7 @@ function KeyboardShortcutsHandler({
   const { isAuthenticated } = useAuth();
 
   const shortcuts = [
-    { key: 'd', action: () => isAuthenticated && navigate('/'), description: 'Go to Dashboard' },
+    { key: 'd', action: () => isAuthenticated && navigate('/dashboard'), description: 'Go to Dashboard' },
     { key: 't', action: () => isAuthenticated && navigate('/tasks'), description: 'Go to Tasks' },
     { key: 'r', action: () => isAuthenticated && navigate('/resources'), description: 'Go to Resources' },
     { key: 'a', action: () => isAuthenticated && navigate('/analytics'), description: 'Go to Analytics' },
@@ -108,16 +109,21 @@ function AppRoutes() {
       />
       <Suspense fallback={<PageLoader />}>
         <Routes>
+        {/* Public landing page — shown to everyone at root */}
+        <Route
+          path="/"
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />}
+        />
         <Route
           path="/login"
-          element={isAuthenticated ? <Navigate to="/" replace /> : <Login />}
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />}
         />
         <Route
           path="/register"
-          element={isAuthenticated ? <Navigate to="/" replace /> : <Register />}
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />}
         />
         <Route
-          path="/"
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <Layout>

@@ -26,7 +26,7 @@ interface LayoutProps {
 }
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Tasks', href: '/tasks', icon: ListTodo },
   { name: 'Resources', href: '/resources', icon: Server },
   { name: 'Devices', href: '/devices', icon: Cpu },
@@ -92,7 +92,7 @@ export default function Layout({ children }: LayoutProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2.5 group">
+            <Link to="/dashboard" className="flex items-center gap-2.5 group">
               <img src="/logo.svg" alt="ML Task Scheduler" className="h-8 w-8 rounded-lg" />
               <span className="text-lg font-extrabold tracking-tight text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                 ML Task Scheduler
