@@ -264,7 +264,7 @@ export default function LandingPage() {
               </button>
               <a
                 id="lp-hero-github"
-                href="https://github.com"
+                href="https://github.com/shri33/ML-Task-Scheduler"
                 target="_blank"
                 rel="noreferrer"
                 className="btn btn-secondary text-base px-8 py-3.5 gap-2 w-full sm:w-auto"
@@ -635,7 +635,18 @@ export default function LandingPage() {
 
           <div className="border-t border-gray-100 dark:border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400 dark:text-gray-500">
             <p>© 2025–26 Team Byte_hogs · BITS Pilani Online · All rights reserved.</p>
-            <p>Based on Wang &amp; Li (2019) · Sensors 19(5), 1023</p>
+            <div className="flex items-center gap-4">
+              <p>Based on Wang &amp; Li (2019) · Sensors 19(5), 1023</p>
+              <a
+                href="https://github.com/shri33/ML-Task-Scheduler"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+              >
+                <Github className="h-3.5 w-3.5" />
+                GitHub
+              </a>
+            </div>
           </div>
         </div>
       </footer>
