@@ -109,10 +109,10 @@ function AppRoutes() {
       />
       <Suspense fallback={<PageLoader />}>
         <Routes>
-        {/* Public landing page — shown to everyone at root */}
+        {/* Public landing page — always visible at root */}
         <Route
           path="/"
-          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />}
+          element={<LandingPage />}
         />
         <Route
           path="/login"
