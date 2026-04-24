@@ -26,10 +26,11 @@ export interface SchedulingJobData {
   taskIds: string[];
   algorithm: 'hybrid' | 'ipso' | 'iaco' | 'round-robin' | 'min-min' |
     // New: user-task scheduling algorithms
-    'ml_enhanced' | 'hybrid_heuristic' | 'fcfs' | 'edf' | 'sjf';
+    'ml_enhanced' | 'hybrid_heuristic' | 'fcfs' | 'edf' | 'sjf' | 'rl_ppo';
   requestedAt: string;
   requestedBy?: string;
 }
+
 
 export interface SchedulingJobResult {
   allocations: Array<{ taskId: string; fogNodeId: string }>;

@@ -35,6 +35,22 @@ interface BatchPredictionResult {
   confidence: number;
 }
 
+interface RLTaskPayload {
+  taskId: string;
+  taskSize: number;
+  taskType: number;
+  priority: number;
+  resourceLoad: number;
+  dueDate: number | null;
+}
+
+interface RLSchedulingResponse {
+  schedulingOrder: string[];
+  modelVersion: string;
+  agentUsed: boolean;
+  taskCount: number;
+}
+
 // Map enums to numbers for ML model
 const sizeMap: Record<string, number> = { SMALL: 1, MEDIUM: 2, LARGE: 3 };
 const typeMap: Record<string, number> = { CPU: 1, IO: 2, MIXED: 3 };
@@ -303,6 +319,44 @@ export class MLService {
       return response.data;
     } catch {
       return { error: 'Model comparison unavailable' };
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // RL scheduling order — calls /api/predict/rl
+  // Returns null if RL service is unavailable (caller falls back to ML-enhanced)
+  // ---------------------------------------------------------------------------
+  async getRLSchedulingOrder(
+    tasks: RLTaskPayload[],
+    userProfile?: {
+      avgCompletionRate: number;
+      avgLateness: number;
+      productivityPattern: number;
+      preferredWorkTime: number;
+    }
+  ): Promise<RLSchedulingResponse | null> {
+    if (!errorRecovery.isServiceAvailable('ml-service')) {
+      logger.warn('ML Service circuit breaker open, skipping RL scheduling');
+      return null;
+    }
+
+    try {
+      const response = await axios.post<RLSchedulingResponse>(
+        `${this.baseUrl}/api/predict/rl`,
+        { tasks, userProfile },
+        { timeout: 15000 },
+      );
+      errorRecovery.recordSuccess('ml-service');
+      return response.data;
+    } catch (error) {
+      errorRecovery.recordFailure(
+        'ml-service',
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      logger.warn('RL scheduling endpoint failed, caller will fall back', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
     }
   }
 }

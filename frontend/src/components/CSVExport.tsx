@@ -15,22 +15,24 @@ interface ExportOption {
   description: string;
 }
 
+import { API_BASE } from '../api/client';
+
 const csvExports: ExportOption[] = [
   {
     name: 'Tasks',
-    endpoint: '/api/reports/csv/tasks',
+    endpoint: `${API_BASE}/v1/reports/csv/tasks`,
     filename: 'tasks-export.csv',
     description: 'All tasks with details',
   },
   {
     name: 'Resources',
-    endpoint: '/api/reports/csv/resources',
+    endpoint: `${API_BASE}/v1/reports/csv/resources`,
     filename: 'resources-export.csv',
     description: 'All resources with load',
   },
   {
     name: 'Schedule History',
-    endpoint: '/api/reports/csv/schedule-history',
+    endpoint: `${API_BASE}/v1/reports/csv/schedule-history`,
     filename: 'schedule-history.csv',
     description: 'Scheduling history log',
   },

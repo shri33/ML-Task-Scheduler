@@ -119,6 +119,29 @@ export class ResourceService {
     return resource;
   }
 
+  /**
+   * Decrement currentLoad by `delta` without a read-modify-write race.
+   * Uses a DB-level expression: MAX(0, currentLoad - delta).
+   * Updates status back to AVAILABLE if load drops below 100.
+   */
+  async decrementLoad(id: string, delta: number): Promise<void> {
+    // Prisma doesn't expose MAX() in updateMany directly, so we use $executeRaw.
+    await prisma.$executeRaw`
+      UPDATE "Resource"
+      SET
+        "currentLoad" = GREATEST(0, "currentLoad" - ${delta}),
+        "status"      = CASE
+                          WHEN GREATEST(0, "currentLoad" - ${delta}) >= 100 THEN 'BUSY'::"ResourceStatus"
+                          ELSE 'AVAILABLE'::"ResourceStatus"
+                        END,
+        "updatedAt"   = NOW()
+      WHERE id = ${id}
+    `;
+    // Invalidate ML prediction cache since load changed
+    await mlService.clearAllPredictions();
+  }
+
+
   async getStats() {
     const resources = await prisma.resource.findMany() as ResourceWithLoad[];
     

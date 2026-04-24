@@ -874,6 +874,178 @@ def tune_hyperparameters():
     except Exception as e:
         return jsonify({'error': safe_error(e)}), 500
 
+@app.route('/api/predict/rl', methods=['POST'])
+@rate_limit
+def predict_rl():
+    """
+    RL-based scheduling: given a list of tasks, return the order in which
+    the PPO agent would schedule them (greedy, deterministic).
+
+    Request body:
+    {
+        "tasks": [
+            {
+                "taskId": "string",
+                "taskSize": 1-3,
+                "taskType": 1-3,
+                "priority": 1-5,
+                "resourceLoad": 0-100,
+                "dueDate": float | null   // seconds from now, null = no deadline
+            },
+            ...
+        ],
+        "userProfile": {                 // optional
+            "avgCompletionRate": 0-1,
+            "avgLateness": float,         // seconds
+            "productivityPattern": 0|0.5|1,
+            "preferredWorkTime": 0-1
+        }
+    }
+
+    Response:
+    {
+        "schedulingOrder": ["taskId1", "taskId2", ...],   // priority-highest first
+        "modelVersion": "ppo_v1",
+        "agentUsed": true | false          // false = fallback to priority sort
+    }
+    """
+    RL_MODEL_PATH = os.path.join(os.path.dirname(__file__), 'models', 'ppo_scheduler_final.zip')
+
+    try:
+        data = request.get_json(silent=True) or {}
+        tasks_raw = data.get('tasks', [])
+
+        if not tasks_raw or not isinstance(tasks_raw, list):
+            return jsonify({'error': 'Missing or empty "tasks" array'}), 400
+
+        if len(tasks_raw) > 50:
+            return jsonify({'error': 'Maximum 50 tasks per RL scheduling request'}), 400
+
+        # Validate required fields
+        for i, t in enumerate(tasks_raw):
+            for field in ('taskId', 'taskSize', 'taskType', 'priority', 'resourceLoad'):
+                if field not in t:
+                    return jsonify({'error': f'Task[{i}] missing field: {field}'}), 400
+
+        task_ids = [t['taskId'] for t in tasks_raw]
+
+        # Attempt RL agent scheduling
+        model_loaded = False
+        if os.path.exists(RL_MODEL_PATH):
+            try:
+                from sb3_contrib import MaskablePPO
+                from environments.scheduling_env import AdvancedSchedulingEnv, RLTask
+                import gymnasium as gym
+
+                max_tasks = 50  # must match training env
+                user_raw = data.get('userProfile', {})
+                user_profile = {
+                    'avg_completion_rate': float(user_raw.get('avgCompletionRate', 0.85)),
+                    'avg_lateness': float(user_raw.get('avgLateness', 300.0)),
+                    'productivity_pattern': float(user_raw.get('productivityPattern', 0.0)),
+                    'preferred_work_time': float(user_raw.get('preferredWorkTime', 0.5)),
+                }
+
+                # Build env and inject tasks so agent can be stepped
+                env = AdvancedSchedulingEnv(max_tasks=max_tasks, seed=42)
+                obs, _ = env.reset(seed=42)
+
+                # Replace env tasks with the real incoming tasks (padded to max_tasks)
+                now = 0.0
+                time_horizon = env.time_horizon
+
+                from environments.scheduling_env import RLTask as _RLTask
+                injected: list = []
+                for i in range(max_tasks):
+                    if i < len(tasks_raw):
+                        t = tasks_raw[i]
+                        # Map taskType 1-3 → 0-2 for env
+                        task_type = int(t['taskType']) - 1  # env uses 0,1,2
+                        priority_norm = (int(t['priority']) - 1) / 4.0  # 0-1
+                        # estimated duration: use simple heuristic from size/type
+                        size_s = {1: 60.0, 2: 180.0, 3: 420.0}
+                        est_dur = size_s.get(int(t['taskSize']), 180.0)
+                        due_date = float(t.get('dueDate') or (est_dur + 1800.0))  # 30 min slack default
+                        rl_t = _RLTask(
+                            id=i,
+                            task_type=task_type,
+                            priority=priority_norm,
+                            deadline=due_date,
+                            estimated_duration=est_dur,
+                            predicted_duration=est_dur,
+                            predicted_success_prob=0.85,
+                            created_at=now,
+                        )
+                        injected.append(rl_t)
+                    else:
+                        # Padding: already completed dummy
+                        injected.append(_RLTask(
+                            id=i, task_type=-1, priority=0, estimated_duration=0,
+                            predicted_duration=0, predicted_success_prob=0,
+                            deadline=0, created_at=0, is_completed=True
+                        ))
+                env.tasks = injected
+
+                from dataclasses import replace as _replace
+                from environments.scheduling_env import RLUserEmbedding as _RLUEmb
+                env.user_data = _RLUEmb(**user_profile)
+
+                # Rebuild observation after injecting tasks
+                obs = env._get_obs()
+
+                agent = MaskablePPO.load(RL_MODEL_PATH, device='cpu')
+                scheduling_order_indices: list[int] = []
+                remaining = set(range(len(tasks_raw)))
+
+                # Step agent greedily for len(tasks_raw) steps
+                for _ in range(len(tasks_raw)):
+                    mask = obs['mask'].astype(bool)
+                    if not mask.any():
+                        break
+                    action, _ = agent.predict(obs, action_masks=mask, deterministic=True)
+                    action = int(action)
+                    if action in remaining:
+                        scheduling_order_indices.append(action)
+                        remaining.discard(action)
+                    # step env to update obs
+                    obs, _, terminated, _, _ = env.step(action)
+                    if terminated:
+                        break
+
+                # Any tasks the agent didn't visit get appended by priority
+                leftover = sorted(remaining, key=lambda i: -tasks_raw[i]['priority'])
+                scheduling_order_indices.extend(leftover)
+
+                scheduling_order = [task_ids[i] for i in scheduling_order_indices]
+                model_loaded = True
+                logger.info(f'RL agent scheduled {len(scheduling_order)} tasks')
+
+            except Exception as rl_err:
+                logger.warning(f'RL agent failed, using fallback: {rl_err}')
+                model_loaded = False
+
+        if not model_loaded:
+            # Fallback: sort by priority desc, then by deadline asc (EDF-style)
+            def _sort_key(t):
+                due = t.get('dueDate') or float('inf')
+                return (-int(t['priority']), due)
+
+            sorted_tasks = sorted(tasks_raw, key=_sort_key)
+            scheduling_order = [t['taskId'] for t in sorted_tasks]
+
+        return jsonify({
+            'schedulingOrder': scheduling_order,
+            'modelVersion': 'ppo_v1' if model_loaded else 'fallback-priority',
+            'agentUsed': model_loaded,
+            'taskCount': len(scheduling_order),
+        })
+
+    except Exception as e:
+        record_metric('errors_total')
+        logger.error(f'RL predict endpoint error: {e}')
+        return jsonify({'error': safe_error(e)}), 500
+
+
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5001))
     debug = os.getenv('FLASK_DEBUG', '0') == '1'

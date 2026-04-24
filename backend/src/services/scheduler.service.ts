@@ -83,7 +83,8 @@ export type SchedulingAlgorithm =
   | 'min_min'          // Min-Min heuristic
   | 'fcfs'             // First-Come-First-Served baseline
   | 'edf'              // Earliest Deadline First
-  | 'sjf';             // Shortest Job First (by predicted time)
+  | 'sjf'              // Shortest Job First (by predicted time)
+  | 'rl_ppo';          // PPO reinforcement learning agent
 
 export interface AlgorithmInfo {
   id: SchedulingAlgorithm;
@@ -158,6 +159,13 @@ export const ALGORITHM_REGISTRY: AlgorithmInfo[] = [
     description: 'Tasks processed in arrival order. Baseline for comparison.',
     complexity: 'O(n)',
   },
+  {
+    id: 'rl_ppo',
+    name: 'PPO Reinforcement Learning',
+    category: 'ml',
+    description: 'MaskablePPO agent with attention-based feature extractor. Learns task ordering from quadratic lateness + context-switch rewards. Falls back to priority-EDF if model not loaded.',
+    complexity: 'O(n) inference (trained offline)',
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -220,11 +228,24 @@ interface ComparisonResult {
   latencyMs: number;
 }
 
+// Load delta per task size. Single source of truth used for increment on
+// schedule AND decrement on completion (Fix #3).
+export const LOAD_DELTA_MAP: Record<string, number> = {
+  SMALL: 10,
+  MEDIUM: 15,
+  LARGE: 25,
+};
+
 // ---------------------------------------------------------------------------
 // Scheduler Service
 // ---------------------------------------------------------------------------
 
 export class SchedulerService {
+  /** Returns the load unit to add/subtract for this task's size. */
+  computeLoadDelta(task: { size: string }): number {
+    return LOAD_DELTA_MAP[task.size] ?? 15;
+  }
+
   // -----------------------------------------------------------------------
   // Main scheduling — now supports pluggable algorithms + context
   // -----------------------------------------------------------------------
@@ -296,6 +317,10 @@ export class SchedulerService {
 
       case 'sjf':
         results = await this.scheduleWithSJF(tasks, resources);
+        break;
+
+      case 'rl_ppo':
+        results = await this.scheduleWithRL(tasks, resources);
         break;
 
       default:
@@ -551,6 +576,126 @@ export class SchedulerService {
         score,
         explanation: `SJF: Predicted execution ${bestPredTime.toFixed(1)}s — scheduled for fastest completion.`,
         algorithm: 'sjf',
+      });
+    }
+
+    return results;
+  }
+
+  // -----------------------------------------------------------------------
+  // PPO Reinforcement Learning scheduling
+  // Calls /api/predict/rl → gets agent-ordered task list →
+  // assigns each task to best available resource (ML timing still used).
+  // -----------------------------------------------------------------------
+  private async scheduleWithRL(tasks: Task[], resources: Resource[]): Promise<ScheduleResult[]> {
+    // Build payload for RL endpoint
+    const rlPayload = tasks.map(task => ({
+      taskId: task.id,
+      taskSize: sizeMap[task.size] || 2,
+      taskType: typeMap[task.type] || 1,
+      priority: task.priority,
+      resourceLoad: resources.length > 0
+        ? resources.reduce((s, r) => s + r.currentLoad, 0) / resources.length
+        : 50,
+      dueDate: task.dueDate
+        ? Math.max(1, (task.dueDate.getTime() - Date.now()) / 1000)
+        : null,
+    }));
+
+    // Call RL service — fall back to ML-enhanced on any failure
+    let orderedTaskIds: string[] = tasks.map(t => t.id);
+    let agentUsed = false;
+    try {
+      const response = await mlService.getRLSchedulingOrder(rlPayload);
+      if (response && response.schedulingOrder.length > 0) {
+        orderedTaskIds = response.schedulingOrder;
+        agentUsed = response.agentUsed;
+      }
+    } catch (err) {
+      logger.warn('RL endpoint unreachable, falling back to ml_enhanced', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Re-order tasks according to RL decision
+    const taskMap = new Map(tasks.map(t => [t.id, t]));
+    const orderedTasks: Task[] = [];
+    for (const id of orderedTaskIds) {
+      const t = taskMap.get(id);
+      if (t) orderedTasks.push(t);
+    }
+    // Safety: append any tasks missing from RL order
+    const seen = new Set(orderedTaskIds);
+    for (const t of tasks) {
+      if (!seen.has(t.id)) orderedTasks.push(t);
+    }
+
+    // Batch ML predictions for timing (reuse existing infrastructure)
+    const batchItems = orderedTasks.flatMap(task =>
+      resources
+        .filter(r => r.currentLoad < 100)
+        .map(resource => ({
+          taskId: `${task.id}::${resource.id}`,
+          taskSize: sizeMap[task.size] || 2,
+          taskType: typeMap[task.type] || 1,
+          priority: task.priority,
+          resourceLoad: resource.currentLoad,
+          startupOverhead: 1,
+        }))
+    );
+    const predictions = await mlService.getBatchPredictions(batchItems);
+
+    const results: ScheduleResult[] = [];
+    const resourceLoads = new Map(resources.map(r => [r.id, r.currentLoad]));
+
+    for (const task of orderedTasks) {
+      // Assign to least-loaded resource (RL handles order; ML handles timing)
+      let bestResource = resources[0];
+      let bestPredTime = Infinity;
+      let bestConf = 0.5;
+
+      for (const r of resources) {
+        const load = resourceLoads.get(r.id) ?? r.currentLoad;
+        if (load >= 100) continue;
+        const key = `${task.id}::${r.id}`;
+        const pred = predictions.get(key);
+        if (pred && pred.predictedTime < bestPredTime) {
+          bestPredTime = pred.predictedTime;
+          bestConf = pred.confidence;
+          bestResource = r;
+        }
+      }
+      if (bestPredTime === Infinity) bestPredTime = 5;
+
+      const currentLoad = resourceLoads.get(bestResource.id) ?? bestResource.currentLoad;
+      const loadDelta = this.computeLoadDelta(task);
+      const score =
+        0.4 * ((100 - currentLoad) / 100) +
+        0.3 * Math.max(0, 1 - bestPredTime / 20) +
+        0.3 * (task.priority / 5);
+
+      await taskService.assignToResource(task.id, bestResource.id, bestPredTime);
+      const newLoad = Math.min(100, currentLoad + loadDelta);
+      await resourceService.updateLoad(bestResource.id, newLoad);
+      resourceLoads.set(bestResource.id, newLoad);
+
+      await this.recordHistory(
+        task.id, bestResource.id,
+        agentUsed ? 'RL_PPO' : 'RL_PPO_FALLBACK',
+        true, bestPredTime, score,
+        `RL_PPO: "${task.name}" → "${bestResource.name}" (agent=${agentUsed}, pred=${bestPredTime.toFixed(1)}s)`,
+      );
+
+      results.push({
+        taskId: task.id,
+        taskName: task.name,
+        resourceId: bestResource.id,
+        resourceName: bestResource.name,
+        predictedTime: bestPredTime,
+        confidence: bestConf,
+        score,
+        explanation: `RL_PPO ordering (agentUsed=${agentUsed}). Assigned to least-loaded resource with ML time estimate.`,
+        algorithm: 'rl_ppo',
       });
     }
 

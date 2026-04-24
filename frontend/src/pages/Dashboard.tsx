@@ -36,12 +36,19 @@ export default function Dashboard() {
   const hasFetched = useRef(false);
 
   useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-    fetchTasks();
-    fetchResources();
-    fetchMetrics();
-    checkMlStatus();
+    if (!hasFetched.current) {
+      hasFetched.current = true;
+      fetchTasks();
+      fetchResources();
+      fetchMetrics();
+      checkMlStatus();
+    }
+    const interval = setInterval(() => {
+      fetchTasks();
+      fetchResources();
+      fetchMetrics();
+    }, 3000);
+    return () => clearInterval(interval);
   }, [fetchTasks, fetchResources, fetchMetrics, checkMlStatus]);
 
   const handleRefresh = async () => {

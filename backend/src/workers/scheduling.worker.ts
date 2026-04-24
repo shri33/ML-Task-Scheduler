@@ -22,7 +22,11 @@ import {
   roundRobinSchedule,
   minMinSchedule,
 } from '../services/fogComputing.service';
-import { schedulerService, SchedulingAlgorithm } from '../services/scheduler.service';
+import { schedulerService, SchedulingAlgorithm, LOAD_DELTA_MAP } from '../services/scheduler.service';
+import { resourceService } from '../services/resource.service';
+import { autoRetrainService } from '../services/autoRetrain.service';
+import prisma from '../lib/prisma';
+
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 const CONCURRENCY = parseInt(process.env.SCHEDULING_WORKER_CONCURRENCY || '2', 10);
@@ -125,7 +129,9 @@ async function processUserTaskScheduling(job: Job<SchedulingJobData>): Promise<S
     'fcfs': 'fcfs',
     'edf': 'edf',
     'sjf': 'sjf',
+    'rl_ppo': 'rl_ppo',
   };
+
 
   const schedulingAlgorithm = algoMap[algorithm] || 'ml_enhanced';
 
@@ -167,18 +173,42 @@ async function processTaskEvent(job: Job<TaskEventJobData>): Promise<TaskEventJo
 
   logger.info('Processing task event', { jobId: job.id, eventType, taskId });
 
-  // On task create/update: re-schedule pending tasks
-  // On task delete/complete: no action needed (schedule is stale-tolerant)
   let scheduledTasks = 0;
   const usedAlgorithm = (algorithm as SchedulingAlgorithm) || 'ml_enhanced';
 
   if (eventType === 'task_created' || eventType === 'task_updated') {
+    // Re-schedule all pending tasks when the queue changes
     try {
       const results = await schedulerService.schedule(undefined, usedAlgorithm);
       scheduledTasks = results.length;
     } catch (err) {
       logger.warn('Task event scheduling failed (non-critical)', { error: String(err) });
     }
+  } else if (eventType === 'task_completed') {
+    // Fix #3: Decrement resource load when a task finishes.
+    // Also increment auto-retrain counter (new real data point available).
+    try {
+      const task = await prisma.task.findUnique({
+        where: { id: taskId },
+        select: { size: true, resourceId: true },
+      });
+
+      if (task?.resourceId) {
+        const delta = LOAD_DELTA_MAP[task.size] ?? 15;
+        await resourceService.decrementLoad(task.resourceId, delta);
+        logger.info('Resource load decremented on task completion', {
+          taskId, resourceId: task.resourceId, delta,
+        });
+      }
+    } catch (err) {
+      // Non-fatal: log and continue. Load will self-correct over time.
+      logger.warn('Failed to decrement resource load on task_completed', {
+        taskId, error: String(err),
+      });
+    }
+
+    // Increment auto-retrain data counter (non-fatal)
+    await autoRetrainService.recordNewDataPoint(1);
   }
 
   return {
@@ -189,6 +219,7 @@ async function processTaskEvent(job: Job<TaskEventJobData>): Promise<TaskEventJo
     latencyMs: Date.now() - startTime,
   };
 }
+
 
 // ---------------------------------------------------------------------------
 // Unified worker — routes jobs by name

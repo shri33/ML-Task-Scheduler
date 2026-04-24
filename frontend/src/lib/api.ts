@@ -77,7 +77,7 @@ export interface AlgorithmComparison {
 }
 
 const api = axios.create({
-  baseURL: (import.meta.env.VITE_API_URL || '') + '/api',
+  baseURL: (import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -134,15 +134,6 @@ api.interceptors.response.use(
     const shouldSkipRefresh = skipRefreshPaths.some(p => requestUrl.includes(p));
 
     if (error.response?.status === 401 && !originalRequest._retry && !shouldSkipRefresh) {
-      // In demo mode, don't try to refresh real tokens — serve mock data instead
-      if (isDemoMode()) {
-        const url = originalRequest?.url || '';
-        const method = (originalRequest?.method || 'get').toLowerCase();
-        const demoData = getDemoResponse(url, method);
-        if (demoData) return demoData;
-        // No mock data for this endpoint — just reject silently (don't redirect)
-        return Promise.reject(error);
-      }
 
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -178,182 +169,7 @@ api.interceptors.response.use(
   }
 );
 
-// ============================================
-// DEMO MODE — Mock Data for Vercel/Static Deploy
-// ============================================
-const DEMO_MODE_KEY = 'ml-scheduler-demo-mode';
 
-function isDemoMode(): boolean {
-  return !!localStorage.getItem(DEMO_MODE_KEY);
-}
-
-const demoTasks: Task[] = [
-  { id: '1', name: 'Image Classification', type: 'CPU', size: 'LARGE', priority: 5, status: 'COMPLETED', dueDate: null, predictedTime: 45.2, actualTime: 42.8, resourceId: 'r1', resource: undefined, createdAt: new Date(Date.now() - 86400000 * 3).toISOString(), scheduledAt: new Date(Date.now() - 86400000 * 3).toISOString(), completedAt: new Date(Date.now() - 86400000 * 2).toISOString() },
-  { id: '2', name: 'Data Preprocessing', type: 'IO', size: 'MEDIUM', priority: 3, status: 'RUNNING', dueDate: null, predictedTime: 12.5, actualTime: null, resourceId: 'r2', resource: undefined, createdAt: new Date(Date.now() - 86400000 * 2).toISOString(), scheduledAt: new Date(Date.now() - 86400000).toISOString(), completedAt: null },
-  { id: '3', name: 'Model Training', type: 'CPU', size: 'LARGE', priority: 5, status: 'SCHEDULED', dueDate: null, predictedTime: 120.0, actualTime: null, resourceId: 'r1', resource: undefined, createdAt: new Date(Date.now() - 86400000).toISOString(), scheduledAt: new Date().toISOString(), completedAt: null },
-  { id: '4', name: 'Log Analysis', type: 'IO', size: 'SMALL', priority: 2, status: 'PENDING', dueDate: null, predictedTime: 5.3, actualTime: null, resourceId: null, resource: undefined, createdAt: new Date().toISOString(), scheduledAt: null, completedAt: null },
-  { id: '5', name: 'Feature Extraction', type: 'MIXED', size: 'MEDIUM', priority: 4, status: 'COMPLETED', dueDate: null, predictedTime: 30.0, actualTime: 28.5, resourceId: 'r3', resource: undefined, createdAt: new Date(Date.now() - 86400000 * 5).toISOString(), scheduledAt: new Date(Date.now() - 86400000 * 5).toISOString(), completedAt: new Date(Date.now() - 86400000 * 4).toISOString() },
-  { id: '6', name: 'Report Generation', type: 'IO', size: 'SMALL', priority: 1, status: 'PENDING', dueDate: null, predictedTime: 3.2, actualTime: null, resourceId: null, resource: undefined, createdAt: new Date().toISOString(), scheduledAt: null, completedAt: null },
-];
-
-const demoResources: Resource[] = [
-  { id: 'r1', name: 'GPU Server Alpha', capacity: 100, currentLoad: 78, status: 'BUSY', createdAt: new Date(Date.now() - 86400000 * 30).toISOString(), updatedAt: new Date().toISOString() },
-  { id: 'r2', name: 'CPU Cluster Beta', capacity: 200, currentLoad: 35, status: 'AVAILABLE', createdAt: new Date(Date.now() - 86400000 * 25).toISOString(), updatedAt: new Date().toISOString() },
-  { id: 'r3', name: 'Edge Node Gamma', capacity: 50, currentLoad: 12, status: 'AVAILABLE', createdAt: new Date(Date.now() - 86400000 * 20).toISOString(), updatedAt: new Date().toISOString() },
-  { id: 'r4', name: 'ML Worker Delta', capacity: 80, currentLoad: 0, status: 'OFFLINE', createdAt: new Date(Date.now() - 86400000 * 18).toISOString(), updatedAt: new Date().toISOString() },
-  { id: 'r5', name: 'Inference Node Epsilon', capacity: 120, currentLoad: 62, status: 'BUSY', createdAt: new Date(Date.now() - 86400000 * 15).toISOString(), updatedAt: new Date().toISOString() },
-  { id: 'r6', name: 'Storage Server Zeta', capacity: 500, currentLoad: 48, status: 'AVAILABLE', createdAt: new Date(Date.now() - 86400000 * 12).toISOString(), updatedAt: new Date().toISOString() },
-  { id: 'r7', name: 'HPC Cluster Eta', capacity: 400, currentLoad: 91, status: 'BUSY', createdAt: new Date(Date.now() - 86400000 * 10).toISOString(), updatedAt: new Date().toISOString() },
-  { id: 'r8', name: 'Fog Gateway Theta', capacity: 60, currentLoad: 22, status: 'AVAILABLE', createdAt: new Date(Date.now() - 86400000 * 5).toISOString(), updatedAt: new Date().toISOString() },
-];
-
-const demoDevices: Device[] = [
-  { id: 'd1', name: 'Assembly Line Camera A1', type: 'CAMERA', status: 'ONLINE', ipAddress: '192.168.1.101', port: 8080, location: 'Factory Floor - Zone A', description: 'High-res camera for quality inspection on assembly line 1', lastHeartbeat: new Date(Date.now() - 30000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 60).toISOString(), _count: { deviceLogs: 1248, deviceMetrics: 8640 } },
-  { id: 'd2', name: 'Robotic Arm RA-07', type: 'ROBOT_ARM', status: 'ONLINE', ipAddress: '192.168.1.102', port: 9090, location: 'Factory Floor - Zone B', description: '6-axis robotic arm for component placement', lastHeartbeat: new Date(Date.now() - 15000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 55).toISOString(), _count: { deviceLogs: 3456, deviceMetrics: 12500 } },
-  { id: 'd3', name: 'Temperature Sensor TS-12', type: 'IOT_SENSOR', status: 'ONLINE', ipAddress: '192.168.2.50', port: 1883, location: 'Server Room A', description: 'Monitors ambient temperature and humidity levels', lastHeartbeat: new Date(Date.now() - 10000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 90).toISOString(), _count: { deviceLogs: 520, deviceMetrics: 43200 } },
-  { id: 'd4', name: 'Edge Compute Node EC-03', type: 'EDGE_SERVER', status: 'ONLINE', ipAddress: '192.168.1.200', port: 443, location: 'Edge Rack - Building 2', description: 'Local inference server with NVIDIA Jetson for real-time ML', lastHeartbeat: new Date(Date.now() - 5000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 45).toISOString(), _count: { deviceLogs: 7892, deviceMetrics: 15000 } },
-  { id: 'd5', name: 'Conveyor Actuator CA-01', type: 'ACTUATOR', status: 'MAINTENANCE', ipAddress: '192.168.1.110', port: 502, location: 'Factory Floor - Zone A', description: 'Controls conveyor belt speed and direction', lastHeartbeat: new Date(Date.now() - 3600000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 80).toISOString(), _count: { deviceLogs: 2100, deviceMetrics: 9800 } },
-  { id: 'd6', name: 'Warehouse Camera C2', type: 'CAMERA', status: 'ONLINE', ipAddress: '192.168.3.15', port: 8080, location: 'Warehouse - Section C', description: 'Tracking camera for inventory management', lastHeartbeat: new Date(Date.now() - 20000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 40).toISOString(), _count: { deviceLogs: 980, deviceMetrics: 7200 } },
-  { id: 'd7', name: 'Vibration Sensor VS-04', type: 'IOT_SENSOR', status: 'ONLINE', ipAddress: '192.168.2.55', port: 1883, location: 'Factory Floor - Zone C', description: 'Monitors machine vibration for predictive maintenance', lastHeartbeat: new Date(Date.now() - 8000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 70).toISOString(), _count: { deviceLogs: 340, deviceMetrics: 25000 } },
-  { id: 'd8', name: 'Robotic Arm RA-12', type: 'ROBOT_ARM', status: 'OFFLINE', ipAddress: '192.168.1.115', port: 9090, location: 'Factory Floor - Zone D', description: 'Welding arm - currently undergoing firmware update', lastHeartbeat: new Date(Date.now() - 7200000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 50).toISOString(), _count: { deviceLogs: 4200, deviceMetrics: 11000 } },
-  { id: 'd9', name: 'Edge Compute Node EC-07', type: 'EDGE_SERVER', status: 'ONLINE', ipAddress: '192.168.1.205', port: 443, location: 'Edge Rack - Building 5', description: 'Fog computing gateway for Zone D sensors', lastHeartbeat: new Date(Date.now() - 12000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 30).toISOString(), _count: { deviceLogs: 5600, deviceMetrics: 18000 } },
-  { id: 'd10', name: 'Pressure Sensor PS-08', type: 'IOT_SENSOR', status: 'ERROR', ipAddress: '192.168.2.60', port: 1883, location: 'Pipeline - Section E', description: 'Hydraulic pressure monitoring - sensor calibration error', lastHeartbeat: new Date(Date.now() - 1800000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 65).toISOString(), _count: { deviceLogs: 890, deviceMetrics: 30000 } },
-  { id: 'd11', name: 'HVAC Actuator HA-02', type: 'ACTUATOR', status: 'ONLINE', ipAddress: '192.168.1.120', port: 502, location: 'Server Room B', description: 'Controls cooling system for server room', lastHeartbeat: new Date(Date.now() - 25000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 85).toISOString(), _count: { deviceLogs: 1560, deviceMetrics: 14400 } },
-  { id: 'd12', name: 'Loading Dock Camera C5', type: 'CAMERA', status: 'ONLINE', ipAddress: '192.168.3.20', port: 8080, location: 'Loading Dock - Bay 3', description: 'License plate recognition and truck monitoring', lastHeartbeat: new Date(Date.now() - 18000).toISOString(), createdAt: new Date(Date.now() - 86400000 * 35).toISOString(), _count: { deviceLogs: 750, deviceMetrics: 6000 } },
-];
-
-/** Generate mock response matching ApiResponse<T> shape */
-function mockResponse<T>(data: T): { data: ApiResponse<T> } {
-  return { data: { success: true, data } as ApiResponse<T> };
-}
-
-/** Map of URL patterns to demo data generators */
-function getDemoResponse(url: string, method: string): any {
-  // Auth
-  if (url.includes('/auth/me')) return mockResponse({ id: 'demo-user-001', email: 'demo@example.com', name: 'Demo User', role: 'ADMIN' });
-  if (url.includes('/auth/')) return mockResponse({});
-
-  // Tasks
-  if (url.match(/\/v1\/tasks\/stats/)) return mockResponse({ total: 6, pending: 2, scheduled: 1, running: 1, completed: 2, failed: 0 });
-  if (url.match(/\/v1\/tasks\/.+/) && method === 'get') return mockResponse(demoTasks[0]);
-  if (url.includes('/v1/tasks')) return mockResponse(demoTasks);
-
-  // Resources
-  if (url.match(/\/v1\/resources\/stats/)) return mockResponse({ total: 8, available: 4, busy: 3, offline: 1, avgLoad: 43.5 });
-  if (url.match(/\/v1\/resources\/.+/) && method === 'get') return mockResponse(demoResources[0]);
-  if (url.includes('/v1/resources')) return mockResponse(demoResources);
-
-  // Schedule
-  if (url.includes('/v1/schedule/ml-status')) return mockResponse({ mlServiceAvailable: true, fallbackMode: false });
-  if (url.includes('/v1/schedule/comparison')) return mockResponse({ withML: { count: 150, avgError: 2.3, avgTime: 45 }, withoutML: { count: 50, avgError: 8.7, avgTime: 120 } });
-  if (url.includes('/v1/schedule/history')) return mockResponse([]);
-  if (url.includes('/v1/schedule')) return mockResponse({ results: [], count: 0, scheduledAt: new Date().toISOString() });
-
-  // Metrics
-  if (url.includes('/v1/metrics/timeline')) return mockResponse([
-    { date: new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0], tasksScheduled: 12, avgExecutionTime: 34, mlAccuracy: 89 },
-    { date: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0], tasksScheduled: 18, avgExecutionTime: 29, mlAccuracy: 91 },
-    { date: new Date(Date.now() - 4 * 86400000).toISOString().split('T')[0], tasksScheduled: 15, avgExecutionTime: 31, mlAccuracy: 90 },
-    { date: new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0], tasksScheduled: 22, avgExecutionTime: 27, mlAccuracy: 92 },
-    { date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0], tasksScheduled: 20, avgExecutionTime: 25, mlAccuracy: 93 },
-    { date: new Date(Date.now() - 86400000).toISOString().split('T')[0], tasksScheduled: 25, avgExecutionTime: 24, mlAccuracy: 94 },
-    { date: new Date().toISOString().split('T')[0], tasksScheduled: 8, avgExecutionTime: 22, mlAccuracy: 95 },
-  ]);
-  if (url.includes('/v1/metrics')) return mockResponse({
-    tasks: { total: 6, pending: 2, scheduled: 1, running: 1, completed: 2, failed: 0 },
-    resources: { total: 8, available: 4, busy: 3, offline: 1, avgLoad: 43.5 },
-    performance: { avgExecutionTime: 35.65, mlAccuracy: 91.5, totalScheduled: 120 },
-  });
-
-  // Devices
-  if (url.includes('/v1/devices/stats')) return mockResponse({ total: 12, online: 9, offline: 1, error: 1, maintenance: 1, byType: { CAMERA: 3, ROBOT_ARM: 2, IOT_SENSOR: 3, EDGE_SERVER: 2, ACTUATOR: 2 } });
-  if (url.match(/\/v1\/devices\/.+\/metrics/) && method === 'get') return mockResponse([]);
-  if (url.match(/\/v1\/devices\/.+\/logs/) && method === 'get') return mockResponse([]);
-  if (url.match(/\/v1\/devices\/.+/) && method === 'get') return mockResponse(demoDevices[0]);
-  if (url.includes('/v1/devices')) return mockResponse(demoDevices);
-
-  // Fog Computing
-  if (url.includes('/v1/fog/metrics')) return mockResponse({ metrics: [
-    { taskCount: 50, completionTime: { hh: 2140, ipso: 2075, iaco: 2146, rr: 2357, minMin: 2355 }, energyConsumption: { hh: 19.5, ipso: 18.7, iaco: 19.4, rr: 20.7, minMin: 21.1 }, reliability: { hh: 14, ipso: 14, iaco: 16, rr: 14, minMin: 14 } },
-    { taskCount: 100, completionTime: { hh: 4196, ipso: 3466, iaco: 3974, rr: 4709, minMin: 4710 }, energyConsumption: { hh: 47.4, ipso: 38.6, iaco: 44.5, rr: 49.5, minMin: 51.3 }, reliability: { hh: 21, ipso: 30, iaco: 25, rr: 23, minMin: 24 } },
-    { taskCount: 200, completionTime: { hh: 8094, ipso: 7668, iaco: 7733, rr: 8645, minMin: 8676 }, energyConsumption: { hh: 78.2, ipso: 73.5, iaco: 74.3, rr: 79.8, minMin: 81.3 }, reliability: { hh: 23.5, ipso: 27, iaco: 24.5, rr: 20, minMin: 19 } },
-  ] });
-  if (url.includes('/v1/fog/tolerance')) return mockResponse({ metrics: [] });
-  if (url.includes('/v1/fog/nodes')) return mockResponse([
-    { id: 'fn1', name: 'Fog Node 1', computingResourceGHz: '2.4', networkBandwidthMbps: '100', currentLoadPercent: '45' },
-    { id: 'fn2', name: 'Fog Node 2', computingResourceGHz: '3.2', networkBandwidthMbps: '200', currentLoadPercent: '30' },
-    { id: 'fn3', name: 'Fog Node 3', computingResourceGHz: '1.8', networkBandwidthMbps: '50', currentLoadPercent: '60' },
-  ]);
-  if (url.includes('/v1/fog/compare') && method === 'post') return mockResponse({
-    hybridHeuristic: { totalDelay: 2140, totalEnergy: 19.5, reliability: 14, executionTimeMs: 573 },
-    ipso: { totalDelay: 2075, totalEnergy: 18.7, reliability: 14, executionTimeMs: 228 },
-    iaco: { totalDelay: 2146, totalEnergy: 19.4, reliability: 16, executionTimeMs: 187 },
-    roundRobin: { totalDelay: 2357, totalEnergy: 20.7, reliability: 14, executionTimeMs: 2 },
-    minMin: { totalDelay: 2355, totalEnergy: 21.1, reliability: 14, executionTimeMs: 5 },
-  });
-  if (url.includes('/v1/fog/info')) return mockResponse({ fogNodes: 10, algorithms: ['HH', 'IPSO', 'IACO', 'RR', 'MinMin', 'FCFS'] });
-  if (url.includes('/v1/fog')) return mockResponse({});
-
-  // Reports
-  if (url.includes('/v1/reports')) return mockResponse({ pdf: ['tasks', 'performance', 'resources'], csv: ['tasks', 'resources', 'schedule-history'] });
-
-  // Experiments
-  if (url.includes('/v1/experiments/results')) return mockResponse({ files: [] });
-  if (url.includes('/v1/experiments/summary')) return mockResponse({});
-  if (url.includes('/v1/experiments')) return mockResponse({});
-
-  // Health
-  if (url.includes('/health')) return mockResponse({ status: 'ok', demo: true });
-
-  return null;
-}
-
-// Demo mode interceptor — returns mock data when backend is unavailable
-api.interceptors.response.use(
-  (response) => {
-    // On Vercel, SPA rewrite returns 200 OK with HTML for API routes.
-    // Detect this and swap in mock data instead of letting HTML propagate.
-    const contentType = response.headers?.['content-type'] || '';
-    const isHtml = contentType.includes('text/html') || (typeof response.data === 'string' && response.data.trimStart().startsWith('<!'));
-    if (isHtml && response.config?.url?.includes('/v1/')) {
-      const url = response.config.url || '';
-      const method = (response.config.method || 'get').toLowerCase();
-      const demoData = getDemoResponse(url, method);
-      if (demoData) {
-        if (!isDemoMode()) {
-          localStorage.setItem(DEMO_MODE_KEY, JSON.stringify({
-            id: 'demo-user-001', email: 'demo@example.com', name: 'Demo User', role: 'ADMIN'
-          }));
-        }
-        return demoData;
-      }
-    }
-    return response;
-  },
-  async (error: AxiosError) => {
-    // If in demo mode OR backend returns 401/405/404/502/503, serve mock data
-    const status = error.response?.status;
-    const isUnavailable = !error.response || status === 401 || status === 405 || status === 404 || status === 502 || status === 503;
-
-    if (isUnavailable) {
-      const url = error.config?.url || '';
-      const method = (error.config?.method || 'get').toLowerCase();
-      const demoData = getDemoResponse(url, method);
-
-      if (demoData) {
-        // If not already in demo mode, activate it
-        if (!isDemoMode()) {
-          localStorage.setItem(DEMO_MODE_KEY, JSON.stringify({
-            id: 'demo-user-001', email: 'demo@example.com', name: 'Demo User', role: 'ADMIN'
-          }));
-        }
-        return demoData;
-      }
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 // ============================================
 // AUTH API

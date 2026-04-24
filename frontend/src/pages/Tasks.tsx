@@ -29,6 +29,10 @@ export default function Tasks() {
 
   useEffect(() => {
     fetchTasks();
+    const interval = setInterval(() => {
+      fetchTasks();
+    }, 3000);
+    return () => clearInterval(interval);
   }, [fetchTasks]);
 
   const handleSearch = useCallback((query: string) => {
@@ -47,6 +51,7 @@ export default function Tasks() {
     try {
       const task = await taskApi.create(data);
       addTask(task);
+      fetchTasks(); // Immediately sync from DB
       setShowForm(false);
       toast.success('Task created', `"${task.name}" has been created successfully.`);
     } catch (error) {
