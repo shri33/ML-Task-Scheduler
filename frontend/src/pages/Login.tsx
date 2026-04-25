@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Brain, Mail, Lock, User, Eye, EyeOff, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { clsx } from 'clsx';
@@ -7,6 +8,7 @@ import { clsx } from 'clsx';
 type ViewMode = 'login' | 'register' | 'forgot-password' | 'reset-password';
 
 export default function Login() {
+  const location = useLocation();
   const [viewMode, setViewMode] = useState<ViewMode>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,6 +24,30 @@ export default function Login() {
 
   const { login, register, forgotPassword, resetPassword } = useAuth();
   const toast = useToast();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const oauthError = params.get('error');
+    if (!oauthError) return;
+
+    const errorMessageMap: Record<string, string> = {
+      google_not_configured: 'Google login is not configured on server.',
+      invalid_oauth_state: 'Google login validation failed. Please try again.',
+      google_token_exchange_failed: 'Could not complete Google token exchange.',
+      missing_google_access_token: 'Google did not return an access token.',
+      google_profile_fetch_failed: 'Could not fetch your Google profile.',
+      google_email_not_verified: 'Your Google email must be verified to continue.',
+      account_deactivated: 'This account is deactivated. Contact support.',
+      google_auth_failed: 'Google login failed. Please try again.',
+    };
+
+    toast.error('Google sign-in failed', errorMessageMap[oauthError] || 'Please try again.');
+  }, [location.search, toast]);
+
+  const handleGoogleLogin = () => {
+    const apiBase = import.meta.env.VITE_API_URL || '';
+    window.location.href = `${apiBase}/api/v1/auth/google`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -353,16 +379,25 @@ export default function Login() {
 
           {/* Demo Account - only show for login/register */}
           {(isLogin || isRegister) && (
-          <button
-            type="button"
-            onClick={() => {
-              setFormData({ ...formData, email: 'demo@example.com', password: 'password123', name: '' });
-              setViewMode('login');
-            }}
-            className="w-full py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            Use Demo Account
-          </button>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              className="w-full py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Continue with Google
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setFormData({ ...formData, email: 'demo@example.com', password: 'password123', name: '' });
+                setViewMode('login');
+              }}
+              className="w-full py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Use Demo Account
+            </button>
+          </div>
           )}
         </div>
 

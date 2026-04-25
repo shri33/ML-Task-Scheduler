@@ -102,6 +102,8 @@ The easiest way to run the entire ecosystem is using the provided PowerShell hel
 ./docker-run.ps1
 ```
 
+For Google sign-in in Docker, make sure `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set in your local `backend/.env` or root `.env`, and register `http://localhost:3001/api/v1/auth/google/callback` in Google Cloud Console.
+
 **Linux / Generic:**
 ```bash
 # Start all 7 services (DB, Redis, Backend, ML, Frontend, Prometheus, Grafana)

@@ -98,8 +98,8 @@ export default function Experiments() {
     RR: r.rr,
   }));
 
-  return (
-    <div className="space-y-6">
+  return (<><div className='dark:bg-black/50 h-full'>
+    <div className="space-y-6 pt-6 mb-6 mx-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -348,6 +348,6 @@ export default function Experiments() {
           </ul>
         </div>
       )}
-    </div>
+    </div></div></>
   );
 }

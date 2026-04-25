@@ -5,8 +5,8 @@ import { Calendar, AlertTriangle } from 'lucide-react';
 export const TypeBadge = memo(function TypeBadge({ type }: { type: string }) {
   const colors: Record<string, string> = {
     CPU: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
-    IO: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
-    MIXED: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300',
+    IO: 'bg-blue-100 dark:bg-black/30 text-blue-700 dark:text-blue-300',
+    MIXED: 'bg-indigo-100 dark:bg-black/30 text-indigo-700 dark:text-indigo-300',
   };
   return (
     <span
@@ -20,7 +20,7 @@ export const TypeBadge = memo(function TypeBadge({ type }: { type: string }) {
 export const PriorityBadge = memo(function PriorityBadge({ priority, showLabel = false }: { priority: number; showLabel?: boolean }) {
   const colors: Record<number, string> = {
     1: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
-    2: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300',
+    2: 'bg-blue-100 dark:bg-black/30 text-blue-600 dark:text-blue-300',
     3: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-300',
     4: 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300',
     5: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300',
@@ -44,7 +44,7 @@ export const PriorityBadge = memo(function PriorityBadge({ priority, showLabel =
 export const StatusBadge = memo(function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
     PENDING: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
-    SCHEDULED: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+    SCHEDULED: 'bg-blue-100 dark:bg-black/30 text-blue-700 dark:text-blue-300',
     RUNNING: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 animate-status-pulse',
     COMPLETED: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
     FAILED: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',

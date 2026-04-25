@@ -6,8 +6,9 @@ import prisma from '../lib/prisma';
 import { authenticate, generateTokens, AuthRequest } from '../middleware/auth.middleware';
 import { authLimiter } from '../middleware/rateLimit.middleware';
 import { setTokenCookies, clearTokenCookies, REFRESH_TOKEN_COOKIE } from '../lib/cookies';
-import { setCsrfCookie } from '../middleware/csrf.middleware';
+import { setCsrfCookie, COOKIE_SECURE } from '../middleware/csrf.middleware';
 import { z } from 'zod';
+import crypto from 'crypto';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || process.env.ACCESS_TOKEN_SECRET;
@@ -27,6 +28,26 @@ const DEMO_USER = {
   createdAt: new Date().toISOString()
 };
 const DEMO_PASSWORD = 'password123';
+const OAUTH_STATE_COOKIE = 'oauth_state';
+
+function getFrontendBaseUrl(): string {
+  return process.env.FRONTEND_URL || process.env.CORS_ORIGIN || 'http://localhost:3000';
+}
+
+function getGoogleRedirectUri(req: Request): string {
+  const configured = process.env.GOOGLE_REDIRECT_URI;
+  if (configured) return configured;
+  return `${req.protocol}://${req.get('host')}/api/v1/auth/google/callback`;
+}
+
+function googleEnabled(): boolean {
+  return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+}
+
+function frontendAuthRedirect(path: string): string {
+  const base = getFrontendBaseUrl().replace(/\/$/, '');
+  return `${base}${path}`;
+}
 
 // Validation schemas
 const registerSchema = z.object({
@@ -38,6 +59,146 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required')
+});
+
+// Google OAuth start
+router.get('/google', (req: Request, res: Response) => {
+  if (!googleEnabled()) {
+    return res.redirect(frontendAuthRedirect('/login?error=google_not_configured'));
+  }
+
+  const state = crypto.randomBytes(24).toString('hex');
+  res.cookie(OAUTH_STATE_COOKIE, state, {
+    httpOnly: true,
+    secure: COOKIE_SECURE,
+    sameSite: (COOKIE_SECURE ? 'strict' : 'lax') as 'strict' | 'lax',
+    path: '/',
+    maxAge: 10 * 60 * 1000,
+  });
+
+  const params = new URLSearchParams({
+    client_id: process.env.GOOGLE_CLIENT_ID!,
+    redirect_uri: getGoogleRedirectUri(req),
+    response_type: 'code',
+    scope: 'openid email profile',
+    state,
+    prompt: 'select_account',
+    access_type: 'offline',
+  });
+
+  return res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+});
+
+// Google OAuth callback
+router.get('/google/callback', async (req: Request, res: Response) => {
+  try {
+    if (!googleEnabled()) {
+      return res.redirect(frontendAuthRedirect('/login?error=google_not_configured'));
+    }
+
+    const { code, state } = req.query as { code?: string; state?: string };
+    const cookieState = req.cookies?.[OAUTH_STATE_COOKIE];
+
+    if (!code || !state || !cookieState || state !== cookieState) {
+      return res.redirect(frontendAuthRedirect('/login?error=invalid_oauth_state'));
+    }
+
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID!,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        redirect_uri: getGoogleRedirectUri(req),
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      return res.redirect(frontendAuthRedirect('/login?error=google_token_exchange_failed'));
+    }
+
+    const tokenData = await tokenResponse.json() as { access_token?: string };
+    if (!tokenData.access_token) {
+      return res.redirect(frontendAuthRedirect('/login?error=missing_google_access_token'));
+    }
+
+    const profileResponse = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+
+    if (!profileResponse.ok) {
+      return res.redirect(frontendAuthRedirect('/login?error=google_profile_fetch_failed'));
+    }
+
+    const profile = await profileResponse.json() as {
+      email?: string;
+      name?: string;
+      email_verified?: boolean;
+      sub?: string;
+    };
+
+    if (!profile.email || !profile.email_verified) {
+      return res.redirect(frontendAuthRedirect('/login?error=google_email_not_verified'));
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email: profile.email }
+    });
+
+    let user = existingUser;
+    if (!user) {
+      const generatedPassword = crypto.randomBytes(32).toString('hex');
+      const hashedPassword = await bcrypt.hash(generatedPassword, 12);
+
+      user = await prisma.user.create({
+        data: {
+          email: profile.email,
+          name: profile.name || profile.email.split('@')[0],
+          password: hashedPassword,
+          notifications: {
+            create: {
+              emailOnTaskComplete: true,
+              emailOnTaskFailed: true,
+              emailDailySummary: false,
+            }
+          }
+        }
+      });
+    }
+
+    if (!user.isActive) {
+      return res.redirect(frontendAuthRedirect('/login?error=account_deactivated'));
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLogin: new Date() }
+    });
+
+    const { accessToken, refreshToken } = generateTokens({
+      id: user.id,
+      email: user.email,
+      role: user.role
+    });
+
+    await prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      }
+    });
+
+    setTokenCookies(res, accessToken, refreshToken);
+    setCsrfCookie(res);
+    res.clearCookie(OAUTH_STATE_COOKIE, { path: '/' });
+
+    return res.redirect(frontendAuthRedirect('/dashboard'));
+  } catch {
+    return res.redirect(frontendAuthRedirect('/login?error=google_auth_failed'));
+  }
 });
 
 // Register new user

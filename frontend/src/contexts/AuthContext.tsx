@@ -63,13 +63,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isDemoMode, setIsDemoMode] = useState(false);
 
-  useEffect(() => {
-    // Check if user was in demo mode (persisted across refresh)
+  // useEffect(() => {
+  //   // Check if user was in demo mode (persisted across refresh)
+  //   const savedDemo = localStorage.getItem(DEMO_MODE_KEY);
+  //   if (savedDemo) {
+  //     try {
+  //       const demoUser = JSON.parse(savedDemo);
+  //       setUser(demoUser);
+  //       setIsDemoMode(true);
+  //       setIsLoading(false);
+  //       return;
+  //     } catch {
+  //       localStorage.removeItem(DEMO_MODE_KEY);
+  //     }
+  //   }
+  //   // Check for existing session via httpOnly cookie
+  //   fetchUser();
+  // }, []);
+
+// AFTER
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const isOAuthReturn = params.has('session') || document.referrer.includes('google.com');
+
+  if (!isOAuthReturn) {
     const savedDemo = localStorage.getItem(DEMO_MODE_KEY);
     if (savedDemo) {
       try {
-        const demoUser = JSON.parse(savedDemo);
-        setUser(demoUser);
+        setUser(JSON.parse(savedDemo));
         setIsDemoMode(true);
         setIsLoading(false);
         return;
@@ -77,9 +98,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem(DEMO_MODE_KEY);
       }
     }
-    // Check for existing session via httpOnly cookie
-    fetchUser();
-  }, []);
+  } else {
+    localStorage.removeItem(DEMO_MODE_KEY);
+    setIsDemoMode(false);
+  }
+  fetchUser();
+}, []);
 
   const fetchUser = async () => {
     try {

@@ -10,6 +10,8 @@ export default {
       fontFamily: {
         sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
         mono: ['DM Mono', 'monospace'],
+        manrope: ['Manrope', 'sans-serif'],
+        inter: ['Inter', 'sans-serif'],
       },
       colors: {
         primary: {
@@ -37,6 +39,10 @@ export default {
         'fade-in-up': {
           '0%': { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'animStar': {
+          'from': { transform: 'translateY(0px)' },
+          'to': { transform: 'translateY(-2000px)' },
         },
       },
       animation: {

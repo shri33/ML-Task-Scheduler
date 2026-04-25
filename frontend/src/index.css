@@ -2,6 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════
+   RED NOIR THEME - CUSTOM ANIMATIONS
+═══════════════════════════════════════════ */
+:root {
+  --accent-red: #ef233c;
+  --accent-red-glow: rgba(239, 35, 60, 0.5);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom Animations */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes border-spin {
+  from { --gradient-angle: 0deg; }
+  to { --gradient-angle: 360deg; }
+}
+
+@keyframes shimmer {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes animStar {
+  from { transform: translateY(0px); }
+  to { transform: translateY(-2000px); }
+}
+
+@property --gradient-angle { 
+  syntax: "<angle>"; 
+  initial-value: 0deg; 
+  inherits: false; 
+}
+
+.animate-fade-up {
+  animation: fade-in-up 0.8s ease-out forwards;
+}
+
+.font-manrope { font-family: 'Manrope', sans-serif; }
+.font-inter { font-family: 'Inter', sans-serif; }
+
+/* Selection styling */
+.selection-red::selection {
+  background: #ef233c;
+  color: white;
+}
+
+.text-stroke {
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.1);
+  color: transparent;
+}
+
 /* Light mode (default) */
 body {
   @apply text-gray-900 font-sans min-h-screen bg-slate-50 bg-gradient-to-br from-indigo-50/50 via-white to-blue-50/50 selection:bg-indigo-100;
@@ -11,6 +68,15 @@ body {
 .dark body,
 .dark {
   @apply text-gray-100 bg-gray-950 bg-gradient-to-br from-gray-950 via-gray-900 to-slate-900 selection:bg-indigo-900;
+}
+
+/* Red Noir Landing Page mode */
+.red-noir {
+  @apply bg-black text-white selection:bg-[#ef233c] selection:text-white;
+}
+
+.red-noir body {
+  @apply bg-black;
 }
 
 /* Page title - strong display heading */

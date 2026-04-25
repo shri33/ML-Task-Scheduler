@@ -195,8 +195,8 @@ export default function FogComputing() {
       ]
     : [];
 
-  return (
-    <div className="p-4 lg:p-6 space-y-6">
+  return (<><div className='dark:bg-black/50 h-full'>
+    <div className=" pt-6 mb-6 mx-6 space-y-6">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm border-l-4 border-l-purple-500">
         <h1 className="page-title">Fog Computing Task Scheduler</h1>
@@ -205,7 +205,7 @@ export default function FogComputing() {
         </p>
         <div className="mt-4 flex flex-wrap gap-3 text-sm">
           <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-3 py-1.5 rounded-full font-medium">IPSO: Improved Particle Swarm Optimization</span>
-          <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-full font-medium">IACO: Improved Ant Colony Optimization</span>
+          <span className="bg-blue-100 dark:bg-black/30 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-full font-medium">IACO: Improved Ant Colony Optimization</span>
         </div>
       </div>
 
@@ -284,7 +284,7 @@ export default function FogComputing() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
           <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Schedule Result — {scheduleResult.algorithm}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-xl border-l-4 border-l-blue-500">
+            <div className="bg-blue-50 dark:bg-black/30 p-4 rounded-xl border-l-4 border-l-blue-500">
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">Total Delay</p>
               <p className="text-3xl font-extrabold font-mono text-blue-600 dark:text-blue-400 mt-1">{scheduleResult.metrics.totalDelay.toFixed(2)}s</p>
             </div>
@@ -539,6 +539,6 @@ export default function FogComputing() {
           </p>
         </div>
       </div>
-    </div>
+    </div></div></>
   );
 }

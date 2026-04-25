@@ -74,7 +74,7 @@ export function SearchFilter({ placeholder = 'Search...', onSearch, filters }: S
             className={clsx(
               'flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors',
               showFilters
-                ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300'
+                ? 'bg-primary-50 dark:bg-black/30 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300'
                 : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
             )}
           >
@@ -127,7 +127,7 @@ export function QuickFilters({
           className={clsx(
             'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
             value === option.value
-              ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+              ? 'bg-primary-100 dark:bg-black/30 text-primary-700 dark:text-primary-300'
               : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
           )}
         >

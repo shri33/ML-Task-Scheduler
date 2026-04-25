@@ -46,25 +46,32 @@ export default function Profile() {
 
   const [editedProfile, setEditedProfile] = useState<ProfileData>(profile);
 
-  // Load saved profile from localStorage
-  useEffect(() => {
-    fetchTasks();
-    fetchResources();
-    const savedProfile = localStorage.getItem('userProfile');
-    if (savedProfile) {
-      const parsed = JSON.parse(savedProfile);
-      setProfile(parsed);
-      setEditedProfile(parsed);
-    } else if (user) {
-      const initialProfile = {
-        ...profile,
-        name: user.name || '',
-        email: user.email || '',
-      };
-      setProfile(initialProfile);
-      setEditedProfile(initialProfile);
-    }
-  }, [user]);
+  // Load saved profile 
+ useEffect(() => {
+  fetchTasks();
+  fetchResources();
+  const savedProfile = localStorage.getItem('userProfile');
+  const base = {
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: '',
+    address: '',
+    organization: '',
+    role: 'Developer',
+    bio: '',
+    joinedDate: new Date().toISOString().split('T')[0],
+  };
+  if (savedProfile) {
+    const parsed = JSON.parse(savedProfile);
+    // Always override name/email from the real authenticated user
+    const merged = { ...parsed, name: user?.name || parsed.name, email: user?.email || parsed.email };
+    setProfile(merged);
+    setEditedProfile(merged);
+  } else {
+    setProfile(base);
+    setEditedProfile(base);
+  }
+}, [user]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -158,11 +165,17 @@ export default function Profile() {
         {/* Avatar Section */}
         <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-gray-200 dark:border-gray-700">
           <div className="relative group">
-            <div className="w-28 h-28 bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/30 dark:to-primary-800/30 rounded-full flex items-center justify-center ring-4 ring-white dark:ring-gray-800 shadow-md">
-              <span className="text-4xl font-extrabold text-primary-600 dark:text-primary-400">
-                {profile.name ? profile.name.charAt(0).toUpperCase() : 'U'}
-              </span>
-            </div>
+            <div className="w-28 h-28 rounded-full ring-4 ring-white dark:ring-gray-800 shadow-md overflow-hidden">
+  {user?.picture ? (
+    <img src={user.picture} alt={profile.name} className="w-full h-full object-cover" />
+  ) : (
+    <div className="w-full h-full bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/30 dark:to-primary-800/30 flex items-center justify-center">
+      <span className="text-4xl font-extrabold text-primary-600 dark:text-primary-400">
+        {profile.name ? profile.name.charAt(0).toUpperCase() : 'U'}
+      </span>
+    </div>
+  )}
+</div>
             {isEditing && (
               <button className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="text-center">
@@ -183,7 +196,7 @@ export default function Profile() {
             </h3>
             <p className="text-gray-600 dark:text-gray-400">{profile.email}</p>
             <div className="flex items-center justify-center sm:justify-start gap-2 mt-2">
-              <span className="px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-sm rounded-full">
+              <span className="px-3 py-1 bg-primary-100 dark:bg-black/30 text-primary-700 dark:text-primary-300 text-sm rounded-full">
                 {profile.role}
               </span>
               <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">

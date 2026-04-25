@@ -127,10 +127,10 @@ export default function Tasks() {
     { label: 'Failed', value: 'FAILED' },
   ];
 
-  return (
-    <div className="space-y-6">
+  return (<><div className=' dark:bg-black/50'>
+    <div className="space-y-6 pt-6 mb-6 mx-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ">
         <div>
           <h2 className="page-title">Tasks</h2>
           <p className="page-subtitle">Manage and schedule tasks</p>
@@ -139,7 +139,7 @@ export default function Tasks() {
           <CSVExport />
           <button
             onClick={() => setShowForm(true)}
-            className="btn btn-primary flex items-center gap-2"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-black dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white transition-colors"
           >
             <Plus className="h-4 w-4" />
             Create Task
@@ -174,7 +174,10 @@ export default function Tasks() {
               {searchQuery ? 'Try a different search term.' : 'Create one to get started.'}
             </p>
             {!searchQuery && (
-              <button onClick={() => setShowForm(true)} className="btn btn-primary">
+              <button
+                onClick={() => setShowForm(true)}
+                className="px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-black dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white transition-colors"
+              >
                 Create Task
               </button>
             )}
@@ -251,7 +254,7 @@ export default function Tasks() {
                           <>
                             <button
                               onClick={() => handleScheduleTask(task.id, task.name)}
-                              className="p-1.5 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400 transition-colors"
+                              className="p-1.5 bg-gray-100 dark:bg-gray-700/70 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-700 dark:text-gray-200 transition-colors"
                               title="Schedule"
                             >
                               <Play className="h-4 w-4" />
@@ -347,7 +350,7 @@ export default function Tasks() {
           />
         </div>
       </ConfirmDialog>
-    </div>
+    </div></div></>
   );
 }
 
@@ -482,7 +485,7 @@ function TaskFormModal({
                   className={clsx(
                     'flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors',
                     formData.priority === p
-                      ? 'bg-primary-600 text-white'
+                      ? 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   )}
                 >
@@ -503,7 +506,7 @@ function TaskFormModal({
             <button 
               type="submit" 
               disabled={isSubmitting}
-              className="btn btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-black dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'Creating...' : 'Create Task'}
             </button>

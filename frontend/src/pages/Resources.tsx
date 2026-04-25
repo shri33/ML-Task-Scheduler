@@ -1,15 +1,12 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useStore } from '../store';
 import { resourceApi } from '../lib/api';
 import { CreateResourceInput, Resource } from '../types';
-import { Plus, Trash2, X, Server, Edit2, RefreshCw, ArrowUpDown } from 'lucide-react';
+import { Plus, RefreshCw, Server, X, MoreVertical } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useToast } from '../contexts/ToastContext';
-import { SearchFilter, QuickFilters } from '../components/SearchFilter';
-import { ResourceCardSkeleton } from '../components/Skeletons';
 import { StatusBadge } from '../components/shared/Badges';
 import ResourceEditModal from '../components/ResourceEditModal';
-import CSVExport from '../components/CSVExport';
 import ConfirmDialog from '../components/shared/ConfirmDialog';
 
 type SortField = 'name' | 'load' | 'capacity' | 'status';
@@ -38,10 +35,6 @@ export default function Resources() {
   useEffect(() => {
     fetchResources();
   }, [fetchResources]);
-
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-  }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -97,10 +90,6 @@ export default function Resources() {
     }
   };
 
-  const handleDeleteResource = async (id: string, name: string) => {
-    setDeleteTarget({ id, name });
-  };
-
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     setIsDeleting(true);
@@ -121,13 +110,6 @@ export default function Resources() {
     setEditingResource(null);
   };
 
-  const filterOptions = [
-    { label: 'All', value: '' },
-    { label: 'Available', value: 'AVAILABLE' },
-    { label: 'Busy', value: 'BUSY' },
-    { label: 'Offline', value: 'OFFLINE' },
-  ];
-
   const sortOptions: { label: string; value: SortField }[] = [
     { label: 'Name', value: 'name' },
     { label: 'Load', value: 'load' },
@@ -145,221 +127,272 @@ export default function Resources() {
     : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="page-title">Resources</h2>
-          <p className="page-subtitle">
-            Manage computing resources for task allocation
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="btn btn-secondary flex items-center gap-2"
-          >
-            <RefreshCw className={clsx('h-4 w-4', refreshing && 'animate-spin')} />
-            Refresh
-          </button>
-          <CSVExport />
-          <button
-            onClick={() => setShowForm(true)}
-            className="btn btn-primary flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Add Resource
-          </button>
-        </div>
-      </div>
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 text-center">
-          <p className="text-3xl font-extrabold font-mono text-gray-900 dark:text-white">{totalResources}</p>
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Total</p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 text-center border-l-4 border-l-green-500">
-          <p className="text-3xl font-extrabold font-mono text-green-600 dark:text-green-400">{availableCount}</p>
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Available</p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 text-center border-l-4 border-l-amber-500">
-          <p className="text-3xl font-extrabold font-mono text-yellow-600 dark:text-yellow-400">{busyCount}</p>
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Busy</p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 text-center border-l-4 border-l-gray-400">
-          <p className="text-3xl font-extrabold font-mono text-gray-600 dark:text-gray-400">{offlineCount}</p>
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Offline</p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 text-center col-span-2 sm:col-span-1">
-          <p className="text-3xl font-extrabold font-mono text-primary-600 dark:text-primary-400">{avgLoad}%</p>
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Avg Load</p>
-        </div>
-      </div>
-
-      {/* Search & Filters */}
-      <div className="space-y-4">
-        <SearchFilter
-          placeholder="Search resources by name..."
-          onSearch={handleSearch}
-        />
-        <div className="flex flex-col sm:flex-row justify-between gap-3">
-          <QuickFilters
-            options={filterOptions}
-            value={statusFilter}
-            onChange={setStatusFilter}
-          />
-          {/* Sort Controls */}
-          <div className="flex items-center gap-2">
-            <ArrowUpDown className="h-4 w-4 text-gray-400" />
-            <span className="text-sm text-gray-500 dark:text-gray-400">Sort:</span>
-            {sortOptions.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => toggleSort(opt.value)}
-                className={clsx(
-                  'px-2 py-1 rounded text-xs font-medium transition-colors',
-                  sortField === opt.value
-                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                )}
-              >
-                {opt.label}
-                {sortField === opt.value && (sortDir === 'asc' ? ' ↑' : ' ↓')}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Resource Grid */}
-      {resourcesLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <ResourceCardSkeleton key={i} />
-          ))}
-        </div>
-      ) : filteredResources.length === 0 ? (
-        <div className="card text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Server className="h-8 w-8 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No resources found</h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">
-            {searchQuery || statusFilter ? 'Try a different search term or filter.' : 'Add one to get started.'}
-          </p>
-          {!searchQuery && !statusFilter && (
-            <button onClick={() => setShowForm(true)} className="btn btn-primary">
-              Add Resource
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredResources.map((resource) => (
-            <div key={resource.id} className={clsx(
-              'card hover:shadow-lg transition-all duration-200',
-              resource.status === 'AVAILABLE' && 'status-strip-available',
-              resource.status === 'BUSY' && 'status-strip-busy',
-              resource.status === 'OFFLINE' && 'status-strip-offline',
-            )}>
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={clsx(
-                      'p-2 rounded-lg',
-                      resource.status === 'AVAILABLE'
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                        : resource.status === 'BUSY'
-                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                    )}
-                  >
-                    <Server className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">
-                      {resource.name}
-                    </h3>
-                    <StatusBadge status={resource.status} />
-                  </div>
-                </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => setEditingResource(resource)}
-                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-600 dark:text-gray-400"
-                    title="Edit"
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteResource(resource.id, resource.name)}
-                    className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-red-600 dark:text-red-400"
-                    title="Delete"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
+    <main>
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,4fr)_minmax(0,1fr)] gap-4 xl:gap-6">
+        {/* Left Panel - Resources Grid */}
+        <div className="bg-gray-200 dark:bg-black/30 p-7 min-h-full w-full">
+          <div className="space-y-6">
+            {/* Page Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+                  Resources
+                </h2>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                  Manage computing resources for task allocation
+                </p>
               </div>
-
-              {/* Load Bar */}
-              <div className="mb-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">Current Load</span>
-                  <span
-                    className={clsx(
-                      'text-sm font-bold font-mono',
-                      resource.currentLoad < 50
-                        ? 'text-green-600 dark:text-green-400'
-                        : resource.currentLoad < 80
-                        ? 'text-yellow-600 dark:text-yellow-400'
-                        : 'text-red-600 dark:text-red-400'
-                    )}
-                  >
-                    {Math.round(resource.currentLoad)}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
-                  <div
-                    className={clsx(
-                      'h-4 rounded-full transition-all duration-500',
-                      resource.currentLoad < 50
-                        ? 'bg-gradient-to-r from-green-400 to-green-500'
-                        : resource.currentLoad < 80
-                        ? 'bg-gradient-to-r from-yellow-400 to-yellow-500'
-                        : 'bg-gradient-to-r from-red-400 to-red-500'
-                    )}
-                    style={{ width: `${resource.currentLoad}%` }}
+              <div className="flex gap-2.5">
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+                >
+                  <RefreshCw
+                    className={clsx("h-4 w-4", refreshing && "animate-spin")}
                   />
-                </div>
-                {resource.currentLoad >= 90 && (
-                  <p className="text-xs text-red-500 dark:text-red-400 mt-1 font-medium flex items-center gap-1">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse-dot" />
-                    Overloaded
-                  </p>
-                )}
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {resource.capacity}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Capacity</p>
-                </div>
-                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {resource._count?.tasks || 0}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Active Tasks</p>
-                </div>
+                  Refresh
+                </button>
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-colors shadow-sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Resource
+                </button>
               </div>
             </div>
-          ))}
+
+            {/* Summary Stats Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 text-center shadow-sm">
+                <p className="text-2xl font-bold font-mono text-gray-900 dark:text-white">{totalResources}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Total</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-green-100 dark:border-green-900/30 p-4 text-center shadow-sm border-l-4 border-l-green-500">
+                <p className="text-2xl font-bold font-mono text-green-600 dark:text-green-400">{availableCount}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Available</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-amber-100 dark:border-amber-900/30 p-4 text-center shadow-sm border-l-4 border-l-amber-500">
+                <p className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">{busyCount}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Busy</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 text-center shadow-sm border-l-4 border-l-gray-400">
+                <p className="text-2xl font-bold font-mono text-gray-600 dark:text-gray-400">{offlineCount}</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Offline</p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-primary-100 dark:border-primary-900/30 p-4 text-center shadow-sm col-span-2 sm:col-span-1 border-l-4 border-l-primary-500">
+                <p className="text-2xl font-bold font-mono text-primary-600 dark:text-primary-400">{avgLoad}%</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Avg Load</p>
+              </div>
+            </div>
+
+            {/* Resource Grid */}
+            {resourcesLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-4 animate-pulse">
+                    <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredResources.length === 0 ? (
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center shadow-sm border border-gray-100 dark:border-gray-700">
+                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Server className="h-8 w-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">No resources found</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">
+                  {searchQuery || statusFilter ? 'Try a different search term or filter.' : 'Add one to get started.'}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredResources.map((resource) => (
+                  <div
+                    key={resource.id}
+                    className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all"
+                  >
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={clsx(
+                            'p-2.5 rounded-lg',
+                            resource.status === 'AVAILABLE'
+                              ? 'bg-green-100 dark:bg-green-900/30'
+                              : resource.status === 'BUSY'
+                              ? 'bg-amber-100 dark:bg-amber-900/30'
+                              : 'bg-gray-100 dark:bg-gray-700'
+                          )}
+                        >
+                          <Server
+                            className={clsx(
+                              'h-5 w-5',
+                              resource.status === 'AVAILABLE'
+                                ? 'text-green-600 dark:text-green-400'
+                                : resource.status === 'BUSY'
+                                ? 'text-amber-600 dark:text-amber-400'
+                                : 'text-gray-600 dark:text-gray-400'
+                            )}
+                          />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">
+                            {resource.name}
+                          </h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            <StatusBadge status={resource.status} />
+                          </p>
+                        </div>
+                      </div>
+                      <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Load Bar */}
+                    <div className="mb-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Current Load</span>
+                        <span
+                          className={clsx(
+                            'text-xs font-bold font-mono',
+                            resource.currentLoad < 50
+                              ? 'text-green-600 dark:text-green-400'
+                              : resource.currentLoad < 80
+                              ? 'text-amber-600 dark:text-amber-400'
+                              : 'text-red-600 dark:text-red-400'
+                          )}
+                        >
+                          {Math.round(resource.currentLoad)}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                        <div
+                          className={clsx(
+                            'h-2.5 rounded-full transition-all duration-500',
+                            resource.currentLoad < 50
+                              ? 'bg-green-500'
+                              : resource.currentLoad < 80
+                              ? 'bg-amber-500'
+                              : 'bg-red-500'
+                          )}
+                          style={{ width: `${resource.currentLoad}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Stats Footer */}
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                      <div className="text-center">
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{resource.capacity}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Capacity</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{resource._count?.tasks || 0}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Active Tasks</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      )}
+
+        {/* Right Panel - Sidebar */}
+        <div className="p-4 sm:p-5 w-full">
+          {/* Filters Section */}
+          <section className="space-y-4 mb-6">
+            <h3 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight text-indigo-900 dark:text-indigo-100">
+              Filters
+            </h3>
+            <div className="space-y-2">
+              <label className="text-xs sm:text-sm text-slate-400 dark:text-slate-300 block">
+                Status
+              </label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full rounded-xl bg-slate-100 dark:bg-slate-700 px-3 py-2 text-sm text-indigo-900 dark:text-indigo-100 outline-none border border-transparent focus:border-indigo-300"
+              >
+                <option value="">All Status</option>
+                <option value="AVAILABLE">Available</option>
+                <option value="BUSY">Busy</option>
+                <option value="OFFLINE">Offline</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs sm:text-sm text-slate-400 dark:text-slate-300 block">
+                Search Resources
+              </label>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search..."
+                className="w-full rounded-xl bg-slate-100 dark:bg-slate-700 px-3 py-2 text-sm text-indigo-900 dark:text-indigo-100 outline-none border border-transparent focus:border-indigo-300"
+              />
+            </div>
+          </section>
+
+          {/* Sort Section */}
+          <section className="border-t border-gray-100 dark:border-gray-700 pt-5 space-y-3">
+            <h4 className="text-base sm:text-lg font-bold text-indigo-900 dark:text-indigo-100">
+              Sort By
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {sortOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => toggleSort(opt.value)}
+                  className={clsx(
+                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                    sortField === opt.value
+                      ? 'bg-indigo-100 dark:bg-black/30 text-indigo-700 dark:text-indigo-300'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  )}
+                >
+                  {opt.label}
+                  {sortField === opt.value && (sortDir === 'asc' ? ' ↑' : ' ↓')}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* Quick Insights */}
+          <section className="border-t border-gray-100 dark:border-gray-700 pt-5 mt-5 space-y-3">
+            <h4 className="text-base sm:text-lg font-bold text-indigo-900 dark:text-indigo-100">
+              Quick Insights
+            </h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Health</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {resources.length > 0
+                    ? Math.round((availableCount / resources.length) * 100)
+                    : 0}%
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Total Capacity</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {resources.reduce((sum, r) => sum + r.capacity, 0)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Utilization</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{avgLoad}%</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
 
       {/* Create Resource Modal */}
       {showForm && (
@@ -389,7 +422,7 @@ export default function Resources() {
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
-    </div>
+    </main>
   );
 }
 

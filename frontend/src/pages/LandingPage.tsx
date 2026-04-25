@@ -68,7 +68,7 @@ const FEATURES = [
     title: 'Bio-Inspired Scheduling',
     desc: '6 algorithms — IPSO, IACO, Hybrid HH, FCFS, Round-Robin, Min-Min — delivering up to 31% energy reduction over baseline.',
     accent: 'text-primary-600 dark:text-primary-400',
-    bg: 'bg-primary-50 dark:bg-primary-900/30',
+    bg: 'bg-primary-50 dark:bg-black/30',
     span: 'md:col-span-2',
   },
   {
@@ -220,12 +220,12 @@ export default function LandingPage() {
             }}
           />
           {/* Gradient blobs */}
-          <div className="absolute top-0 -left-40 w-[600px] h-[600px] bg-primary-200/30 dark:bg-primary-900/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 -right-40 w-[500px] h-[500px] bg-indigo-200/20 dark:bg-indigo-900/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-0 -left-40 w-[600px] h-[600px] bg-primary-200/30 dark:bg-black/30 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 -right-40 w-[500px] h-[500px] bg-indigo-200/20 dark:bg-black/30 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative max-w-4xl mx-auto text-center">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 mb-6 animate-fade-in-up">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-50 dark:bg-black/30 border border-primary-200 dark:border-primary-800 mb-6 animate-fade-in-up">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500" />
@@ -376,14 +376,14 @@ export default function LandingPage() {
                   <div
                     key={a.name}
                     className={clsx(
-                      'grid grid-cols-[1fr_2fr_90px_90px_90px] gap-4 px-6 py-4 items-center transition-colors hover:bg-primary-50/50 dark:hover:bg-primary-900/10',
+                      'grid grid-cols-[1fr_2fr_90px_90px_90px] gap-4 px-6 py-4 items-center transition-colors hover:bg-primary-50/50 dark:hover:bg-black/30',
                       i < ALGOS.length - 1 && 'border-b border-gray-100 dark:border-gray-700/50'
                     )}
                   >
                     {/* Name */}
                     <div className="flex items-center gap-2">
                       {a.best && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 font-bold uppercase tracking-wider">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary-100 dark:bg-black/30 text-primary-700 dark:text-primary-300 font-bold uppercase tracking-wider">
                           Best
                         </span>
                       )}
@@ -424,7 +424,7 @@ export default function LandingPage() {
               })}
 
               {/* Summary footer */}
-              <div className="px-6 py-4 border-t border-primary-100 dark:border-primary-900/30 bg-primary-50/50 dark:bg-primary-900/10">
+              <div className="px-6 py-4 border-t border-primary-100 dark:border-primary-900/30 bg-primary-50/50 dark:bg-black/30">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   <span className="text-primary-600 dark:text-primary-400 font-semibold">HH vs Round-Robin: </span>
                   10.96% delay reduction · 30.25% energy reduction · highest reliability across all task counts.
@@ -494,7 +494,7 @@ export default function LandingPage() {
                 { name: 'Aditi Singh',     id: '2023ebcs498', role: 'Developer',       emoji: '👩‍💻' },
               ].map((m) => (
                 <div key={m.name} className="card text-center hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-                  <div className="w-14 h-14 rounded-full bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 flex items-center justify-center text-2xl mx-auto mb-3">
+                  <div className="w-14 h-14 rounded-full bg-primary-50 dark:bg-black/30 border border-primary-200 dark:border-primary-800 flex items-center justify-center text-2xl mx-auto mb-3">
                     {m.emoji}
                   </div>
                   <div className="font-bold text-gray-900 dark:text-white text-sm mb-1">{m.name}</div>

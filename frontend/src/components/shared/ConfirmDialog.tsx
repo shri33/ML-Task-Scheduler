@@ -58,7 +58,7 @@ export default function ConfirmDialog({
   const iconBg = {
     danger: 'bg-red-100 dark:bg-red-900/30',
     warning: 'bg-amber-100 dark:bg-amber-900/30',
-    info: 'bg-primary-100 dark:bg-primary-900/30',
+    info: 'bg-primary-100 dark:bg-black/30',
   };
 
   return (

@@ -57,6 +57,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: production
+    env_file:
+      - ./backend/.env
     container_name: task-scheduler-backend
     restart: unless-stopped
     ports:
@@ -70,6 +72,8 @@ services:
       CORS_ORIGIN: http://localhost:3000
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-minimum-32-char-length-1234567890}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      GOOGLE_REDIRECT_URI: http://localhost:3001/api/v1/auth/google/callback
     depends_on:
       db:
         condition: service_healthy
@@ -133,6 +137,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: production
+      args:
+        VITE_API_URL: http://localhost:3001
+        VITE_WS_URL: http://localhost:3001
     container_name: task-scheduler-frontend
     restart: unless-stopped
     ports:

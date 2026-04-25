@@ -40,7 +40,7 @@ const deviceTypeColors: Record<string, string> = {
   CAMERA: 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400',
   ROBOT_ARM: 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400',
   IOT_SENSOR: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400',
-  EDGE_SERVER: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400',
+  EDGE_SERVER: 'bg-indigo-100 dark:bg-black/30 text-indigo-600 dark:text-indigo-400',
   ACTUATOR: 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400',
 };
 
@@ -198,8 +198,9 @@ export default function Devices() {
     setIsModalOpen(true);
   };
 
-  return (
-    <div className="space-y-6">
+  return (<>
+  <div className='dark:bg-black/50'>
+    <div className="space-y-6 pt-6 mb-6 mx-6 ">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -523,6 +524,6 @@ export default function Devices() {
           </div>
         </div>
       )}
-    </div>
+    </div></div></>
   );
 }

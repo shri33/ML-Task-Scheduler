@@ -124,6 +124,8 @@ setupMetricsEndpoint(app);
 // API v1 Routes (versioned)
 // ===============================
 app.use('/api/v1/auth', authRoutes);
+// Backward-compatible alias for auth routes (useful for OAuth callback URL mismatches)
+app.use('/api/auth', authRoutes);
 app.use('/api/v1/tasks', taskRoutes);
 app.use('/api/v1/resources', resourceRoutes);
 app.use('/api/v1/schedule', scheduleLimiter, scheduleRoutes);

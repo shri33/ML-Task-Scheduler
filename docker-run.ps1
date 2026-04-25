@@ -29,8 +29,15 @@ docker compose up --build -d
 
 # 3. Status Dashboard
 Write-Header "System Status"
-Write-Host "Waiting for containers to initialize..." -ForegroundColor Gray
-Start-Sleep -Seconds 5
+Write-Host "Waiting for the frontend to become healthy..." -ForegroundColor Gray
+$deadline = (Get-Date).AddMinutes(2)
+do {
+    $frontendStatus = docker compose ps frontend --format json 2>$null | ConvertFrom-Json
+    if ($frontendStatus -and $frontendStatus.State -eq "running" -and $frontendStatus.Health -eq "healthy") {
+        break
+    }
+    Start-Sleep -Seconds 2
+} while ((Get-Date) -lt $deadline)
 
 docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
@@ -40,5 +47,9 @@ Write-Host "Backend API: http://localhost:3001/api/health" -ForegroundColor Gree
 Write-Host "Prometheus:  http://localhost:9090" -ForegroundColor Green
 Write-Host "Grafana:     http://localhost:3002 (admin/admin)" -ForegroundColor Green
 Write-Host "ML Service:  http://localhost:5001/api/health" -ForegroundColor Green
+
+if (-not $frontendStatus -or $frontendStatus.Health -ne "healthy") {
+    Write-Host "Frontend is still starting. If the browser shows refused connection, wait a moment and refresh http://localhost:3000." -ForegroundColor Yellow
+}
 
 Write-Host "`nUse 'docker compose logs -f' to view real-time logs.`n" -ForegroundColor Gray

@@ -84,15 +84,15 @@ export function PDFDownloadButtons() {
           className={clsx(
             'flex items-center gap-3 p-4 rounded-lg border-2 border-dashed transition-all text-left',
             downloading === report.endpoint
-              ? 'border-primary-400 bg-primary-50 dark:bg-primary-900/20'
-              : 'border-gray-200 dark:border-gray-700 hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20'
+              ? 'border-primary-400 bg-primary-50 dark:bg-black/30'
+              : 'border-gray-200 dark:border-gray-700 hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-black/30'
           )}
         >
           <div
             className={clsx(
               'p-2 rounded-lg',
               downloading === report.endpoint
-                ? 'bg-primary-100 dark:bg-primary-900/40'
+                ? 'bg-primary-100 dark:bg-black/30'
                 : 'bg-gray-100 dark:bg-gray-800'
             )}
           >

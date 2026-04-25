@@ -1,5 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import socketService from './lib/socket';
@@ -11,7 +11,7 @@ import { useDocumentTitle } from './hooks/useDocumentTitle';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
 
 // Lazy load pages for code splitting
-const LandingPage = lazy(() => import('./pages/LandingPage'));
+const LandingPageRedNoir = lazy(() => import('./pages/LandingPageRedNoir'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Tasks = lazy(() => import('./pages/Tasks'));
 const Resources = lazy(() => import('./pages/Resources'));
@@ -20,6 +20,7 @@ const FogComputing = lazy(() => import('./pages/FogComputing'));
 const Devices = lazy(() => import('./pages/Devices'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Login = lazy(() => import('./pages/Login'));
+const NotLoggedIn = lazy(() => import('./pages/NotLoggedIn'));
 const Register = lazy(() => import('./pages/Register'));
 const Experiments = lazy(() => import('./pages/Experiments'));
 const NotFound = lazy(() => import('./pages/NotFound'));
@@ -38,6 +39,7 @@ function PageLoader() {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -48,7 +50,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/not-logged-in" replace state={{ from: location.pathname }} />;
   }
 
   return <>{children}</>;
@@ -112,11 +114,15 @@ function AppRoutes() {
         {/* Public landing page — always visible at root */}
         <Route
           path="/"
-          element={<LandingPage />}
+          element={<LandingPageRedNoir />}
         />
         <Route
           path="/login"
           element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />}
+        />
+        <Route
+          path="/not-logged-in"
+          element={<NotLoggedIn />}
         />
         <Route
           path="/register"
