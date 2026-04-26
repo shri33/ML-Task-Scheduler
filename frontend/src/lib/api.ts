@@ -226,9 +226,9 @@ export const taskApi = {
   getAll: async (status?: string): Promise<Task[]> => {
     if (isDemoMode()) {
       return [
-        { id: '1', name: 'Process Video Stream', type: 'CPU', size: 'LARGE', priority: 1, status: 'SCHEDULED', dueDate: new Date(Date.now() + 3600000).toISOString(), predictedTime: 45.2, actualTime: null, resourceId: 'res-1', createdAt: new Date().toISOString(), scheduledAt: new Date().toISOString(), completedAt: null },
-        { id: '2', name: 'Train Mini Model', type: 'MIXED', size: 'MEDIUM', priority: 2, status: 'PENDING', dueDate: null, predictedTime: 120.5, actualTime: null, resourceId: null, createdAt: new Date().toISOString(), scheduledAt: null, completedAt: null },
-        { id: '3', name: 'Log Analytics', type: 'IO', size: 'SMALL', priority: 3, status: 'COMPLETED', dueDate: null, predictedTime: 2.1, actualTime: 2.0, resourceId: 'res-2', createdAt: new Date(Date.now() - 7200000).toISOString(), scheduledAt: new Date(Date.now() - 3600000).toISOString(), completedAt: new Date().toISOString() },
+        { id: '1', name: 'Neural Network Training', type: 'CPU', size: 'LARGE', priority: 5, status: 'SCHEDULED', dueDate: new Date().toISOString(), predictedTime: 450, actualTime: null, resourceId: '1', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), scheduledAt: new Date().toISOString(), completedAt: null },
+        { id: '2', name: 'Database Optimization', type: 'MIXED', size: 'MEDIUM', priority: 3, status: 'PENDING', dueDate: null, predictedTime: 120, actualTime: null, resourceId: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), scheduledAt: null, completedAt: null },
+        { id: '3', name: 'Image Batch Processing', type: 'IO', size: 'SMALL', priority: 2, status: 'COMPLETED', dueDate: null, predictedTime: 45, actualTime: 42, resourceId: '2', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), scheduledAt: new Date().toISOString(), completedAt: new Date().toISOString() },
       ];
     }
     const params = status ? { status } : {};

@@ -1,7 +1,6 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
-import FloatingParticles from './components/FloatingParticles';
 import ErrorBoundary from './components/ErrorBoundary';
 import socketService from './lib/socket';
 import { ThemeProvider } from './contexts/ThemeContext';
