@@ -166,6 +166,10 @@ export const authApi = {
     const response = await api.get<ApiResponse<AuthUser>>('/v1/auth/me');
     return response.data.data;
   },
+  updateProfile: async (data: Partial<AuthUser>): Promise<AuthUser> => {
+    const response = await api.patch<ApiResponse<AuthUser>>('/v1/auth/profile', data);
+    return response.data.data;
+  },
 };
 
 export const taskApi = {
@@ -188,6 +192,14 @@ export const taskApi = {
   getStats: async () => {
     const response = await api.get<ApiResponse<any>>('/v1/tasks/stats');
     return response.data.data;
+  },
+  getById: async (id: string): Promise<Task> => {
+    const response = await api.get<ApiResponse<Task>>(`/v1/tasks/${id}`);
+    return response.data.data;
+  },
+  update: async (id: string, data: Partial<CreateTaskInput>): Promise<Task> => {
+    const response = await api.patch<ApiResponse<Task>>(`/v1/tasks/${id}`, data);
+    return response.data.data;
   }
 };
 
@@ -204,6 +216,17 @@ export const resourceApi = {
   getStats: async () => {
     const response = await api.get<ApiResponse<any>>('/v1/resources/stats');
     return response.data.data;
+  },
+  create: async (data: { name: string; capacity: number; layer?: string }): Promise<Resource> => {
+    const response = await api.post<ApiResponse<Resource>>('/v1/resources', data);
+    return response.data.data;
+  },
+  update: async (id: string, data: any): Promise<Resource> => {
+    const response = await api.patch<ApiResponse<Resource>>(`/v1/resources/${id}`, data);
+    return response.data.data;
+  },
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/v1/resources/${id}`);
   }
 };
 
@@ -250,6 +273,17 @@ export const deviceApi = {
   getStats: async (): Promise<DeviceStats> => {
     const response = await api.get<ApiResponse<DeviceStats>>('/v1/devices/stats/overview');
     return response.data.data;
+  },
+  create: async (data: any): Promise<Device> => {
+    const response = await api.post<ApiResponse<Device>>('/v1/devices', data);
+    return response.data.data;
+  },
+  update: async (id: string, data: any): Promise<Device> => {
+    const response = await api.patch<ApiResponse<Device>>(`/v1/devices/${id}`, data);
+    return response.data.data;
+  },
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/v1/devices/${id}`);
   }
 };
 
@@ -295,6 +329,10 @@ export const fogApi = {
   },
   exportCsv: async (): Promise<Blob> => {
     const response = await api.get('/v1/fog/export/csv', { responseType: 'blob' });
+    return response.data;
+  },
+  exportJson: async (): Promise<Blob> => {
+    const response = await api.get('/v1/fog/export/json', { responseType: 'blob' });
     return response.data;
   },
 };
