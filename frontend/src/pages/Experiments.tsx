@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { aiApi, experimentsApi, fogApi, ExperimentResult } from '../lib/api';
 import {
   LineChart,
   Line,
@@ -13,7 +14,6 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import { experimentsApi, ExperimentResult } from '../lib/api';
 import { 
   IconFlask, 
   IconPlayerPlay, 
@@ -42,6 +42,7 @@ const ALGO_COLORS: Record<string, string> = {
   RR: '#f43f5e',
   MinMin: '#10b981',
   FCFS: '#94a3b8',
+  cuOpt: '#76b900', // NVIDIA Green
 };
 
 type ExperimentType = 'all' | 'energy' | 'reliability_taskcount' | 'reliability_tolerance' | 'completion_time';
@@ -54,6 +55,9 @@ export default function Experiments() {
   const [iterations, setIterations] = useState(3);
   const [error, setError] = useState<string | null>(null);
   const [savedFiles, setSavedFiles] = useState<string[]>([]);
+  const [showScenarioGenerator, setShowScenarioGenerator] = useState(false);
+  const [scenarioDescription, setScenarioDescription] = useState('');
+  const [isGeneratingScenario, setIsGeneratingScenario] = useState(false);
 
   useEffect(() => {
     experimentsApi.getResults().then(r => setSavedFiles(r.files)).catch(() => {});
@@ -142,6 +146,65 @@ export default function Experiments() {
           </a>
         </div>
       </div>
+      
+      {/* ── AI SCENARIO GENERATOR MODAL ── */}
+      {showScenarioGenerator && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+           <div className="bg-white dark:bg-[#1a2234] rounded-3xl p-8 max-w-xl w-full border border-gray-200 dark:border-gray-800 shadow-2xl animate-scale-up">
+              <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2 flex items-center gap-3">
+                 <IconPlus className="w-6 h-6 text-primary-500" />
+                 AI Scenario Generator
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Describe a research scenario, and Nova will generate a specialized batch of synthetic tasks using SDG (Synthetic Data Generation).</p>
+              
+              <div className="space-y-4">
+                 <textarea 
+                   value={scenarioDescription}
+                   onChange={e => setScenarioDescription(e.target.value)}
+                   placeholder="e.g., Generate a high-priority medical emergency scenario with large data processing tasks..."
+                   className="w-full h-32 px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-2xl text-sm focus:ring-4 focus:ring-primary-500/10 outline-none transition-all resize-none"
+                 />
+                 
+                 <div className="flex gap-3">
+                    <button 
+                      onClick={() => setShowScenarioGenerator(false)}
+                      className="flex-1 px-6 py-3 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold hover:bg-gray-200 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={async () => {
+                        setIsGeneratingScenario(true);
+                        try {
+                          const generatedTasks = await aiApi.generateScenario(scenarioDescription);
+                          // Inject into Fog Lab
+                          await fogApi.addBulkTasks(generatedTasks);
+                          
+                          setShowScenarioGenerator(false);
+                          setScenarioDescription('');
+                          
+                          // Success notification (simulated here since we don't have a direct hook, 
+                          // but the user will see it in the Fog page)
+                          alert(`Success! Nova generated ${generatedTasks.length} tasks for this scenario.`);
+                          window.location.href = '/fog-computing';
+                        } catch (e) {
+                          console.error(e);
+                          alert('Failed to generate scenario. Please check your API key.');
+                        } finally {
+                          setIsGeneratingScenario(false);
+                        }
+                      }}
+                      disabled={isGeneratingScenario || !scenarioDescription.trim()}
+                      className="flex-[2] px-6 py-3 rounded-2xl bg-primary-600 text-white font-bold hover:bg-primary-700 shadow-lg shadow-primary-500/20 transition-all flex items-center justify-center gap-2"
+                    >
+                      {isGeneratingScenario ? <IconLoader2 className="w-5 h-5 animate-spin" /> : <IconBolt className="w-5 h-5" />}
+                      Generate Scenario
+                    </button>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
 
       <ExperimentWizard isOpen={showWizard} onClose={() => setShowWizard(false)} />
 
@@ -255,7 +318,7 @@ export default function Experiments() {
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
                   <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
                   <Legend />
-                  {['HH', 'IPSO', 'IACO', 'RR', 'MinMin'].map(alg => (
+                  {['HH', 'IPSO', 'IACO', 'RR', 'MinMin', 'cuOpt'].map(alg => (
                     <Line key={alg} type="monotone" dataKey={alg} stroke={ALGO_COLORS[alg]} strokeWidth={3} dot={{ r: 4, fill: ALGO_COLORS[alg], strokeWidth: 2, stroke: '#fff' }} />
                   ))}
                 </LineChart>
@@ -301,7 +364,7 @@ export default function Experiments() {
                   <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
                   <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
                   <Legend />
-                  {['HH', 'IPSO', 'IACO'].map(alg => (
+                  {['HH', 'IPSO', 'IACO', 'cuOpt'].map(alg => (
                     <Line key={alg} type="monotone" dataKey={alg} stroke={ALGO_COLORS[alg]} strokeWidth={3} dot={{ r: 4 }} />
                   ))}
                 </LineChart>
@@ -321,7 +384,7 @@ export default function Experiments() {
                   <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
                   <Tooltip cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }} contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px' }} />
                   <Legend />
-                  {['HH', 'IPSO', 'IACO'].map(alg => (
+                  {['HH', 'IPSO', 'IACO', 'cuOpt'].map(alg => (
                     <Bar key={alg} dataKey={alg} fill={ALGO_COLORS[alg]} radius={[4, 4, 0, 0]} />
                   ))}
                 </BarChart>
@@ -358,10 +421,18 @@ export default function Experiments() {
                   <p className="text-sm text-gray-500">Aggregate all simulation results into a consolidated research paper format.</p>
                </div>
             </div>
-            <button className="btn btn-secondary bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-6 font-bold flex items-center gap-2">
-               <IconDownload className="w-4 h-4" /> Prepare Report
-            </button>
-          </div>
+            <div className="flex gap-3">
+               <button 
+                 onClick={() => setShowScenarioGenerator(true)}
+                 className="btn btn-secondary bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-900/30 text-emerald-600 px-6 font-bold flex items-center gap-2"
+               >
+                  <IconFlask className="w-4 h-4" /> AI Scenario
+               </button>
+               <button className="btn btn-secondary bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-6 font-bold flex items-center gap-2">
+                  <IconDownload className="w-4 h-4" /> Prepare Report
+               </button>
+            </div>
+         </div>
        </div>
 
       <ExperimentWizard 

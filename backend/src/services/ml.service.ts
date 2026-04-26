@@ -51,6 +51,35 @@ interface RLSchedulingResponse {
   taskCount: number;
 }
 
+export interface AnomalyTask {
+  taskId?: string;
+  taskSize: number;
+  taskType: number;
+  priority: number;
+  resourceLoad: number;
+  actualTime: number;
+  startupOverhead?: number;
+}
+
+export interface AnomalyResult {
+  index: number;
+  taskId?: string;
+  actualTime: number;
+  features: {
+    size: number;
+    type: number;
+    load: number;
+  };
+}
+
+export interface AnomalyResponse {
+  anomalies: AnomalyResult[];
+  count: number;
+  totalProcessed: number;
+  contamination: number;
+  modelVersion: string;
+}
+
 // Map enums to numbers for ML model
 const sizeMap: Record<string, number> = { SMALL: 1, MEDIUM: 2, LARGE: 3 };
 const typeMap: Record<string, number> = { CPU: 1, IO: 2, MIXED: 3 };
@@ -355,6 +384,32 @@ export class MLService {
       );
       logger.warn('RL scheduling endpoint failed, caller will fall back', {
         error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Anomaly Detection — calls /api/anomalies
+  // ---------------------------------------------------------------------------
+  async getAnomalies(tasks: AnomalyTask[], contamination: number = 0.05): Promise<AnomalyResponse | null> {
+    if (!errorRecovery.isServiceAvailable('ml-service')) {
+      logger.warn('ML Service circuit breaker open, skipping anomaly detection');
+      return null;
+    }
+
+    try {
+      const response = await axios.post<AnomalyResponse>(
+        `${this.baseUrl}/api/anomalies`,
+        { tasks, contamination },
+        { timeout: 10000 }
+      );
+      errorRecovery.recordSuccess('ml-service');
+      return response.data;
+    } catch (error) {
+      errorRecovery.recordFailure('ml-service', error instanceof Error ? error : new Error(String(error)));
+      logger.error('ML anomaly detection failed', {
+        error: error instanceof Error ? error.message : String(error)
       });
       return null;
     }

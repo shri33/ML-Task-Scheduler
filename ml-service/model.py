@@ -6,7 +6,7 @@ Supports Random Forest and XGBoost with synthetic training data
 import os
 import numpy as np
 import joblib
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, IsolationForest
 from sklearn.model_selection import cross_val_score
 from datetime import datetime
 
@@ -264,6 +264,41 @@ class TaskPredictor:
     def get_version(self):
         """Get model version"""
         return self.version or "not-loaded"
+
+    def detect_anomalies(self, X, actual_times, contamination=0.05):
+        """
+        Detect anomalies in task execution times using Isolation Forest
+        and simple prediction-error thresholds.
+        
+        Args:
+            X: features array (n_samples, 5)
+            actual_times: actual execution times array (n_samples,)
+            contamination: expected proportion of anomalies
+            
+        Returns:
+            list: indices of anomalies
+        """
+        if self.model is None:
+            raise ValueError("Model not loaded")
+
+        # 1. Prediction-based anomalies (Z-score of residuals)
+        predicted_times = self.model.predict(X)
+        residuals = np.abs(actual_times - predicted_times)
+        mean_res = np.mean(residuals)
+        std_res = np.std(residuals)
+        
+        # Z-score > 3 is a common statistical outlier
+        z_score_anomalies = np.where(residuals > (mean_res + 3 * std_res))[0]
+        
+        # 2. Multi-variate anomalies (Isolation Forest)
+        # Combine features and actual times to find patterns that don't fit
+        combined_data = np.column_stack([X, actual_times])
+        iso_forest = IsolationForest(contamination=contamination, random_state=42)
+        iso_preds = iso_forest.fit_predict(combined_data)
+        iso_anomalies = np.where(iso_preds == -1)[0]
+        
+        # Return union of both methods
+        return sorted(list(set(z_score_anomalies) | set(iso_anomalies)))
 
 
 # Test if run directly

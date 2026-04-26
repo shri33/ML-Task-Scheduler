@@ -14,6 +14,7 @@ import {
   FogNode,
   TerminalDevice,
 } from '../services/fogComputing.service';
+import { cuOptService } from '../services/cuopt.service';
 import { authenticate, adminOnly, AuthRequest } from '../middleware/auth.middleware';
 import prisma from '../lib/prisma';
 import logger from '../lib/logger';
@@ -105,9 +106,9 @@ router.get('/info', async (req: Request, res: Response) => {
       algorithm: 'Hybrid Heuristic (HH) - IPSO + IACO',
       reference: 'Wang & Li (2019) - Task Scheduling Based on Hybrid Heuristic Algorithm',
       capabilities: {
-        algorithms: ['Hybrid Heuristic (HH)', 'Improved PSO (IPSO)', 'Improved ACO (IACO)', 'FCFS', 'Round-Robin', 'Min-Min'],
+        algorithms: ['Hybrid Heuristic (HH)', 'Improved PSO (IPSO)', 'Improved ACO (IACO)', 'FCFS', 'Round-Robin', 'Min-Min', 'NVIDIA cuOpt'],
         metrics: ['Completion Time', 'Energy Consumption', 'Reliability'],
-        features: ['Multi-objective optimization', 'Delay constraints', 'Energy constraints', 'Maximum tolerance time analysis']
+        features: ['Multi-objective optimization', 'Delay constraints', 'Energy constraints', 'Maximum tolerance time analysis', 'GPU-accelerated solving']
       },
       currentState: {
         fogNodes: nodeCount,
@@ -266,6 +267,41 @@ router.post('/tasks', async (req: Request, res: Response) => {
 });
 
 /**
+ * @route POST /api/fog/tasks/bulk
+ * @desc Add multiple tasks at once (used by SDG)
+ */
+router.post('/tasks/bulk', async (req: Request, res: Response) => {
+  await initializeSampleData();
+  const { tasks: newTasks } = req.body;
+  
+  if (!Array.isArray(newTasks)) {
+    return res.status(400).json({ success: false, error: 'Expected an array of tasks' });
+  }
+
+  const formattedTasks: Task[] = newTasks.map((t: any, i: number) => ({
+    id: `task-ai-${Date.now()}-${i}`,
+    name: t.name || `AI-Task-${i}`,
+    dataSize: t.dataSize || 50,
+    computationIntensity: t.computationIntensity || 300,
+    maxToleranceTime: t.maxToleranceTime || 30,
+    expectedCompletionTime: 5,
+    terminalDeviceId: t.terminalDeviceId || terminalDevices[0]?.id,
+    priority: t.priority || 3,
+    memoryRequirement: t.memoryRequirement || 128,
+    vramRequirement: t.vramRequirement || 0,
+    startupOverhead: t.startupOverhead || 1
+  }));
+
+  fogTasks.push(...formattedTasks);
+  
+  res.status(201).json({
+    success: true,
+    count: formattedTasks.length,
+    data: formattedTasks
+  });
+});
+
+/**
  * @route POST /api/fog/schedule
  * @desc Run the Hybrid Heuristic scheduling algorithm
  */
@@ -288,23 +324,31 @@ router.post('/schedule', async (req: Request, res: Response) => {
     }
     
     // Validate algorithm before offloading to worker
-    const validAlgos = ['hh', 'hybrid', 'ipso', 'pso', 'iaco', 'aco', 'fcfs', 'first-come-first-served', 'rr', 'round-robin', 'min-min', 'minmin'];
+    const validAlgos = ['hh', 'hybrid', 'ipso', 'pso', 'iaco', 'aco', 'fcfs', 'first-come-first-served', 'rr', 'round-robin', 'min-min', 'minmin', 'cuopt', 'nvidia-cuopt'];
     if (!validAlgos.includes(algorithm.toLowerCase())) {
       return res.status(400).json({
         success: false,
-        error: `Unknown algorithm: ${algorithm}. Use 'hh', 'ipso', 'iaco', 'fcfs', 'rr', or 'min-min'`
+        error: `Unknown algorithm: ${algorithm}. Use 'hh', 'ipso', 'iaco', 'fcfs', 'rr', 'min-min', or 'cuopt'`
       });
     }
-    
+
     const startTime = Date.now();
-    
-    // Offload CPU-intensive scheduling to a worker thread
-    const result = await runSchedulingInWorker({
-      tasks: fogTasks,
-      fogNodes,
-      devices: terminalDevices,
-      algorithm,
-    });
+    let result: any; // Using any for now to handle both serialized and instance versions, but avoiding implicit any error
+
+    if (algorithm.toLowerCase().includes('cuopt')) {
+      result = await cuOptService.solve(fogTasks, fogNodes, terminalDevices);
+      if (!result) {
+        return res.status(400).json({ success: false, error: 'cuOpt failed (API key missing or request failed)' });
+      }
+    } else {
+      // Offload CPU-intensive scheduling to a worker thread
+      result = await runSchedulingInWorker({
+        tasks: fogTasks,
+        fogNodes,
+        devices: terminalDevices,
+        algorithm,
+      });
+    }
     
     const executionTime = Date.now() - startTime;
     
@@ -887,6 +931,51 @@ router.get('/tolerance-reliability', async (req: Request, res: Response) => {
       success: false,
       error: 'Failed to generate tolerance-reliability metrics'
     });
+  }
+});
+
+/**
+ * @route POST /api/fog/tasks/bulk
+ * @desc Add multiple tasks at once (used by AI Scenario Generator)
+ */
+router.post('/tasks/bulk', async (req: Request, res: Response) => {
+  try {
+    const { tasks } = req.body;
+    if (!Array.isArray(tasks)) {
+      return res.status(400).json({ success: false, error: 'Tasks must be an array' });
+    }
+
+    await initializeSampleData();
+    
+    const createdTasks = [];
+    for (const taskData of tasks) {
+      const newTask: Task = {
+        id: `ai-task-${Math.random().toString(36).substr(2, 9)}`,
+        name: taskData.name || 'AI Generated Task',
+        dataSize: taskData.dataSize || 50,
+        computationIntensity: taskData.computationIntensity || 15,
+        maxToleranceTime: taskData.maxToleranceTime || 10,
+        priority: taskData.priority || 3,
+        terminalDeviceId: taskData.terminalDeviceId || (terminalDevices.length > 0 ? terminalDevices[0].id : 'd1'),
+        expectedCompletionTime: taskData.expectedCompletionTime || 5,
+        memoryRequirement: taskData.memoryRequirement || 0,
+        vramRequirement: taskData.vramRequirement || 0,
+        startupOverhead: taskData.startupOverhead || 0.1,
+      };
+      fogTasks.push(newTask);
+      createdTasks.push(newTask);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        count: createdTasks.length,
+        tasks: createdTasks
+      }
+    });
+  } catch (error) {
+    logger.error('Bulk task creation error:', error);
+    res.status(500).json({ success: false, error: 'Failed to create bulk tasks' });
   }
 });
 

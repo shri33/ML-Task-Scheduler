@@ -150,4 +150,44 @@ router.get('/dashboard', async (req: Request, res: Response, next: NextFunction)
   }
 });
 
+// GET /api/metrics/anomalies - Get performance anomalies
+router.get('/anomalies', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { mlService } = await import('../services/ml.service');
+    
+    // Get last 100 completed tasks to check for anomalies
+    const completedTasks = await prisma.task.findMany({
+      where: {
+        status: 'COMPLETED',
+        actualTime: { not: null },
+        deletedAt: null
+      },
+      include: { resource: true },
+      orderBy: { completedAt: 'desc' },
+      take: 100
+    });
+
+    if (completedTasks.length === 0) {
+      return res.json({ success: true, data: { anomalies: [], count: 0 } });
+    }
+
+    // Map to ML format
+    const mlTasks = completedTasks.map(t => ({
+      taskId: t.id,
+      taskSize: t.size === 'SMALL' ? 1 : t.size === 'MEDIUM' ? 2 : 3,
+      taskType: t.type === 'CPU' ? 1 : t.type === 'IO' ? 2 : 3,
+      priority: t.priority,
+      resourceLoad: t.resource?.currentLoad || 50,
+      actualTime: t.actualTime!,
+      startupOverhead: t.startupOverhead || 1.0
+    }));
+
+    const anomalies = await mlService.getAnomalies(mlTasks);
+    
+    res.json({ success: true, data: anomalies });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

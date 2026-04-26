@@ -44,9 +44,18 @@ interface ComparisonData {
   withoutML: { count: number; avgError: number; avgTime: number };
 }
 
+interface AnomalyData {
+  taskId: string;
+  actualTime: number;
+  predictedTime: number;
+  deviation: number;
+  isAnomaly: boolean;
+}
+
 export default function Analytics() {
   const [timeline, setTimeline] = useState<TimelineData[]>([]);
   const [comparison, setComparison] = useState<ComparisonData | null>(null);
+  const [anomalies, setAnomalies] = useState<AnomalyData[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState('14');
   const { tasks, resources, fetchTasks, fetchResources } = useStore();
@@ -55,12 +64,14 @@ export default function Analytics() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [timelineData, comparisonData] = await Promise.all([
+        const [timelineData, comparisonData, anomalyData] = await Promise.all([
           metricsApi.getTimeline(Number(dateRange)),
           scheduleApi.getComparison(),
+          metricsApi.getAnomalies(),
         ]);
         setTimeline(timelineData);
         setComparison(comparisonData);
+        setAnomalies(anomalyData?.anomalies || []);
         if (tasks.length === 0) fetchTasks();
         if (resources.length === 0) fetchResources();
       } catch (error) {
@@ -263,14 +274,14 @@ export default function Analytics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-[#1a2234] rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">ML Performance Forecast</h3>
-           <MLPerformanceChart 
-              data={timeline.length > 0 
-                ? timeline.map((t, i) => ({
-                    date: t.date,
-                    predicted: t.avgExecutionTime || 0,
-                    actual: t.avgExecutionTime * (1 + ((i % 5) * 0.04 - 0.1)),
+            <MLPerformanceChart 
+              data={anomalies.length > 0 
+                ? anomalies.slice(-10).map((a, i) => ({
+                    date: `Task ${i+1}`,
+                    predicted: a.predictedTime,
+                    actual: a.actualTime,
                   }))
-                : []
+                : timeline.map(t => ({ date: t.date, predicted: t.avgExecutionTime, actual: t.avgExecutionTime }))
               } 
             />
         </div>

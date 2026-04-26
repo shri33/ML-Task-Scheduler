@@ -83,6 +83,7 @@ export default function Dashboard() {
   const [newTaskPriority, setNewTaskPriority] = useState<number>(2);
   const [isCreating, setIsCreating] = useState(false);
   const [chartData, setChartData] = useState<{ name: string; load: number; throughput: number }[]>([]);
+  const [anomalies, setAnomalies] = useState<any[]>([]);
   const toast = useToast();
   const hasFetched = useRef(false);
 
@@ -99,6 +100,12 @@ export default function Dashboard() {
       fetchResources();
       fetchMetrics();
       metricsApi.getDashboard().then(setChartData).catch(console.error);
+      metricsApi.getAnomalies().then(data => {
+        if (data?.anomalies?.length > 0 && data.anomalies.length !== anomalies.length) {
+          setAnomalies(data.anomalies);
+          toast.warning('Anomalies Detected', `Found ${data.anomalies.length} performance outliers in recent tasks.`);
+        }
+      }).catch(console.error);
     }, 5000);
     
     // Initial fetch

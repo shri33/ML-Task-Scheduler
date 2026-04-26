@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { aiApi } from '../lib/api';
 import { 
   IconSearch, 
   IconDotsVertical, 
@@ -10,11 +11,13 @@ import {
   IconChecks,
   IconCircleFilled,
   IconMicrophone,
-  IconInfoCircle
+  IconInfoCircle,
+  IconRobot
 } from '@tabler/icons-react';
 import { clsx } from 'clsx';
 
 const CONTACTS = [
+  { id: 0, name: 'Nova', role: 'System AI Assistant', status: 'Online', lastMsg: 'How can I help you optimize your task scheduler today?', time: 'Now', avatar: 'https://i.pravatar.cc/150?u=ai', online: true, isAI: true },
   { id: 1, name: 'Felecia Rower', role: 'Lead Researcher', status: 'Online', lastMsg: 'Benchmark cycle #42 complete. Results are looking promising.', time: '5m', avatar: 'https://i.pravatar.cc/150?u=1', online: true },
   { id: 2, name: 'Adalberto Granjer', role: 'Data Engineer', status: 'Offline', lastMsg: 'Node 7 latency spiked again. Investigating.', time: '12m', avatar: 'https://i.pravatar.cc/150?u=2', online: false },
   { id: 3, name: 'Joanne Williams', role: 'Algorithm Specialist', status: 'Away', lastMsg: 'The IACO refinement is almost done!', time: '1h', avatar: 'https://i.pravatar.cc/150?u=3', online: false },
@@ -31,12 +34,26 @@ const INITIAL_MESSAGES = [
 ];
 
 export default function Chat() {
-  const [activeChat, setActiveChat] = useState(1);
+  const [activeChat, setActiveChat] = useState(0);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
+  const [isTyping, setIsTyping] = useState(false);
+  const [messages, setMessages] = useState<any[]>([
+    { id: 0, text: "System initialized. Nova AI Assistant online.", time: '10:00 AM', sender: 'system', isMe: false, type: 'status' },
+    { id: 1, text: "Hello! I am Nova, your intelligent assistant. I am powered by NVIDIA NIM and Llama 3 to help you manage your Fog Computing architecture. How can I assist you today?", time: '10:01 AM', sender: 'Nova', isMe: false }
+  ]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const activeContact = CONTACTS.find(c => c.id === activeChat) || CONTACTS[0];
+
+  useEffect(() => {
+    // When switching to AI for the first time, or if empty, show greeting
+    if (activeChat === 0 && messages.length <= 1) {
+       // Greeting already in state
+    } else if (activeChat !== 0) {
+       // Show dummy messages for other contacts
+       setMessages(INITIAL_MESSAGES);
+    }
+  }, [activeChat]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -44,17 +61,47 @@ export default function Chat() {
     }
   }, [messages]);
 
-  const handleSendMessage = () => {
-    if (!message.trim()) return;
-    const newMsg = {
+  const handleSendMessage = async () => {
+    if (!message.trim() || isTyping) return;
+    
+    const userMsg = {
       id: messages.length + 1,
       text: message,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       sender: 'me',
       isMe: true
     };
-    setMessages([...messages, newMsg]);
+    
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setMessage('');
+
+    if (activeContact.isAI) {
+      setIsTyping(true);
+      try {
+        const history = updatedMessages
+          .filter(m => m.type !== 'status')
+          .slice(-5)
+          .map(m => ({
+            role: (m.isMe ? 'user' : 'assistant') as 'user' | 'assistant',
+            content: String(m.text)
+          }));
+
+        const aiResponse = await aiApi.chat(message, history);
+        
+        setMessages(prev => [...prev, {
+          id: prev.length + 1,
+          text: aiResponse,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          sender: 'Nova',
+          isMe: false
+        }]);
+      } catch (error) {
+        console.error('AI Chat Error:', error);
+      } finally {
+        setIsTyping(false);
+      }
+    }
   };
 
   return (
@@ -135,6 +182,11 @@ export default function Chat() {
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{activeContact.status}</span>
                   </div>
                </div>
+               {activeContact.isAI && (
+                 <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                    <IconRobot size={18} />
+                 </div>
+               )}
             </div>
             <div className="flex items-center gap-2">
                <button className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-primary-500 transition-all border border-transparent hover:border-gray-200 dark:hover:border-gray-700"><IconPhone className="w-5 h-5" stroke={1.5} /></button>
@@ -177,6 +229,18 @@ export default function Chat() {
                   )}
                </div>
             ))}
+            
+            {isTyping && (
+              <div className="flex flex-col items-start animate-fade-in">
+                <div className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 p-4 rounded-3xl rounded-tl-none border border-gray-100 dark:border-gray-700 shadow-sm">
+                  <div className="flex gap-1">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
+                  </div>
+                </div>
+              </div>
+            )}
          </div>
 
          {/* INPUT AREA */}

@@ -136,6 +136,32 @@ class EmailService {
     }
   }
 
+  // Anomaly detected notification
+  async notifyAnomaly(task: any, actualTime: number, predictedTime: number): Promise<void> {
+    try {
+      const preferences = await prisma.notificationPreference.findMany({
+        where: {
+          emailAddress: { not: null }
+          // For now, send to anyone with an email address if an anomaly occurs
+          // In a real app, add a specific preference for this
+        }
+      });
+
+      for (const pref of preferences) {
+        if (!pref.emailAddress) continue;
+
+        const html = this.generateAnomalyEmail(task, actualTime, predictedTime);
+        await this.sendEmail({
+          to: pref.emailAddress,
+          subject: `⚠️ Performance Anomaly Detected: ${task.name}`,
+          html
+        });
+      }
+    } catch (error) {
+      logger.error('Error sending anomaly notification', error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
   // Daily summary notification
   async sendDailySummary(): Promise<void> {
     try {
@@ -315,6 +341,62 @@ class EmailService {
           </div>
           <div class="footer">
             <p>ML Task Scheduler - Intelligent Task Allocation System</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  private generateAnomalyEmail(task: any, actualTime: number, predictedTime: number): string {
+    const deviation = ((Math.abs(actualTime - predictedTime) / predictedTime) * 100).toFixed(1);
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Inter', sans-serif; line-height: 1.6; color: #1e293b; }
+          .container { max-width: 600px; margin: 0 auto; padding: 24px; background: #ffffff; }
+          .header { background: #f59e0b; color: white; padding: 32px; text-align: center; border-radius: 12px 12px 0 0; }
+          .content { padding: 32px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px; }
+          .alert-box { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 16px; margin: 24px 0; }
+          .metric-card { background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 12px; }
+          .footer { text-align: center; color: #64748b; font-size: 12px; margin-top: 32px; }
+          .badge { padding: 4px 8px; rounded: 4px; font-size: 10px; font-weight: bold; background: #fef3c7; color: #92400e; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin:0;">⚠️ Anomaly Alert</h1>
+            <p style="margin-top:8px; opacity:0.9;">System performance outlier detected</p>
+          </div>
+          <div class="content">
+            <h2 style="margin-top:0;">Task: ${task.name}</h2>
+            <div class="alert-box">
+              <strong>Performance Deviation:</strong> <span class="badge">${deviation}%</span>
+              <p style="margin: 8px 0 0 0; font-size: 14px;">The execution time for this task deviated significantly from the predicted baseline.</p>
+            </div>
+            
+            <div class="metric-card">
+              <div style="font-size: 12px; color: #64748b; text-transform: uppercase;">Actual Execution</div>
+              <div style="font-size: 24px; font-weight: bold; color: #ef4444;">${actualTime.toFixed(2)}s</div>
+            </div>
+            
+            <div class="metric-card">
+              <div style="font-size: 12px; color: #64748b; text-transform: uppercase;">Predicted Runtime</div>
+              <div style="font-size: 24px; font-weight: bold; color: #3b82f6;">${predictedTime.toFixed(2)}s</div>
+            </div>
+
+            <p style="font-size: 14px; color: #475569;">
+              <strong>Node:</strong> ${task.resource?.name || 'N/A'}<br/>
+              <strong>Type:</strong> ${task.type}<br/>
+              <strong>Timestamp:</strong> ${new Date().toLocaleString()}
+            </p>
+          </div>
+          <div class="footer">
+            <p>Nova AI Task Scheduler • Intelligent System Monitoring</p>
           </div>
         </div>
       </body>

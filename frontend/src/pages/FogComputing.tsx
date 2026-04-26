@@ -161,6 +161,7 @@ export default function FogComputing() {
     'IACO': m.completionTime.iaco,
     'Round Robin': m.completionTime.rr,
     'Min-Min': m.completionTime.minMin,
+    'cuOpt': m.completionTime.cuopt,
   }));
 
   const energyData = metrics.map(m => ({
@@ -170,6 +171,7 @@ export default function FogComputing() {
     'IACO': m.energyConsumption.iaco,
     'Round Robin': m.energyConsumption.rr,
     'Min-Min': m.energyConsumption.minMin,
+    'cuOpt': m.energyConsumption.cuopt,
   }));
 
   const reliabilityData = metrics.map(m => ({
@@ -179,25 +181,28 @@ export default function FogComputing() {
     'IACO': m.reliability.iaco,
     'Round Robin': m.reliability.rr,
     'Min-Min': m.reliability.minMin,
+    'cuOpt': m.reliability.cuopt,
   }));
 
   const radarData = comparison
     ? [
         {
           metric: 'Speed',
-          HH: 100 - (comparison.hybridHeuristic.executionTimeMs / Math.max(comparison.hybridHeuristic.executionTimeMs, comparison.ipso.executionTimeMs, comparison.iaco.executionTimeMs, comparison.roundRobin.executionTimeMs, comparison.minMin.executionTimeMs) * 100),
-          IPSO: 100 - (comparison.ipso.executionTimeMs / Math.max(comparison.hybridHeuristic.executionTimeMs, comparison.ipso.executionTimeMs, comparison.iaco.executionTimeMs, comparison.roundRobin.executionTimeMs, comparison.minMin.executionTimeMs) * 100),
-          IACO: 100 - (comparison.iaco.executionTimeMs / Math.max(comparison.hybridHeuristic.executionTimeMs, comparison.ipso.executionTimeMs, comparison.iaco.executionTimeMs, comparison.roundRobin.executionTimeMs, comparison.minMin.executionTimeMs) * 100),
-          RR: 100 - (comparison.roundRobin.executionTimeMs / Math.max(comparison.hybridHeuristic.executionTimeMs, comparison.ipso.executionTimeMs, comparison.iaco.executionTimeMs, comparison.roundRobin.executionTimeMs, comparison.minMin.executionTimeMs) * 100),
-          MinMin: 100 - (comparison.minMin.executionTimeMs / Math.max(comparison.hybridHeuristic.executionTimeMs, comparison.ipso.executionTimeMs, comparison.iaco.executionTimeMs, comparison.roundRobin.executionTimeMs, comparison.minMin.executionTimeMs) * 100),
+          HH: 100 - (comparison.hybridHeuristic.executionTimeMs / Math.max(comparison.hybridHeuristic.executionTimeMs, comparison.ipso.executionTimeMs, comparison.iaco.executionTimeMs, comparison.roundRobin.executionTimeMs, comparison.minMin.executionTimeMs, comparison.cuopt.executionTimeMs) * 100),
+          IPSO: 100 - (comparison.ipso.executionTimeMs / Math.max(comparison.hybridHeuristic.executionTimeMs, comparison.ipso.executionTimeMs, comparison.iaco.executionTimeMs, comparison.roundRobin.executionTimeMs, comparison.minMin.executionTimeMs, comparison.cuopt.executionTimeMs) * 100),
+          IACO: 100 - (comparison.iaco.executionTimeMs / Math.max(comparison.hybridHeuristic.executionTimeMs, comparison.ipso.executionTimeMs, comparison.iaco.executionTimeMs, comparison.roundRobin.executionTimeMs, comparison.minMin.executionTimeMs, comparison.cuopt.executionTimeMs) * 100),
+          RR: 100 - (comparison.roundRobin.executionTimeMs / Math.max(comparison.hybridHeuristic.executionTimeMs, comparison.ipso.executionTimeMs, comparison.iaco.executionTimeMs, comparison.roundRobin.executionTimeMs, comparison.minMin.executionTimeMs, comparison.cuopt.executionTimeMs) * 100),
+          MinMin: 100 - (comparison.minMin.executionTimeMs / Math.max(comparison.hybridHeuristic.executionTimeMs, comparison.ipso.executionTimeMs, comparison.iaco.executionTimeMs, comparison.roundRobin.executionTimeMs, comparison.minMin.executionTimeMs, comparison.cuopt.executionTimeMs) * 100),
+          cuOpt: 100 - (comparison.cuopt.executionTimeMs / Math.max(comparison.hybridHeuristic.executionTimeMs, comparison.ipso.executionTimeMs, comparison.iaco.executionTimeMs, comparison.roundRobin.executionTimeMs, comparison.minMin.executionTimeMs, comparison.cuopt.executionTimeMs) * 100),
         },
         {
           metric: 'Low Delay',
-          HH: 100 - (comparison.hybridHeuristic.totalDelay / Math.max(comparison.hybridHeuristic.totalDelay, comparison.ipso.totalDelay, comparison.iaco.totalDelay, comparison.roundRobin.totalDelay, comparison.minMin.totalDelay) * 100),
-          IPSO: 100 - (comparison.ipso.totalDelay / Math.max(comparison.hybridHeuristic.totalDelay, comparison.ipso.totalDelay, comparison.iaco.totalDelay, comparison.roundRobin.totalDelay, comparison.minMin.totalDelay) * 100),
-          IACO: 100 - (comparison.iaco.totalDelay / Math.max(comparison.hybridHeuristic.totalDelay, comparison.ipso.totalDelay, comparison.iaco.totalDelay, comparison.roundRobin.totalDelay, comparison.minMin.totalDelay) * 100),
-          RR: 100 - (comparison.roundRobin.totalDelay / Math.max(comparison.hybridHeuristic.totalDelay, comparison.ipso.totalDelay, comparison.iaco.totalDelay, comparison.roundRobin.totalDelay, comparison.minMin.totalDelay) * 100),
-          MinMin: 100 - (comparison.minMin.totalDelay / Math.max(comparison.hybridHeuristic.totalDelay, comparison.ipso.totalDelay, comparison.iaco.totalDelay, comparison.roundRobin.totalDelay, comparison.minMin.totalDelay) * 100),
+          HH: 100 - (comparison.hybridHeuristic.totalDelay / Math.max(comparison.hybridHeuristic.totalDelay, comparison.ipso.totalDelay, comparison.iaco.totalDelay, comparison.roundRobin.totalDelay, comparison.minMin.totalDelay, comparison.cuopt.totalDelay) * 100),
+          IPSO: 100 - (comparison.ipso.totalDelay / Math.max(comparison.hybridHeuristic.totalDelay, comparison.ipso.totalDelay, comparison.iaco.totalDelay, comparison.roundRobin.totalDelay, comparison.minMin.totalDelay, comparison.cuopt.totalDelay) * 100),
+          IACO: 100 - (comparison.iaco.totalDelay / Math.max(comparison.hybridHeuristic.totalDelay, comparison.ipso.totalDelay, comparison.iaco.totalDelay, comparison.roundRobin.totalDelay, comparison.minMin.totalDelay, comparison.cuopt.totalDelay) * 100),
+          RR: 100 - (comparison.roundRobin.totalDelay / Math.max(comparison.hybridHeuristic.totalDelay, comparison.ipso.totalDelay, comparison.iaco.totalDelay, comparison.roundRobin.totalDelay, comparison.minMin.totalDelay, comparison.cuopt.totalDelay) * 100),
+          MinMin: 100 - (comparison.minMin.totalDelay / Math.max(comparison.hybridHeuristic.totalDelay, comparison.ipso.totalDelay, comparison.iaco.totalDelay, comparison.roundRobin.totalDelay, comparison.minMin.totalDelay, comparison.cuopt.totalDelay) * 100),
+          cuOpt: 100 - (comparison.cuopt.totalDelay / Math.max(comparison.hybridHeuristic.totalDelay, comparison.ipso.totalDelay, comparison.iaco.totalDelay, comparison.roundRobin.totalDelay, comparison.minMin.totalDelay, comparison.cuopt.totalDelay) * 100),
         },
         {
           metric: 'Energy Efficiency',
@@ -213,6 +218,7 @@ export default function FogComputing() {
           IPSO: comparison.ipso.reliability,
           IACO: comparison.iaco.reliability,
           RR: comparison.roundRobin.reliability,
+          cuOpt: comparison.cuopt.reliability,
         },
       ]
     : [];

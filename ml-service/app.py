@@ -344,6 +344,82 @@ def predict_batch():
         record_metric('errors_total')
         return jsonify({'error': safe_error(e)}), 500
 
+@app.route('/api/anomalies', methods=['POST'])
+@rate_limit
+def detect_anomalies():
+    """
+    Detect performance anomalies in completed tasks
+    
+    Request body:
+    {
+        "tasks": [
+            {
+                "taskSize": 1-3,
+                "taskType": 1-3,
+                "priority": 1-5,
+                "resourceLoad": 0-100,
+                "actualTime": float,
+                "taskId": "..." (optional)
+            },
+            ...
+        ],
+        "contamination": 0.05 (optional)
+    }
+    """
+    predictor.check_for_updates()
+    try:
+        data = request.get_json()
+        if 'tasks' not in data or not isinstance(data['tasks'], list):
+            return jsonify({'error': 'Missing "tasks" array'}), 400
+        
+        contamination = float(data.get('contamination', 0.05))
+        tasks = data['tasks']
+        
+        if not tasks:
+            return jsonify({'anomalies': [], 'count': 0})
+
+        # Prepare features and targets
+        X = []
+        actual_times = []
+        for t in tasks:
+            X.append([
+                int(t['taskSize']),
+                int(t['taskType']),
+                int(t['priority']),
+                float(t['resourceLoad']),
+                float(t.get('startupOverhead', 1.0))
+            ])
+            actual_times.append(float(t['actualTime']))
+        
+        # Detect anomalies
+        anomaly_indices = predictor.detect_anomalies(np.array(X), np.array(actual_times), contamination)
+        
+        results = []
+        for idx in anomaly_indices:
+            task_info = tasks[idx]
+            results.append({
+                'index': idx,
+                'taskId': task_info.get('taskId'),
+                'actualTime': task_info['actualTime'],
+                'features': {
+                    'size': task_info['taskSize'],
+                    'type': task_info['taskType'],
+                    'load': task_info['resourceLoad']
+                }
+            })
+            
+        return jsonify({
+            'anomalies': results,
+            'count': len(results),
+            'totalProcessed': len(tasks),
+            'contamination': contamination,
+            'modelVersion': predictor.get_version()
+        })
+        
+    except Exception as e:
+        record_metric('errors_total')
+        return jsonify({'error': safe_error(e)}), 500
+
 @app.route('/api/train', methods=['POST'])
 @require_api_key
 def train():

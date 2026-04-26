@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
+import NovaFloatingAssistant from './components/NovaFloatingAssistant';
 
 // Lazy load pages for code splitting
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -321,6 +322,7 @@ function AppRoutes() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       </Suspense>
+      {isAuthenticated && <NovaFloatingAssistant />}
     </>
   );
 }

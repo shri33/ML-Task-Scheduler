@@ -1,6 +1,8 @@
 import prisma from '../lib/prisma';
 import { CreateTaskInput, UpdateTaskInput } from '../validators/task.validator';
 import { mlService } from './ml.service';
+import { emailService } from './email.service';
+import logger from '../lib/logger';
 
 type TaskStatus = 'PENDING' | 'SCHEDULED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 
@@ -135,14 +137,31 @@ export class TaskService {
   }
 
   async markCompleted(taskId: string, actualTime: number) {
-    return prisma.task.update({
+    const task = await prisma.task.update({
       where: { id: taskId },
       data: {
         status: 'COMPLETED',
         actualTime,
         completedAt: new Date()
-      }
+      },
+      include: { resource: true }
     });
+
+    // Check for performance anomaly (if we have a prediction)
+    if (task.predictedTime) {
+      const deviation = Math.abs(task.actualTime! - task.predictedTime);
+      const threshold = task.predictedTime * 0.5; // 50% deviation threshold for alert
+
+      if (deviation > threshold) {
+        logger.warn(`Anomaly detected for task ${task.id}: Actual=${task.actualTime}s, Predicted=${task.predictedTime}s`);
+        // Trigger async notification
+        emailService.notifyAnomaly(task, task.actualTime!, task.predictedTime).catch(e => 
+          logger.error('Failed to send anomaly notification', e)
+        );
+      }
+    }
+
+    return task;
   }
 
   async getStats() {
