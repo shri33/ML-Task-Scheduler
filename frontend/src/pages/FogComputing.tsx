@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   LineChart,
   Line,
@@ -17,11 +18,22 @@ import {
   Radar,
 } from 'recharts';
 import { fogApi, FogMetrics, FogNode, AlgorithmComparison } from '../lib/api';
-
-interface ToleranceReliability {
-  maxToleranceTime: number;
-  reliability: { hh: number; ipso: number; iaco: number; rr: number };
-}
+import { 
+  IconCloud, 
+  IconSettings, 
+  IconPlayerPlay, 
+  IconRefresh, 
+  IconChartBar, 
+  IconDownload,
+  IconCpu,
+  IconBolt,
+  IconShieldCheck,
+  IconClock,
+  IconChevronRight,
+  IconDotsVertical
+} from '@tabler/icons-react';
+import { clsx } from 'clsx';
+import { useToast } from '../contexts/ToastContext';
 
 interface ScheduleResult {
   algorithm: string;
@@ -43,16 +55,15 @@ export default function FogComputing() {
   const [metrics, setMetrics] = useState<FogMetrics[]>([]);
   const [comparison, setComparison] = useState<AlgorithmComparison | null>(null);
   const [fogNodes, setFogNodes] = useState<FogNode[]>([]);
-  const [toleranceData, setToleranceData] = useState<ToleranceReliability[]>([]);
   const [loading, setLoading] = useState(false);
   const [taskCount, setTaskCount] = useState(50);
   const [selectedAlgorithm, setSelectedAlgorithm] = useState('hh');
   const [scheduleResult, setScheduleResult] = useState<ScheduleResult | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     fetchMetrics();
     fetchFogNodes();
-    fetchToleranceReliability();
   }, []);
 
   const fetchMetrics = async () => {
@@ -73,22 +84,14 @@ export default function FogComputing() {
     }
   };
 
-  const fetchToleranceReliability = async () => {
-    try {
-      const data = await fogApi.getToleranceReliability();
-      setToleranceData(data.metrics as ToleranceReliability[]);
-    } catch (error) {
-      console.error('Failed to fetch tolerance-reliability:', error);
-    }
-  };
-
   const runComparison = async () => {
     setLoading(true);
     try {
       const data = await fogApi.compare(taskCount);
       setComparison(data);
+      toast.success('Comparison Complete', `Simulation run for ${taskCount} tasks across all algorithms.`);
     } catch (error) {
-      console.error('Failed to run comparison:', error);
+      toast.error('Simulation Failed', 'Could not complete algorithm comparison.');
     } finally {
       setLoading(false);
     }
@@ -99,8 +102,9 @@ export default function FogComputing() {
     try {
       const data = await fogApi.schedule(selectedAlgorithm) as ScheduleResult;
       setScheduleResult(data);
+      toast.success('Schedule Optimized', `Allocated tasks using ${selectedAlgorithm.toUpperCase()} algorithm.`);
     } catch (error) {
-      console.error('Failed to run schedule:', error);
+      toast.error('Scheduling Failed', 'Could not run the selected algorithm.');
     } finally {
       setLoading(false);
     }
@@ -110,15 +114,42 @@ export default function FogComputing() {
     setLoading(true);
     try {
       await fogApi.reset(taskCount);
-      await fetchMetrics();
-      await fetchFogNodes();
-      await fetchToleranceReliability();
+      await Promise.all([
+        fetchMetrics(),
+        fetchFogNodes()
+      ]);
       setScheduleResult(null);
       setComparison(null);
+      toast.info('Simulation Reset', 'All metrics and node states have been cleared.');
     } catch (error) {
-      console.error('Failed to reset:', error);
+      toast.error('Reset Failed', 'Could not clear simulation state.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExport = async (format: 'csv' | 'json') => {
+    try {
+      let blob;
+      let filename;
+      if (format === 'csv') {
+        blob = await fogApi.exportCsv();
+        filename = `fog_metrics_${Date.now()}.csv`;
+      } else {
+        const data = await fogApi.exportJson();
+        blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        filename = `fog_metrics_${Date.now()}.json`;
+      }
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Export Successful', `Downloaded metrics as ${format.toUpperCase()}.`);
+    } catch (error) {
+      toast.error('Export Failed', 'Could not generate report.');
     }
   };
 
@@ -148,14 +179,6 @@ export default function FogComputing() {
     'IACO': m.reliability.iaco,
     'Round Robin': m.reliability.rr,
     'Min-Min': m.reliability.minMin,
-  }));
-
-  const toleranceChartData = toleranceData.map(m => ({
-    time: m.maxToleranceTime,
-    'HH': m.reliability.hh,
-    'IPSO': m.reliability.ipso,
-    'IACO': m.reliability.iaco,
-    'RR': m.reliability.rr,
   }));
 
   const radarData = comparison
@@ -190,314 +213,243 @@ export default function FogComputing() {
           IPSO: comparison.ipso.reliability,
           IACO: comparison.iaco.reliability,
           RR: comparison.roundRobin.reliability,
-          MinMin: comparison.minMin.reliability,
         },
       ]
     : [];
 
-  return (<><div className='dark:bg-black/50 h-full'>
-    <div className=" pt-6 mb-6 mx-6 space-y-6">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm border-l-4 border-l-purple-500">
-        <h1 className="page-title">Fog Computing Task Scheduler</h1>
-        <p className="page-subtitle mt-1">
-          Hybrid Heuristic (HH) Algorithm — Combining IPSO & IACO for optimal task scheduling
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3 text-sm">
-          <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-3 py-1.5 rounded-full font-medium">IPSO: Improved Particle Swarm Optimization</span>
-          <span className="bg-blue-100 dark:bg-black/30 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-full font-medium">IACO: Improved Ant Colony Optimization</span>
+  return (
+    <div className="max-w-[1600px] mx-auto pb-12 space-y-8 animate-fade-in">
+      
+      {/* ── HEADER ── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            Fog Node Scheduler
+            <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-xs font-bold rounded-full uppercase tracking-widest">Hybrid Heuristic</span>
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Optimizing task allocation across edge nodes using IPSO & IACO.</p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => handleExport('csv')}
+            className="btn btn-secondary bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center gap-2 px-4 py-2"
+          >
+            <IconDownload className="w-4 h-4 text-gray-400" /> Export CSV
+          </button>
+          <button 
+            onClick={resetSimulation}
+            disabled={loading}
+            className="btn btn-secondary bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center gap-2 px-4 py-2"
+          >
+            <IconRefresh className={clsx("w-4 h-4 text-gray-400", loading && "animate-spin")} /> Reset
+          </button>
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-        <div className="flex flex-wrap gap-4 items-end">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Task Count</label>
-            <input
-              type="number"
-              value={taskCount}
-              onChange={(e) => setTaskCount(parseInt(e.target.value) || 50)}
-              className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              min={10}
-              max={500}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Algorithm</label>
-            <select
-              value={selectedAlgorithm}
-              onChange={(e) => setSelectedAlgorithm(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            >
-              <option value="hh">Hybrid Heuristic (HH)</option>
-              <option value="ipso">IPSO Only</option>
-              <option value="iaco">IACO Only</option>
-              <option value="rr">Round Robin</option>
-              <option value="min-min">Min-Min</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={runSchedule}
-              disabled={loading}
-              className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium h-[42px] flex items-center"
-            >
-              {loading ? 'Running...' : 'Run Schedule'}
-            </button>
-            <button
-              onClick={runComparison}
-              disabled={loading}
-              className="px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors font-medium h-[42px] flex items-center"
-            >
-              Compare All
-            </button>
-            <button
-              onClick={resetSimulation}
-              disabled={loading}
-              className="px-4 py-2.5 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors font-medium h-[42px] flex items-center"
-            >
-              Reset
-            </button>
-          </div>
-          <div className="border-l border-gray-200 dark:border-gray-700 pl-4 py-1 flex gap-3 h-[42px] items-center">
-            <a
-              href="/api/fog/export/csv?type=all"
-              download
-              className="px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm h-full flex items-center gap-2"
-            >
-              📊 Export CSV
-            </a>
-            <a
-              href="/api/fog/export/json"
-              download
-              className="px-4 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium text-sm h-full flex items-center gap-2"
-            >
-              📋 Export JSON
-            </a>
-          </div>
+      {/* ── CONTROLS & CONFIG ── */}
+      <div className="bg-white dark:bg-[#1a2234] rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+           <div className="md:col-span-1">
+              <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 block">Task Batch Size</label>
+              <div className="relative">
+                <IconDotsVertical className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="number"
+                  value={taskCount}
+                  onChange={(e) => setTaskCount(parseInt(e.target.value) || 50)}
+                  className="w-full pl-9 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/20 outline-none transition-all"
+                  min={10} max={500}
+                />
+              </div>
+           </div>
+
+           <div className="md:col-span-1">
+              <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 block">Primary Algorithm</label>
+              <div className="relative">
+                <IconSettings className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <select
+                  value={selectedAlgorithm}
+                  onChange={(e) => setSelectedAlgorithm(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm appearance-none focus:ring-2 focus:ring-primary-500/20 outline-none transition-all cursor-pointer"
+                >
+                  <option value="hh">Hybrid Heuristic (HH)</option>
+                  <option value="ipso">IPSO Only</option>
+                  <option value="iaco">IACO Only</option>
+                  <option value="rr">Round Robin</option>
+                  <option value="min-min">Min-Min</option>
+                </select>
+              </div>
+           </div>
+
+           <div className="md:col-span-2 flex gap-3">
+              <button
+                onClick={runSchedule}
+                disabled={loading}
+                className="flex-1 btn btn-primary flex items-center justify-center gap-2 py-2.5 font-bold shadow-lg shadow-primary-500/20"
+              >
+                <IconPlayerPlay className="w-4 h-4" /> Run Simulation
+              </button>
+              <button
+                onClick={runComparison}
+                disabled={loading}
+                className="flex-1 btn bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2 py-2.5 font-bold shadow-lg shadow-purple-500/20 border-none"
+              >
+                <IconChartBar className="w-4 h-4" /> Compare All
+              </button>
+           </div>
         </div>
       </div>
 
-      {/* Schedule Result */}
+      {/* ── LIVE RESULTS ── */}
       {scheduleResult && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-          <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Schedule Result — {scheduleResult.algorithm}</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-blue-50 dark:bg-black/30 p-4 rounded-xl border-l-4 border-l-blue-500">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">Total Delay</p>
-              <p className="text-3xl font-extrabold font-mono text-blue-600 dark:text-blue-400 mt-1">{scheduleResult.metrics.totalDelay.toFixed(2)}s</p>
-            </div>
-            <div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-xl border-l-4 border-l-green-500">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">Total Energy</p>
-              <p className="text-3xl font-extrabold font-mono text-green-600 dark:text-green-400 mt-1">{scheduleResult.metrics.totalEnergy.toFixed(2)}J</p>
-            </div>
-            <div className="bg-purple-50 dark:bg-purple-900/30 p-4 rounded-xl border-l-4 border-l-purple-500">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">Reliability</p>
-              <p className="text-3xl font-extrabold font-mono text-purple-600 dark:text-purple-400 mt-1">{scheduleResult.metrics.reliability}%</p>
-            </div>
-            <div className="bg-orange-50 dark:bg-orange-900/30 p-4 rounded-xl border-l-4 border-l-orange-500">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">Execution Time</p>
-              <p className="text-3xl font-extrabold font-mono text-orange-600 dark:text-orange-400 mt-1">{scheduleResult.metrics.executionTimeMs}ms</p>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in-up">
+           <ResultCard label="Total Delay" value={`${scheduleResult.metrics.totalDelay.toFixed(2)}s`} icon={IconClock} color="blue" />
+           <ResultCard label="Energy Used" value={`${scheduleResult.metrics.totalEnergy.toFixed(2)}J`} icon={IconBolt} color="amber" />
+           <ResultCard label="Reliability" value={`${scheduleResult.metrics.reliability}%`} icon={IconShieldCheck} color="green" />
+           <ResultCard label="Compute Time" value={`${scheduleResult.metrics.executionTimeMs}ms`} icon={IconBolt} color="purple" />
         </div>
       )}
 
-      {/* Algorithm Comparison */}
-      {comparison && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Algorithm Comparison (Figure 5-7 from Paper)</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-            {/* HH */}
-            <div className="bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-900/40 dark:to-purple-900/20 p-4 rounded-lg border-2 border-purple-300 dark:border-purple-700">
-              <h3 className="font-semibold text-purple-800 dark:text-purple-300 text-sm">HH (Hybrid)</h3>
-              <div className="mt-2 space-y-1 text-xs text-gray-700 dark:text-gray-300">
-                <p>Delay: <span className="font-bold">{comparison.hybridHeuristic.totalDelay.toFixed(2)}s</span></p>
-                <p>Energy: <span className="font-bold">{comparison.hybridHeuristic.totalEnergy.toFixed(2)}J</span></p>
-                <p>Reliability: <span className="font-bold">{comparison.hybridHeuristic.reliability}%</span></p>
-                <p>Time: <span className="font-bold">{comparison.hybridHeuristic.executionTimeMs}ms</span></p>
-              </div>
-            </div>
-            {/* IPSO */}
-            <div className="bg-gradient-to-br from-indigo-100 to-indigo-50 dark:from-indigo-900/40 dark:to-indigo-900/20 p-4 rounded-lg">
-              <h3 className="font-semibold text-indigo-800 dark:text-indigo-300 text-sm">IPSO</h3>
-              <div className="mt-2 space-y-1 text-xs text-gray-700 dark:text-gray-300">
-                <p>Delay: <span className="font-bold">{comparison.ipso.totalDelay.toFixed(2)}s</span></p>
-                <p>Energy: <span className="font-bold">{comparison.ipso.totalEnergy.toFixed(2)}J</span></p>
-                <p>Reliability: <span className="font-bold">{comparison.ipso.reliability}%</span></p>
-                <p>Time: <span className="font-bold">{comparison.ipso.executionTimeMs}ms</span></p>
-              </div>
-            </div>
-            {/* IACO */}
-            <div className="bg-gradient-to-br from-cyan-100 to-cyan-50 dark:from-cyan-900/40 dark:to-cyan-900/20 p-4 rounded-lg">
-              <h3 className="font-semibold text-cyan-800 dark:text-cyan-300 text-sm">IACO</h3>
-              <div className="mt-2 space-y-1 text-xs text-gray-700 dark:text-gray-300">
-                <p>Delay: <span className="font-bold">{comparison.iaco.totalDelay.toFixed(2)}s</span></p>
-                <p>Energy: <span className="font-bold">{comparison.iaco.totalEnergy.toFixed(2)}J</span></p>
-                <p>Reliability: <span className="font-bold">{comparison.iaco.reliability}%</span></p>
-                <p>Time: <span className="font-bold">{comparison.iaco.executionTimeMs}ms</span></p>
-              </div>
-            </div>
-            {/* RR */}
-            <div className="bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/40 dark:to-blue-900/20 p-4 rounded-lg">
-              <h3 className="font-semibold text-blue-800 dark:text-blue-300 text-sm">Round Robin</h3>
-              <div className="mt-2 space-y-1 text-xs text-gray-700 dark:text-gray-300">
-                <p>Delay: <span className="font-bold">{comparison.roundRobin.totalDelay.toFixed(2)}s</span></p>
-                <p>Energy: <span className="font-bold">{comparison.roundRobin.totalEnergy.toFixed(2)}J</span></p>
-                <p>Reliability: <span className="font-bold">{comparison.roundRobin.reliability}%</span></p>
-                <p>Time: <span className="font-bold">{comparison.roundRobin.executionTimeMs}ms</span></p>
-              </div>
-            </div>
-            {/* Min-Min */}
-            <div className="bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/40 dark:to-green-900/20 p-4 rounded-lg">
-              <h3 className="font-semibold text-green-800 dark:text-green-300 text-sm">Min-Min</h3>
-              <div className="mt-2 space-y-1 text-xs text-gray-700 dark:text-gray-300">
-                <p>Delay: <span className="font-bold">{comparison.minMin.totalDelay.toFixed(2)}s</span></p>
-                <p>Energy: <span className="font-bold">{comparison.minMin.totalEnergy.toFixed(2)}J</span></p>
-                <p>Reliability: <span className="font-bold">{comparison.minMin.reliability}%</span></p>
-                <p>Time: <span className="font-bold">{comparison.minMin.executionTimeMs}ms</span></p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Radar Chart */}
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData}>
-                <PolarGrid />
-                <PolarAngleAxis dataKey="metric" />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} />
-                <Radar name="HH" dataKey="HH" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.5} />
-                <Radar name="IPSO" dataKey="IPSO" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} />
-                <Radar name="IACO" dataKey="IACO" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.3} />
-                <Radar name="RR" dataKey="RR" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.2} />
-                <Radar name="MinMin" dataKey="MinMin" stroke="#22c55e" fill="#22c55e" fillOpacity={0.2} />
-                <Legend />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
-
-      {/* Performance Charts */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Completion Time Chart */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Completion Time vs Task Count (Figure 5)</h2>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={completionTimeData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="tasks" label={{ value: 'Tasks', position: 'bottom' }} />
-                <YAxis label={{ value: 'Time (s)', angle: -90, position: 'insideLeft' }} />
-                <Tooltip />
-                <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                <Line type="monotone" dataKey="HH" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 6 }} />
-                <Line type="monotone" dataKey="IPSO" stroke="#6366f1" strokeWidth={2} />
-                <Line type="monotone" dataKey="IACO" stroke="#06b6d4" strokeWidth={2} />
-                <Line type="monotone" dataKey="Round Robin" stroke="#3b82f6" strokeWidth={2} />
-                <Line type="monotone" dataKey="Min-Min" stroke="#22c55e" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+      {/* ── ANALYSIS & VISUALIZATION ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Radar Comparison */}
+        <div className="lg:col-span-1 bg-white dark:bg-[#1a2234] rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Algorithm Spectrum</h3>
+           {comparison ? (
+             <div className="h-[350px]">
+               <ResponsiveContainer width="100%" height="100%">
+                 <RadarChart data={radarData}>
+                   <PolarGrid stroke="#e2e8f0" className="dark:stroke-gray-700" />
+                   <PolarAngleAxis dataKey="metric" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                   <PolarRadiusAxis angle={30} domain={[0, 100]} axisLine={false} tick={false} />
+                   <Radar name="HH" dataKey="HH" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.6} />
+                   <Radar name="IPSO" dataKey="IPSO" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} />
+                   <Radar name="IACO" dataKey="IACO" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.3} />
+                   <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                 </RadarChart>
+               </ResponsiveContainer>
+             </div>
+           ) : (
+             <div className="h-[350px] flex flex-col items-center justify-center text-gray-400 space-y-4">
+               <IconChartBar className="w-12 h-12 opacity-20" />
+               <p className="text-sm">Run "Compare All" to see spectrum analysis</p>
+             </div>
+           )}
         </div>
 
-        {/* Energy Consumption Chart */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Energy Consumption vs Task Count (Figure 6)</h2>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={energyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="tasks" />
-                <YAxis label={{ value: 'Energy (J)', angle: -90, position: 'insideLeft' }} />
-                <Tooltip />
-                <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                <Bar dataKey="HH" fill="#8b5cf6" />
-                <Bar dataKey="IPSO" fill="#6366f1" />
-                <Bar dataKey="IACO" fill="#06b6d4" />
-                <Bar dataKey="Round Robin" fill="#3b82f6" />
-                <Bar dataKey="Min-Min" fill="#22c55e" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        {/* Performance Trends */}
+        <div className="lg:col-span-2 bg-white dark:bg-[#1a2234] rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Completion Time vs Complexity</h3>
+           <div className="h-[350px]">
+             <ResponsiveContainer width="100%" height="100%">
+               <LineChart data={completionTimeData}>
+                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-gray-700" />
+                 <XAxis dataKey="tasks" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} dy={10} />
+                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                 <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
+                 <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                 <Line type="monotone" dataKey="HH" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4, fill: '#8b5cf6' }} />
+                 <Line type="monotone" dataKey="IPSO" stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" />
+                 <Line type="monotone" dataKey="Round Robin" stroke="#94a3b8" strokeWidth={1} />
+               </LineChart>
+             </ResponsiveContainer>
+           </div>
         </div>
       </div>
 
-      {/* Reliability Charts */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Reliability vs Task Count Chart */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Reliability vs Task Count (Figure 7)</h2>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={reliabilityData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="tasks" label={{ value: 'Tasks', position: 'bottom' }} />
-                <YAxis domain={[0, 100]} label={{ value: 'Reliability (%)', angle: -90, position: 'insideLeft' }} />
-                <Tooltip />
-                <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                <Line type="monotone" dataKey="HH" stroke="#8b5cf6" strokeWidth={3} />
-                <Line type="monotone" dataKey="IPSO" stroke="#6366f1" strokeWidth={2} />
-                <Line type="monotone" dataKey="IACO" stroke="#06b6d4" strokeWidth={2} />
-                <Line type="monotone" dataKey="Round Robin" stroke="#3b82f6" strokeWidth={2} />
-                <Line type="monotone" dataKey="Min-Min" stroke="#22c55e" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+         {/* Energy Consumption */}
+         <div className="bg-white dark:bg-[#1a2234] rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Energy Consumption Efficiency</h3>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={energyData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-gray-700" />
+                  <XAxis dataKey="tasks" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                  <Tooltip cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }} contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px' }} />
+                  <Legend />
+                  <Bar dataKey="HH" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="IPSO" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Min-Min" fill="#10b981" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+         </div>
 
-        {/* Reliability vs Max Tolerance Time Chart (Figure 8) */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Reliability vs Max Tolerance Time (Figure 8)</h2>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={toleranceChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="time" label={{ value: 'Max Tolerance Time (s)', position: 'bottom' }} />
-                <YAxis domain={[0, 100]} label={{ value: 'Reliability (%)', angle: -90, position: 'insideLeft' }} />
-                <Tooltip />
-                <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                <Line type="monotone" dataKey="HH" stroke="#8b5cf6" strokeWidth={3} />
-                <Line type="monotone" dataKey="IPSO" stroke="#6366f1" strokeWidth={2} />
-                <Line type="monotone" dataKey="IACO" stroke="#06b6d4" strokeWidth={2} />
-                <Line type="monotone" dataKey="RR" stroke="#3b82f6" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+         {/* Reliability Distribution */}
+         <div className="bg-white dark:bg-[#1a2234] rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Service Reliability (%)</h3>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={reliabilityData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-gray-700" />
+                  <XAxis dataKey="tasks" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                  <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px' }} />
+                  <Legend />
+                  <Line type="stepAfter" dataKey="HH" stroke="#8b5cf6" strokeWidth={3} dot={false} />
+                  <Line type="stepAfter" dataKey="IPSO" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+         </div>
       </div>
 
-      {/* Fog Nodes Status */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-        <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Fog Nodes Status</h2>
+      {/* ── FOG NODES TABLE ── */}
+      <div className="bg-white dark:bg-[#1a2234] rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Active Fog Nodes</h3>
+            <p className="text-sm text-gray-500">Real-time resource utilization across the edge network.</p>
+          </div>
+          <span className="px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-600 text-xs font-bold rounded-lg uppercase tracking-wider">{fogNodes.length} Nodes</span>
+        </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Node</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Computing (GHz)</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Bandwidth (Mbps)</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Load</th>
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-gray-50 dark:bg-gray-900/50 text-[10px] uppercase font-bold text-gray-500 tracking-widest border-b border-gray-100 dark:border-gray-800">
+                <th className="px-6 py-4">Edge Node</th>
+                <th className="px-6 py-4">Compute Capability</th>
+                <th className="px-6 py-4">Network Speed</th>
+                <th className="px-6 py-4">Current Load</th>
+                <th className="px-6 py-4">Status</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {fogNodes.map((node) => (
-                <tr key={node.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900 dark:text-white">{node.name}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">{node.computingResourceGHz}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">{node.networkBandwidthMbps}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <div className="w-24 bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
-                        <div
-                          className="bg-blue-600 h-2.5 rounded-full"
-                          style={{ width: `${node.currentLoadPercent}%` }}
-                        />
-                      </div>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{node.currentLoadPercent}%</span>
+                <tr key={node.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/40 transition-colors group">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                       <div className="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+                          <IconCloud className="w-4 h-4 text-primary-600" />
+                       </div>
+                       <span className="text-sm font-bold text-gray-900 dark:text-white">{node.name}</span>
                     </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 font-mono">{node.computingResourceGHz} GHz</td>
+                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 font-mono">{node.networkBandwidthMbps} Mbps</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                       <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                          <div 
+                            className={clsx(
+                              "h-full transition-all duration-500",
+                              Number(node.currentLoadPercent) > 80 ? "bg-red-500" : Number(node.currentLoadPercent) > 50 ? "bg-amber-500" : "bg-primary-500"
+                            )}
+                            style={{ width: `${node.currentLoadPercent}%` }}
+                          />
+                       </div>
+                       <span className="text-[10px] font-bold text-gray-500 min-w-[30px]">{node.currentLoadPercent}%</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 capitalize">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                        Online
+                     </span>
                   </td>
                 </tr>
               ))}
@@ -506,39 +458,82 @@ export default function FogComputing() {
         </div>
       </div>
 
-      {/* Algorithm Description */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Algorithm Details</h2>
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <h3 className="font-semibold text-purple-700 dark:text-purple-400 mb-2">IPSO (Improved PSO)</h3>
-            <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
-              <li>Adaptive inertia weight with contraction factor</li>
-              <li>Sigmoid function for binary particle conversion</li>
-              <li>Fast convergence for global exploration</li>
-              <li>Velocity clamping for stability</li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="font-semibold text-blue-700 dark:text-blue-400 mb-2">IACO (Improved ACO)</h3>
-            <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
-              <li>Improved heuristic information formula</li>
-              <li>Regulatory factor for path selection</li>
-              <li>Enhanced pheromone update strategy</li>
-              <li>High precision local optimization</li>
-            </ul>
-          </div>
+      {/* ── ALGORITHM INSIGHTS ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <InfoCard 
+          title="IPSO Strategy" 
+          subtitle="Global Optimization" 
+          description="Adaptive inertia weight with contraction factor for fast convergence. Ideal for broad exploration of the solution space."
+          icon={IconCpu}
+          color="indigo"
+          id="ipso"
+        />
+        <InfoCard 
+          title="IACO Strategy" 
+          subtitle="Local Refinement" 
+          description="Regulatory factor for path selection and pheromone updates. Provides high-precision local search for optimal allocation."
+          icon={IconSettings}
+          color="cyan"
+          id="iaco"
+        />
+        <InfoCard 
+          title="Hybrid Advantage" 
+          subtitle="Best of Both Worlds" 
+          description="Combines IPSO's speed with IACO's precision to minimize delay/energy while maintaining reliability."
+          icon={IconBolt}
+          color="purple"
+          id="hybrid"
+        />
+      </div>
+
+    </div>
+  );
+}
+
+function ResultCard({ label, value, icon: Icon, color }: any) {
+  const colors = {
+    blue: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-l-blue-500",
+    amber: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-l-amber-500",
+    green: "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-l-green-500",
+    purple: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border-l-purple-500",
+  };
+
+  return (
+    <div className={clsx("bg-white dark:bg-[#1a2234] p-5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm border-l-4", (colors as any)[color])}>
+      <div className="flex justify-between items-center mb-3">
+        <p className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">{label}</p>
+        <Icon className="w-5 h-5 opacity-50" stroke={1.5} />
+      </div>
+      <p className="text-3xl font-black tracking-tight text-gray-900 dark:text-white font-mono">{value}</p>
+    </div>
+  );
+}
+
+function InfoCard({ title, subtitle, description, icon: Icon, color, id }: any) {
+  const colors = {
+    indigo: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400",
+    cyan: "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400",
+    purple: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
+  };
+
+  return (
+    <div className="bg-white dark:bg-[#1a2234] p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+      <div className="flex items-center gap-4 mb-4">
+        <div className={clsx("p-3 rounded-xl", (colors as any)[color])}>
+          <Icon className="w-6 h-6" stroke={1.5} />
         </div>
-        <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 rounded-lg">
-          <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">Hybrid Heuristic (HH)</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            The HH algorithm combines IPSO and IACO to achieve both fast convergence speed (from PSO) 
-            and high solution accuracy (from ACO). PSO first explores the solution space rapidly, 
-            then ACO refines the solution for optimal task-to-fog-node allocation, minimizing 
-            both delay and energy consumption while maintaining reliability constraints.
-          </p>
+        <div>
+          <h4 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h4>
+          <p className="text-xs font-bold text-primary-500 uppercase tracking-widest">{subtitle}</p>
         </div>
       </div>
-    </div></div></>
+      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{description}</p>
+      <Link 
+        to={`/algorithm-details/${id}`}
+        className="mt-4 flex items-center gap-1 text-xs font-bold text-primary-600 hover:text-primary-700 transition-colors uppercase tracking-widest"
+      >
+        Read More <IconChevronRight className="w-3 h-3" />
+      </Link>
+    </div>
   );
 }

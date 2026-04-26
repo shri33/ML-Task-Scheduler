@@ -1,6 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
+import FloatingParticles from './components/FloatingParticles';
 import ErrorBoundary from './components/ErrorBoundary';
 import socketService from './lib/socket';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -11,8 +12,9 @@ import { useDocumentTitle } from './hooks/useDocumentTitle';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
 
 // Lazy load pages for code splitting
-const LandingPageRedNoir = lazy(() => import('./pages/LandingPageRedNoir'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Calendar = lazy(() => import('./pages/Calendar'));
 const Tasks = lazy(() => import('./pages/Tasks'));
 const Resources = lazy(() => import('./pages/Resources'));
 const Analytics = lazy(() => import('./pages/Analytics'));
@@ -23,6 +25,15 @@ const Login = lazy(() => import('./pages/Login'));
 const NotLoggedIn = lazy(() => import('./pages/NotLoggedIn'));
 const Register = lazy(() => import('./pages/Register'));
 const Experiments = lazy(() => import('./pages/Experiments'));
+const AlgorithmDetails = lazy(() => import('./pages/AlgorithmDetails'));
+const Roles = lazy(() => import('./pages/Roles'));
+const Permissions = lazy(() => import('./pages/Permissions'));
+const FAQ = lazy(() => import('./pages/FAQ'));
+const UserList = lazy(() => import('./pages/UserList'));
+const UserView = lazy(() => import('./pages/UserView'));
+const Chat = lazy(() => import('./pages/Chat'));
+const Email = lazy(() => import('./pages/Email'));
+const Kanban = lazy(() => import('./pages/Kanban'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Loading spinner for lazy loaded components
@@ -30,7 +41,7 @@ function PageLoader() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
       <div className="flex flex-col items-center gap-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         <p className="text-gray-500 dark:text-gray-400">Loading...</p>
       </div>
     </div>
@@ -44,7 +55,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -114,7 +125,7 @@ function AppRoutes() {
         {/* Public landing page — always visible at root */}
         <Route
           path="/"
-          element={<LandingPageRedNoir />}
+          element={<LandingPage />}
         />
         <Route
           path="/login"
@@ -134,6 +145,16 @@ function AppRoutes() {
             <ProtectedRoute>
               <Layout>
                 <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/calendar"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Calendar />
               </Layout>
             </ProtectedRoute>
           }
@@ -204,6 +225,96 @@ function AppRoutes() {
             <ProtectedRoute>
               <Layout>
                 <Experiments />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/algorithm-details/:strategyId"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <AlgorithmDetails />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/roles"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Roles />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/permissions"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Permissions />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/faq"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <FAQ />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <UserList />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/users/:id"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <UserView />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Chat />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/email"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Email />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kanban"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Kanban />
               </Layout>
             </ProtectedRoute>
           }

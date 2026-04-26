@@ -48,7 +48,7 @@ async function safeJson(response: Response): Promise<any> {
 
 /** Check if a fetch response indicates the backend is not available (405 = no API route, 404 = not found) */
 function isBackendUnavailable(response: Response): boolean {
-  return response.status === 405 || response.status === 404 || response.status === 502 || response.status === 503;
+  return response.status === 500 || response.status === 405 || response.status === 404 || response.status === 502 || response.status === 503;
 }
 
 /** Fetch with a timeout (ms). Rejects with AbortError if exceeded. */
@@ -109,6 +109,11 @@ useEffect(() => {
     try {
       const me = await authApi.getMe();
       setUser(me);
+      // If the backend returned the fallback Demo User (e.g. from Google Auth offline fallback)
+      if (me.id === 'demo-user-001') {
+        setIsDemoMode(true);
+        localStorage.setItem(DEMO_MODE_KEY, JSON.stringify(me));
+      }
     } catch {
       // Not authenticated or token expired or backend unavailable
     } finally {

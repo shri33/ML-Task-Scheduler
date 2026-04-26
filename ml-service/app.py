@@ -180,6 +180,7 @@ logger.info(f"Model initialized: {predictor.model_type} - {predictor.get_version
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
+    predictor.check_for_updates()
     return jsonify({
         'status': 'ok',
         'service': 'ml-prediction-service',
@@ -192,22 +193,8 @@ def health_check():
 def predict():
     """
     Predict task execution time
-    
-    Request body:
-    {
-        "taskSize": 1-3 (SMALL=1, MEDIUM=2, LARGE=3),
-        "taskType": 1-3 (CPU=1, IO=2, MIXED=3),
-        "priority": 1-5,
-        "resourceLoad": 0-100
-    }
-    
-    Response:
-    {
-        "predictedTime": float (seconds),
-        "confidence": float (0-1),
-        "modelVersion": string
-    }
     """
+    predictor.check_for_updates()
     try:
         data = request.get_json()
         
@@ -270,36 +257,8 @@ def predict():
 def predict_batch():
     """
     Batch prediction for multiple tasks at once
-    
-    Request body:
-    {
-        "tasks": [
-            {
-                "taskId": "optional-id",
-                "taskSize": 1-3,
-                "taskType": 1-3,
-                "priority": 1-5,
-                "resourceLoad": 0-100
-            },
-            ...
-        ]
-    }
-    
-    Response:
-    {
-        "predictions": [
-            {
-                "taskId": "optional-id",
-                "predictedTime": float,
-                "confidence": float
-            },
-            ...
-        ],
-        "totalTasks": int,
-        "avgPredictedTime": float,
-        "modelVersion": string
-    }
     """
+    predictor.check_for_updates()
     try:
         data = request.get_json()
         
@@ -417,11 +376,14 @@ def train():
         X = []
         y = []
         for item in training_data:
+            # Include startupOverhead if provided, otherwise default to 1.0
+            overhead = item.get('startupOverhead', 1.0)
             X.append([
                 item['taskSize'],
                 item['taskType'],
                 item['priority'],
-                item['resourceLoad']
+                item['resourceLoad'],
+                overhead
             ])
             y.append(item['actualTime'])
         
@@ -446,6 +408,7 @@ def train():
 @app.route('/api/model/info', methods=['GET'])
 def model_info():
     """Get information about the current model"""
+    predictor.check_for_updates()
     return jsonify({
         'modelVersion': predictor.get_version(),
         'modelType': predictor.model_type,
@@ -615,7 +578,8 @@ def retrain():
             item['taskSize'],
             item['taskType'],
             item['priority'],
-            item['resourceLoad']
+            item['resourceLoad'],
+            item.get('startupOverhead', 1.0)
         ] for item in training_data])
         
         y = np.array([item['actualTime'] for item in training_data])
@@ -720,7 +684,7 @@ def retrain_from_db():
 
         # Convert to numpy arrays
         import numpy as np_local
-        X = np_local.array([[r[0], r[1], r[2], r[3]] for r in rows])
+        X = np_local.array([[r[0], r[1], r[2], r[3], 1.0] for r in rows])
         y = np_local.array([r[4] for r in rows])
 
         logger.info(f"Retraining on {len(rows)} real completed tasks from PostgreSQL")

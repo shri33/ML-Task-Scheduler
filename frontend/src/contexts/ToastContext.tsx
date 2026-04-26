@@ -1,6 +1,6 @@
 
 import { create } from 'zustand';
-import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { IconX, IconCircleCheck, IconAlertCircle, IconInfoCircle, IconAlertTriangle } from '@tabler/icons-react';
 import { clsx } from 'clsx';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -77,10 +77,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
 function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   const icons = {
-    success: CheckCircle,
-    error: AlertCircle,
-    info: Info,
-    warning: AlertTriangle,
+    success: IconCircleCheck,
+    error: IconAlertCircle,
+    info: IconInfoCircle,
+    warning: IconAlertTriangle,
   };
 
   const colors = {
@@ -117,7 +117,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
         onClick={onClose}
         className="flex-shrink-0 p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded"
       >
-        <X className="h-4 w-4 text-gray-400" />
+        <IconX className="h-4 w-4 text-gray-400" />
       </button>
     </div>
   );

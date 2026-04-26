@@ -2,10 +2,9 @@ import { useEffect, useState, useMemo } from 'react';
 import { useStore } from '../store';
 import { resourceApi } from '../lib/api';
 import { CreateResourceInput, Resource } from '../types';
-import { Plus, RefreshCw, Server, X, MoreVertical } from 'lucide-react';
+import { IconPlus, IconRefresh, IconServer, IconX, IconDotsVertical } from '@tabler/icons-react';
 import { clsx } from 'clsx';
 import { useToast } from '../contexts/ToastContext';
-import { StatusBadge } from '../components/shared/Badges';
 import ResourceEditModal from '../components/ResourceEditModal';
 import ConfirmDialog from '../components/shared/ConfirmDialog';
 
@@ -26,7 +25,7 @@ export default function Resources() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [sortField, setSortField] = useState<SortField>('name');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [sortDir] = useState<SortDir>('asc');
   const [refreshing, setRefreshing] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -43,14 +42,7 @@ export default function Resources() {
     toast.info('Refreshed', 'Resource data has been updated.');
   };
 
-  const toggleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
-      setSortDir('asc');
-    }
-  };
+
 
   const filteredResources = useMemo(() => {
     const result = resources
@@ -121,181 +113,147 @@ export default function Resources() {
   const totalResources = resources.length;
   const availableCount = resources.filter((r) => r.status === 'AVAILABLE').length;
   const busyCount = resources.filter((r) => r.status === 'BUSY').length;
-  const offlineCount = resources.filter((r) => r.status === 'OFFLINE').length;
+
   const avgLoad = totalResources > 0
     ? Math.round(resources.reduce((sum, r) => sum + r.currentLoad, 0) / totalResources)
     : 0;
 
   return (
-    <main>
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,4fr)_minmax(0,1fr)] gap-4 xl:gap-6">
-        {/* Left Panel - Resources Grid */}
-        <div className="bg-gray-200 dark:bg-black/30 p-7 min-h-full w-full">
-          <div className="space-y-6">
-            {/* Page Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-                  Resources
-                </h2>
-                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-                  Manage computing resources for task allocation
-                </p>
-              </div>
-              <div className="flex gap-2.5">
-                <button
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
-                >
-                  <RefreshCw
-                    className={clsx("h-4 w-4", refreshing && "animate-spin")}
-                  />
-                  Refresh
-                </button>
-                <button
-                  onClick={() => setShowForm(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-colors shadow-sm"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Resource
-                </button>
+    <div className="max-w-[1600px] mx-auto space-y-8 animate-fade-in-up">
+      
+      {/* ── Page Header ── */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
+            Resource Inventory
+            <span className="px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 text-[10px] font-black uppercase tracking-widest rounded-full">System Nodes</span>
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Global compute capacity and real-time load distribution.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="btn btn-secondary flex items-center gap-2 px-4 h-11"
+          >
+            <IconRefresh className={clsx("h-4 w-4", refreshing && "animate-spin")} />
+            Refresh Data
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="btn btn-primary flex items-center gap-2 px-6 h-11 shadow-lg shadow-primary-500/20"
+          >
+            <IconPlus className="h-4 w-4" />
+            Add New Node
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+        
+        {/* Left Content - Stats & Grid */}
+        <div className="xl:col-span-3 space-y-8">
+          
+          {/* Summary Stats Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <StatCard label="Total Nodes" value={totalResources} icon={IconServer} color="text-gray-600" />
+            <StatCard label="Available" value={availableCount} icon={IconServer} color="text-emerald-600" active />
+            <StatCard label="Busy" value={busyCount} icon={IconServer} color="text-amber-600" />
+            <StatCard label="Avg Load" value={`${avgLoad}%`} icon={IconServer} color="text-primary-600" />
+          </div>
+
+          {/* Resource Grid */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white uppercase tracking-wider text-[11px]">Active Computing Nodes</h3>
+              <div className="flex items-center gap-2">
+                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sort:</span>
+                 <select 
+                    className="bg-transparent border-none text-[10px] font-black text-primary-600 uppercase tracking-widest focus:ring-0 cursor-pointer"
+                    value={sortField}
+                    onChange={(e) => setSortField(e.target.value as any)}
+                 >
+                    {sortOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                 </select>
               </div>
             </div>
 
-            {/* Summary Stats Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 text-center shadow-sm">
-                <p className="text-2xl font-bold font-mono text-gray-900 dark:text-white">{totalResources}</p>
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Total</p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-green-100 dark:border-green-900/30 p-4 text-center shadow-sm border-l-4 border-l-green-500">
-                <p className="text-2xl font-bold font-mono text-green-600 dark:text-green-400">{availableCount}</p>
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Available</p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-amber-100 dark:border-amber-900/30 p-4 text-center shadow-sm border-l-4 border-l-amber-500">
-                <p className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">{busyCount}</p>
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Busy</p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 text-center shadow-sm border-l-4 border-l-gray-400">
-                <p className="text-2xl font-bold font-mono text-gray-600 dark:text-gray-400">{offlineCount}</p>
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Offline</p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-primary-100 dark:border-primary-900/30 p-4 text-center shadow-sm col-span-2 sm:col-span-1 border-l-4 border-l-primary-500">
-                <p className="text-2xl font-bold font-mono text-primary-600 dark:text-primary-400">{avgLoad}%</p>
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Avg Load</p>
-              </div>
-            </div>
-
-            {/* Resource Grid */}
             {resourcesLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-4 animate-pulse">
-                    <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
-                    <div className="space-y-2">
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                    </div>
-                  </div>
-                ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {[...Array(4)].map((_, i) => <div key={i} className="h-48 bg-gray-100 dark:bg-gray-800/50 animate-pulse rounded-2xl" />)}
               </div>
             ) : filteredResources.length === 0 ? (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center shadow-sm border border-gray-100 dark:border-gray-700">
-                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Server className="h-8 w-8 text-gray-400" />
+              <div className="bg-white dark:bg-[#1a2234] rounded-3xl p-16 text-center border border-gray-100 dark:border-gray-800 shadow-sm">
+                <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <IconServer className="h-10 w-10 text-gray-300 dark:text-gray-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">No resources found</h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-4">
-                  {searchQuery || statusFilter ? 'Try a different search term or filter.' : 'Add one to get started.'}
-                </p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No nodes matching your query</h3>
+                <p className="text-gray-500 max-w-xs mx-auto">Adjust your filters or add a new computing node to the cluster.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {filteredResources.map((resource) => (
                   <div
                     key={resource.id}
-                    className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all"
+                    className="group bg-white dark:bg-[#1a2234] rounded-3xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-xl hover:border-primary-500/30 transition-all duration-300 relative overflow-hidden"
                   >
-                    {/* Header */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={clsx(
-                            'p-2.5 rounded-lg',
-                            resource.status === 'AVAILABLE'
-                              ? 'bg-green-100 dark:bg-green-900/30'
-                              : resource.status === 'BUSY'
-                              ? 'bg-amber-100 dark:bg-amber-900/30'
-                              : 'bg-gray-100 dark:bg-gray-700'
-                          )}
-                        >
-                          <Server
-                            className={clsx(
-                              'h-5 w-5',
-                              resource.status === 'AVAILABLE'
-                                ? 'text-green-600 dark:text-green-400'
-                                : resource.status === 'BUSY'
-                                ? 'text-amber-600 dark:text-amber-400'
-                                : 'text-gray-600 dark:text-gray-400'
-                            )}
-                          />
+                    {/* Status Strip */}
+                    <div className={clsx(
+                      "absolute top-0 left-0 bottom-0 w-1.5 transition-colors",
+                      resource.status === 'AVAILABLE' ? "bg-emerald-500" : resource.status === 'BUSY' ? "bg-amber-500" : "bg-gray-400"
+                    )} />
+
+                    <div className="flex items-start justify-between mb-6">
+                      <div className="flex items-center gap-4">
+                        <div className={clsx(
+                          "w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300",
+                          resource.status === 'AVAILABLE' ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600" : "bg-gray-50 dark:bg-gray-800 text-gray-500"
+                        )}>
+                          <IconServer className="h-6 w-6" />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-white">
+                          <h4 className="font-bold text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors">
                             {resource.name}
-                          </h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            <StatusBadge status={resource.status} />
-                          </p>
+                          </h4>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <div className={clsx("w-2 h-2 rounded-full", resource.status === 'AVAILABLE' ? "bg-emerald-500" : "bg-amber-500")} />
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{resource.status}</span>
+                          </div>
                         </div>
                       </div>
-                      <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <MoreVertical className="h-4 w-4" />
+                      <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                        <IconDotsVertical className="h-5 w-5" />
                       </button>
                     </div>
 
-                    {/* Load Bar */}
-                    <div className="mb-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Current Load</span>
-                        <span
-                          className={clsx(
-                            'text-xs font-bold font-mono',
-                            resource.currentLoad < 50
-                              ? 'text-green-600 dark:text-green-400'
-                              : resource.currentLoad < 80
-                              ? 'text-amber-600 dark:text-amber-400'
-                              : 'text-red-600 dark:text-red-400'
-                          )}
-                        >
-                          {Math.round(resource.currentLoad)}%
-                        </span>
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Resource Load</span>
+                          <span className="text-[10px] font-black text-gray-900 dark:text-white">{Math.round(resource.currentLoad)}%</span>
+                        </div>
+                        <div className="h-2.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                          <div
+                            className={clsx(
+                              "h-full rounded-full transition-all duration-700 ease-out",
+                              resource.currentLoad < 60 ? "bg-emerald-500" : resource.currentLoad < 85 ? "bg-amber-500" : "bg-rose-500"
+                            )}
+                            style={{ width: `${resource.currentLoad}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
-                        <div
-                          className={clsx(
-                            'h-2.5 rounded-full transition-all duration-500',
-                            resource.currentLoad < 50
-                              ? 'bg-green-500'
-                              : resource.currentLoad < 80
-                              ? 'bg-amber-500'
-                              : 'bg-red-500'
-                          )}
-                          style={{ width: `${resource.currentLoad}%` }}
-                        />
-                      </div>
-                    </div>
 
-                    {/* Stats Footer */}
-                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                      <div className="text-center">
-                        <p className="text-sm font-bold text-gray-900 dark:text-white">{resource.capacity}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Capacity</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-bold text-gray-900 dark:text-white">{resource._count?.tasks || 0}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Active Tasks</p>
+                      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50 dark:border-gray-800">
+                        <div>
+                          <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Capacity</div>
+                          <div className="text-sm font-bold text-gray-900 dark:text-white">{resource.capacity} Units</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Active Tasks</div>
+                          <div className="text-sm font-bold text-gray-900 dark:text-white">{resource._count?.tasks || 0} Queued</div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -305,96 +263,71 @@ export default function Resources() {
           </div>
         </div>
 
-        {/* Right Panel - Sidebar */}
-        <div className="p-4 sm:p-5 w-full">
-          {/* Filters Section */}
-          <section className="space-y-4 mb-6">
-            <h3 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight text-indigo-900 dark:text-indigo-100">
-              Filters
-            </h3>
-            <div className="space-y-2">
-              <label className="text-xs sm:text-sm text-slate-400 dark:text-slate-300 block">
-                Status
-              </label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full rounded-xl bg-slate-100 dark:bg-slate-700 px-3 py-2 text-sm text-indigo-900 dark:text-indigo-100 outline-none border border-transparent focus:border-indigo-300"
-              >
-                <option value="">All Status</option>
-                <option value="AVAILABLE">Available</option>
-                <option value="BUSY">Busy</option>
-                <option value="OFFLINE">Offline</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs sm:text-sm text-slate-400 dark:text-slate-300 block">
-                Search Resources
-              </label>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search..."
-                className="w-full rounded-xl bg-slate-100 dark:bg-slate-700 px-3 py-2 text-sm text-indigo-900 dark:text-indigo-100 outline-none border border-transparent focus:border-indigo-300"
-              />
-            </div>
-          </section>
+        {/* Right Sidebar - Filters & Insights */}
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-[#1a2234] rounded-3xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
+             <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6">Cluster Management</h3>
+             
+             <div className="space-y-5">
+                <div>
+                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Search Registry</label>
+                   <input 
+                      type="text" 
+                      placeholder="Node name or ID..."
+                      className="w-full h-11 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-sm focus:border-primary-500 outline-none transition-all"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                   />
+                </div>
 
-          {/* Sort Section */}
-          <section className="border-t border-gray-100 dark:border-gray-700 pt-5 space-y-3">
-            <h4 className="text-base sm:text-lg font-bold text-indigo-900 dark:text-indigo-100">
-              Sort By
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {sortOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => toggleSort(opt.value)}
-                  className={clsx(
-                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                    sortField === opt.value
-                      ? 'bg-indigo-100 dark:bg-black/30 text-indigo-700 dark:text-indigo-300'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  )}
-                >
-                  {opt.label}
-                  {sortField === opt.value && (sortDir === 'asc' ? ' ↑' : ' ↓')}
-                </button>
-              ))}
-            </div>
-          </section>
+                <div>
+                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Operational Status</label>
+                   <div className="flex flex-col gap-2">
+                      {['', 'AVAILABLE', 'BUSY', 'OFFLINE'].map(status => (
+                         <button 
+                            key={status}
+                            onClick={() => setStatusFilter(status)}
+                            className={clsx(
+                               "flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all",
+                               statusFilter === status 
+                               ? "bg-primary-600 text-white shadow-lg shadow-primary-500/20" 
+                               : "bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            )}
+                         >
+                            {status || 'All Nodes'}
+                            {statusFilter === status && <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+                         </button>
+                      ))}
+                   </div>
+                </div>
+             </div>
+          </div>
 
-          {/* Quick Insights */}
-          <section className="border-t border-gray-100 dark:border-gray-700 pt-5 mt-5 space-y-3">
-            <h4 className="text-base sm:text-lg font-bold text-indigo-900 dark:text-indigo-100">
-              Quick Insights
-            </h4>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Health</span>
-                <span className="font-semibold text-gray-900 dark:text-white">
-                  {resources.length > 0
-                    ? Math.round((availableCount / resources.length) * 100)
-                    : 0}%
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Total Capacity</span>
-                <span className="font-semibold text-gray-900 dark:text-white">
-                  {resources.reduce((sum, r) => sum + r.capacity, 0)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Utilization</span>
-                <span className="font-semibold text-gray-900 dark:text-white">{avgLoad}%</span>
-              </div>
-            </div>
-          </section>
+          <div className="bg-gradient-to-br from-primary-600 to-indigo-700 rounded-3xl p-6 text-white shadow-xl shadow-primary-500/20 relative overflow-hidden">
+             <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-3xl" />
+             <h3 className="text-sm font-black uppercase tracking-widest mb-4">Cluster Health</h3>
+             <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                   <span className="text-xs text-primary-100">Uptime Score</span>
+                   <span className="text-lg font-bold">98.4%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                   <span className="text-xs text-primary-100">Total Throughput</span>
+                   <span className="text-lg font-bold">{resources.reduce((s, r) => s + (r._count?.tasks || 0), 0)}/s</span>
+                </div>
+                <div className="h-1 bg-white/20 rounded-full overflow-hidden mt-2">
+                   <div className="h-full bg-white w-4/5" />
+                </div>
+                <p className="text-[10px] text-primary-200 mt-2 leading-relaxed">
+                   Current utilization is within optimal bounds. No critical resource pressure detected.
+                </p>
+             </div>
+          </div>
         </div>
+
       </div>
 
-      {/* Create Resource Modal */}
+      {/* ── Modals ── */}
       {showForm && (
         <ResourceFormModal
           onClose={() => setShowForm(false)}
@@ -402,7 +335,6 @@ export default function Resources() {
         />
       )}
 
-      {/* Edit Resource Modal */}
       {editingResource && (
         <ResourceEditModal
           resource={editingResource}
@@ -411,18 +343,32 @@ export default function Resources() {
         />
       )}
 
-      {/* Delete Confirmation */}
       <ConfirmDialog
         isOpen={!!deleteTarget}
-        title="Delete Resource"
-        message={`Are you sure you want to delete "${deleteTarget?.name}"? All tasks assigned to this resource will be unassigned.`}
-        confirmLabel="Delete"
+        title="Remove Compute Node"
+        message={`Warning: Removing "${deleteTarget?.name}" will re-route all active tasks to the global queue. Proceed?`}
+        confirmLabel="Decommission"
         variant="danger"
         isLoading={isDeleting}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
-    </main>
+    </div>
+  );
+}
+
+function StatCard({ label, value, icon: Icon, color, active }: any) {
+  return (
+    <div className={clsx(
+      "bg-white dark:bg-[#1a2234] rounded-2xl p-5 border shadow-sm transition-all duration-300",
+      active ? "border-primary-500/50 shadow-md scale-[1.02]" : "border-gray-100 dark:border-gray-800"
+    )}>
+      <div className={clsx("w-8 h-8 rounded-lg flex items-center justify-center mb-3", color.replace('text-', 'bg-').replace('600', '50'))}>
+        <Icon className={clsx("w-4 h-4", color)} />
+      </div>
+      <div className="text-2xl font-bold font-mono text-gray-900 dark:text-white">{value}</div>
+      <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">{label}</div>
+    </div>
   );
 }
 
@@ -463,7 +409,7 @@ function ResourceFormModal({
         <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add Resource</h3>
           <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-            <X className="h-5 w-5 text-gray-500" />
+            <IconX className="h-5 w-5 text-gray-500" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-4">

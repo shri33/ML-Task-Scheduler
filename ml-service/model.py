@@ -25,6 +25,7 @@ class TaskPredictor:
         self.model = None
         self.version = None
         self.model_type = model_type  # 'random_forest', 'xgboost', or 'gradient_boosting'
+        self.last_loaded_time = 0
         self._load_or_create_model()
     
     def _load_or_create_model(self):
@@ -35,6 +36,7 @@ class TaskPredictor:
                 self.model = data['model']
                 self.version = data['version']
                 self.model_type = data.get('model_type', 'random_forest')
+                self.last_loaded_time = os.path.getmtime(self.model_path)
                 print(f"✅ Loaded {self.model_type} model version: {self.version}")
                 return
             except Exception as e:
@@ -43,6 +45,19 @@ class TaskPredictor:
         # Create new model with synthetic data
         print(f"🔧 Creating new {self.model_type} model with synthetic data...")
         self._train_with_synthetic_data()
+
+    def check_for_updates(self):
+        """Check if model file has been updated on disk and reload if necessary"""
+        if os.path.exists(self.model_path):
+            try:
+                mtime = os.path.getmtime(self.model_path)
+                if mtime > self.last_loaded_time:
+                    print(f"🔄 Model update detected on disk (mtime: {mtime} > {self.last_loaded_time}). Reloading...")
+                    self._load_or_create_model()
+                    return True
+            except Exception as e:
+                print(f"⚠️ Error checking for model updates: {e}")
+        return False
     
     def _generate_synthetic_data(self, n_samples=1000):
         """Generate realistic synthetic training data"""
@@ -81,7 +96,7 @@ class TaskPredictor:
     
     def _train_with_synthetic_data(self):
         """Train model with realistic synthetic data"""
-        X, y = self._generate_synthetic_data(1000)
+        X, y = self._generate_synthetic_data(5000)
         self.train(X, y)
     
     def train(self, X, y):
@@ -89,12 +104,12 @@ class TaskPredictor:
         # Create model based on type
         if self.model_type == 'xgboost' and XGBOOST_AVAILABLE:
             self.model = xgb.XGBRegressor(
-                n_estimators=100,
-                max_depth=6,
-                learning_rate=0.1,
-                min_child_weight=2,
-                subsample=0.8,
-                colsample_bytree=0.8,
+                n_estimators=200,
+                max_depth=8,
+                learning_rate=0.05,
+                min_child_weight=1,
+                subsample=0.9,
+                colsample_bytree=0.9,
                 random_state=42,
                 n_jobs=-1
             )
@@ -111,10 +126,10 @@ class TaskPredictor:
             # Default: Random Forest
             self.model_type = 'random_forest'
             self.model = RandomForestRegressor(
-                n_estimators=100,
-                max_depth=10,
-                min_samples_split=5,
-                min_samples_leaf=2,
+                n_estimators=200,
+                max_depth=15,
+                min_samples_split=2,
+                min_samples_leaf=1,
                 random_state=42,
                 n_jobs=-1
             )

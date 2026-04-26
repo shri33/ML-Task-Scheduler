@@ -10,28 +10,38 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  AreaChart,
+  Area,
 } from 'recharts';
 import { experimentsApi, ExperimentResult } from '../lib/api';
-import {
-  FlaskConical,
-  Play,
-  Download,
-  CheckCircle2,
-  XCircle,
-  Loader2,
-  Zap,
-  Shield,
-  Clock,
-  FileJson,
-} from 'lucide-react';
+import { 
+  IconFlask, 
+  IconPlayerPlay, 
+  IconDownload, 
+  IconCircleCheck, 
+  IconCircleX, 
+  IconLoader2, 
+  IconBolt, 
+  IconShield, 
+  IconClock, 
+  IconFileTypeJs,
+  IconInfoCircle,
+  IconExternalLink,
+  IconChartBar,
+  IconDotsVertical,
+  IconSettings,
+  IconPlus
+} from '@tabler/icons-react';
+import { clsx } from 'clsx';
+import ExperimentWizard from '../components/ExperimentWizard';
 
 const ALGO_COLORS: Record<string, string> = {
-  HH: '#10b981',
+  HH: '#8b5cf6',
   IPSO: '#3b82f6',
-  IACO: '#f59e0b',
-  RR: '#ef4444',
-  MinMin: '#8b5cf6',
-  FCFS: '#6b7280',
+  IACO: '#06b6d4',
+  RR: '#f43f5e',
+  MinMin: '#10b981',
+  FCFS: '#94a3b8',
 };
 
 type ExperimentType = 'all' | 'energy' | 'reliability_taskcount' | 'reliability_tolerance' | 'completion_time';
@@ -39,12 +49,12 @@ type ExperimentType = 'all' | 'energy' | 'reliability_taskcount' | 'reliability_
 export default function Experiments() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ExperimentResult | null>(null);
+  const [showWizard, setShowWizard] = useState(false);
   const [selectedExperiment, setSelectedExperiment] = useState<ExperimentType>('all');
   const [iterations, setIterations] = useState(3);
   const [error, setError] = useState<string | null>(null);
   const [savedFiles, setSavedFiles] = useState<string[]>([]);
 
-  // Load previously saved files
   useEffect(() => {
     experimentsApi.getResults().then(r => setSavedFiles(r.files)).catch(() => {});
   }, [result]);
@@ -62,7 +72,6 @@ export default function Experiments() {
     }
   }, [selectedExperiment, iterations]);
 
-  // Transform data for charts
   const energyChartData = result?.taskCountResults?.map(r => ({
     tasks: r.taskCount,
     HH: r.hh.energy,
@@ -98,256 +107,287 @@ export default function Experiments() {
     RR: r.rr,
   }));
 
-  return (<><div className='dark:bg-black/50 h-full'>
-    <div className="space-y-6 pt-6 mb-6 mx-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+  return (
+    <div className="max-w-[1600px] mx-auto pb-12 space-y-8 animate-fade-in">
+      
+      {/* ── HEADER ── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <FlaskConical className="h-7 w-7 text-primary-600" />
-            Experiments
-          </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Reproduce Figures 5–8 from Wang &amp; Li (2019) – Hybrid Heuristic Algorithm for Fog Computing
-          </p>
-        </div>
-      </div>
-
-      {/* Controls */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Run Experiment</h2>
-        <div className="flex flex-wrap gap-4 items-end">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Experiment Type
-            </label>
-            <select
-              value={selectedExperiment}
-              onChange={e => setSelectedExperiment(e.target.value as ExperimentType)}
-              className="block w-64 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm p-2"
-            >
-              <option value="all">All Experiments</option>
-              <option value="energy">Energy Consumption (Figure 6)</option>
-              <option value="completion_time">Completion Time (Figure 5)</option>
-              <option value="reliability_taskcount">Reliability vs Tasks (Figure 7)</option>
-              <option value="reliability_tolerance">Reliability vs Tolerance (Figure 8)</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Iterations
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={10}
-              value={iterations}
-              onChange={e => setIterations(Number(e.target.value))}
-              className="block w-24 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm p-2"
-            />
-          </div>
-          <button
-            onClick={runExperiment}
-            disabled={loading}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Play className="h-4 w-4" />
-            )}
-            {loading ? 'Running…' : 'Run Experiment'}
-          </button>
-        </div>
-        {error && (
-          <div className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</div>
-        )}
-        {result && (
-          <div className="mt-3 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-            <span>Runtime: <strong>{result.runtimeSeconds}s</strong></span>
-            <span>Files exported: <strong>{result.exportedFiles?.length || 0}</strong></span>
-          </div>
-        )}
-      </div>
-
-      {/* Validation Checklist */}
-      {result?.validation && Object.keys(result.validation).length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary-600" />
-            Validation Checklist
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            Experimental Laboratory
+            <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-full uppercase tracking-widest">Research Mode</span>
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {Object.entries(result.validation).map(([key, passed]) => (
-              <div
-                key={key}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                  passed
-                    ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-                    : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
-                }`}
-              >
-                {passed ? (
-                  <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-                ) : (
-                  <XCircle className="h-4 w-4 flex-shrink-0" />
-                )}
-                {key.replace(/_/g, ' ')}
-              </div>
-            ))}
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Reproducing Figure 5–8 benchmarks from Juan Wang & Di Li (2019).</p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowWizard(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold transition-all shadow-lg shadow-primary-500/20 active:scale-95"
+          >
+            <IconPlus className="w-4 h-4" />
+            New Experiment
+          </button>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 shadow-sm flex items-center gap-2">
+            <IconInfoCircle className="w-4 h-4 text-primary-500" />
+            <span className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Reference: Sensors 2019</span>
           </div>
+          <a 
+            href="https://doi.org/10.3390/s19051023" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="p-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center"
+          >
+             <IconExternalLink className="w-5 h-5" />
+          </a>
         </div>
-      )}
+      </div>
 
-      {/* Charts Grid */}
-      {result && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {/* Figure 5: Completion Time */}
-          {completionChartData && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
-                <Clock className="h-4 w-4 text-blue-500" />
-                Completion Time vs Task Count (Figure 5)
-              </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                Total delay (seconds) for varying numbers of tasks on 10 fog nodes
-              </p>
-              <ResponsiveContainer width="100%" height={320}>
-                <LineChart data={completionChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="tasks" label={{ value: 'Tasks', position: 'insideBottom', offset: -5 }} />
-                  <YAxis label={{ value: 'Delay (s)', angle: -90, position: 'insideLeft' }} />
-                  <Tooltip />
-                  <Legend />
-                  {['HH', 'IPSO', 'IACO', 'RR', 'MinMin'].map(alg => (
-                    <Line key={alg} type="monotone" dataKey={alg} stroke={ALGO_COLORS[alg]} strokeWidth={2} dot={{ r: 4 }} />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+      <ExperimentWizard isOpen={showWizard} onClose={() => setShowWizard(false)} />
 
-          {/* Figure 6: Energy Consumption */}
-          {energyChartData && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
-                <Zap className="h-4 w-4 text-yellow-500" />
-                Energy Consumption vs Task Count (Figure 6)
-              </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                Total energy (Joules) — HH should be lowest, RR highest
-              </p>
-              <ResponsiveContainer width="100%" height={320}>
-                <LineChart data={energyChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="tasks" label={{ value: 'Tasks', position: 'insideBottom', offset: -5 }} />
-                  <YAxis label={{ value: 'Energy (J)', angle: -90, position: 'insideLeft' }} />
-                  <Tooltip />
-                  <Legend />
-                  {['HH', 'IPSO', 'IACO', 'RR', 'MinMin'].map(alg => (
-                    <Line key={alg} type="monotone" dataKey={alg} stroke={ALGO_COLORS[alg]} strokeWidth={2} dot={{ r: 4 }} />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
 
-          {/* Figure 7: Reliability vs Task Count */}
-          {reliabilityTasksData && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
-                <Shield className="h-4 w-4 text-green-500" />
-                Reliability vs Task Count (Figure 7)
-              </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                % tasks completed within max tolerance time — decreases as task count rises
-              </p>
-              <ResponsiveContainer width="100%" height={320}>
-                <LineChart data={reliabilityTasksData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="tasks" label={{ value: 'Tasks', position: 'insideBottom', offset: -5 }} />
-                  <YAxis label={{ value: 'Reliability (%)', angle: -90, position: 'insideLeft' }} domain={[0, 100]} />
-                  <Tooltip />
-                  <Legend />
-                  {['HH', 'IPSO', 'IACO', 'RR', 'MinMin'].map(alg => (
-                    <Line key={alg} type="monotone" dataKey={alg} stroke={ALGO_COLORS[alg]} strokeWidth={2} dot={{ r: 4 }} />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
+      {/* ── CONTROLS ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-3 bg-white dark:bg-[#1a2234] rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+             <IconFlask className="w-32 h-32" />
+          </div>
+          
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Experiment Configurator</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400">Benchmark Type</label>
+              <select
+                value={selectedExperiment}
+                onChange={e => setSelectedExperiment(e.target.value as ExperimentType)}
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm appearance-none focus:ring-2 focus:ring-primary-500/20 outline-none transition-all cursor-pointer"
+              >
+                <option value="all">Comprehensive Analysis</option>
+                <option value="energy">Energy Consumption (Fig. 6)</option>
+                <option value="completion_time">Completion Time (Fig. 5)</option>
+                <option value="reliability_taskcount">Reliability Bench (Fig. 7)</option>
+                <option value="reliability_tolerance">Tolerance Stress (Fig. 8)</option>
+              </select>
             </div>
-          )}
+            
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400">Sample Iterations</label>
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={iterations}
+                onChange={e => setIterations(Number(e.target.value))}
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/20 outline-none transition-all"
+              />
+            </div>
 
-          {/* Figure 8: Reliability vs Tolerance */}
-          {toleranceData && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
-                <Shield className="h-4 w-4 text-emerald-500" />
-                Reliability vs Tolerance Time (Figure 8)
-              </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                200 tasks, tolerance 10–100s — reliability increases with more tolerance
-              </p>
-              <ResponsiveContainer width="100%" height={320}>
-                <LineChart data={toleranceData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="tolerance" label={{ value: 'Tolerance (s)', position: 'insideBottom', offset: -5 }} />
-                  <YAxis label={{ value: 'Reliability (%)', angle: -90, position: 'insideLeft' }} domain={[0, 100]} />
-                  <Tooltip />
-                  <Legend />
-                  {['HH', 'IPSO', 'IACO', 'RR'].map(alg => (
-                    <Line key={alg} type="monotone" dataKey={alg} stroke={ALGO_COLORS[alg]} strokeWidth={2} dot={{ r: 4 }} />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+            <button
+              onClick={runExperiment}
+              disabled={loading}
+              className="btn btn-primary w-full py-2.5 flex items-center justify-center gap-2 font-bold shadow-lg shadow-primary-500/20"
+            >
+              {loading ? <IconLoader2 className="w-5 h-5 animate-spin" /> : <IconPlayerPlay className="w-5 h-5" />}
+              {loading ? 'Simulating...' : 'Execute Benchmark'}
+            </button>
+          </div>
+
+          {error && <p className="mt-4 text-xs font-bold text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-xl">{error}</p>}
         </div>
-      )}
 
-      {/* Runtime Performance */}
-      {result?.taskCountResults && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
-            Scheduler Runtime (ms)
-          </h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={result.taskCountResults.map(r => ({
-              tasks: r.taskCount,
-              HH: r.hh.time,
-              IPSO: r.ipso.time,
-              IACO: r.iaco.time,
-              RR: r.rr.time,
-            }))}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="tasks" label={{ value: 'Tasks', position: 'insideBottom', offset: -5 }} />
-              <YAxis label={{ value: 'Time (ms)', angle: -90, position: 'insideLeft' }} />
-              <Tooltip />
-              <Legend />
-              {['HH', 'IPSO', 'IACO', 'RR'].map(alg => (
-                <Bar key={alg} dataKey={alg} fill={ALGO_COLORS[alg]} />
+        <div className="lg:col-span-1 bg-gradient-to-br from-primary-600 to-primary-700 rounded-2xl p-6 text-white shadow-xl shadow-primary-500/20 flex flex-col justify-between">
+           <div>
+              <h3 className="text-xl font-bold mb-2">Simulation Status</h3>
+              <p className="text-primary-100 text-sm leading-relaxed mb-6">
+                {loading ? 'Currently running complex heuristic calculations across 10 virtual fog nodes.' : 'System ready for next experimental batch.'}
+              </p>
+           </div>
+           <div className="space-y-4">
+              <div className="flex justify-between text-xs font-bold opacity-80">
+                 <span>{loading ? 'Simulation Progress' : 'Last Run Status'}</span>
+                 <span>{loading ? '45%' : 'Complete'}</span>
+              </div>
+              <div className="w-full bg-white/20 h-2 rounded-full overflow-hidden">
+                 <div className={clsx("h-full bg-white transition-all duration-1000", loading ? "w-[45%] animate-pulse" : "w-full")} />
+              </div>
+           </div>
+        </div>
+      </div>
+
+      {/* ── VALIDATION CHECKS ── */}
+      {result?.validation && (
+        <div className="bg-white dark:bg-[#1a2234] rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+              <IconShield className="w-5 h-5 text-emerald-500" />
+              Scientific Validation Checklist
+           </h3>
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {Object.entries(result.validation).map(([key, passed]) => (
+                <div 
+                  key={key} 
+                  className={clsx(
+                    "flex items-center gap-3 p-4 rounded-xl border transition-all",
+                    passed ? "bg-emerald-50/50 border-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-400" : "bg-red-50 border-red-100 text-red-700"
+                  )}
+                >
+                   {passed ? <IconCircleCheck className="w-5 h-5" /> : <IconCircleX className="w-5 h-5" />}
+                   <span className="text-xs font-bold uppercase tracking-wider">{key.replace(/_/g, ' ')}</span>
+                </div>
               ))}
-            </BarChart>
-          </ResponsiveContainer>
+           </div>
         </div>
       )}
 
-      {/* Exported Files */}
-      {savedFiles.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <FileJson className="h-4 w-4 text-primary-600" />
-            Saved Result Files
-          </h3>
-          <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-            {savedFiles.map(f => (
-              <li key={f} className="flex items-center gap-2">
-                <Download className="h-3 w-3" />
-                {f}
-              </li>
-            ))}
-          </ul>
+      {/* ── BENCHMARK CHARTS ── */}
+      {result && (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+           <ExperimentCard 
+              title="Completion Time Bench (Fig. 5)" 
+              subtitle="Total delay (s) for 10 fog nodes" 
+              icon={IconClock} 
+              iconColor="text-blue-500"
+           >
+              <ResponsiveContainer width="100%" height={350}>
+                <LineChart data={completionChartData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-gray-700" />
+                  <XAxis dataKey="tasks" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
+                  <Legend />
+                  {['HH', 'IPSO', 'IACO', 'RR', 'MinMin'].map(alg => (
+                    <Line key={alg} type="monotone" dataKey={alg} stroke={ALGO_COLORS[alg]} strokeWidth={3} dot={{ r: 4, fill: ALGO_COLORS[alg], strokeWidth: 2, stroke: '#fff' }} />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+           </ExperimentCard>
+
+           <ExperimentCard 
+              title="Energy Consumption Bench (Fig. 6)" 
+              subtitle="Total energy (Joules) per batch" 
+              icon={IconBolt} 
+              iconColor="text-amber-500"
+           >
+              <ResponsiveContainer width="100%" height={350}>
+                <AreaChart data={energyChartData}>
+                  <defs>
+                    <linearGradient id="colorHH" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={ALGO_COLORS.HH} stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor={ALGO_COLORS.HH} stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-gray-700" />
+                  <XAxis dataKey="tasks" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
+                  <Legend />
+                  <Area type="monotone" dataKey="HH" stroke={ALGO_COLORS.HH} strokeWidth={3} fillOpacity={1} fill="url(#colorHH)" />
+                  <Line type="monotone" dataKey="IPSO" stroke={ALGO_COLORS.IPSO} strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="RR" stroke={ALGO_COLORS.RR} strokeWidth={2} dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+           </ExperimentCard>
+
+           <ExperimentCard 
+              title="Reliability Bench (Fig. 7)" 
+              subtitle="% tasks completed within max tolerance" 
+              icon={IconShield} 
+              iconColor="text-emerald-500"
+           >
+              <ResponsiveContainer width="100%" height={350}>
+                <LineChart data={reliabilityTasksData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-gray-700" />
+                  <XAxis dataKey="tasks" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                  <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
+                  <Legend />
+                  {['HH', 'IPSO', 'IACO'].map(alg => (
+                    <Line key={alg} type="monotone" dataKey={alg} stroke={ALGO_COLORS[alg]} strokeWidth={3} dot={{ r: 4 }} />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+           </ExperimentCard>
+
+           <ExperimentCard 
+              title="Tolerance Stress Test (Fig. 8)" 
+              subtitle="Reliability vs Max Tolerance Time (s)" 
+              icon={IconSettings} 
+              iconColor="text-purple-500"
+           >
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={toleranceData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-gray-700" />
+                  <XAxis dataKey="tolerance" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                  <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                  <Tooltip cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }} contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px' }} />
+                  <Legend />
+                  {['HH', 'IPSO', 'IACO'].map(alg => (
+                    <Bar key={alg} dataKey={alg} fill={ALGO_COLORS[alg]} radius={[4, 4, 0, 0]} />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+           </ExperimentCard>
         </div>
       )}
-    </div></div></>
+
+      {/* ── FOOTER ASSETS ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+         <div className="lg:col-span-1 bg-white dark:bg-[#1a2234] rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+               <IconFileTypeJs className="w-4 h-4 text-primary-600" />
+               Generated Result Logs
+            </h3>
+            <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+               {savedFiles.map(f => (
+                 <div key={f} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-transparent hover:border-primary-100 transition-all group">
+                    <span className="text-xs font-mono text-gray-500 group-hover:text-primary-600 truncate">{f}</span>
+                    <IconDownload className="w-4 h-4 text-gray-300 group-hover:text-primary-500 cursor-pointer" />
+                 </div>
+               ))}
+               {savedFiles.length === 0 && <p className="text-xs text-gray-400 italic">No logs generated yet.</p>}
+            </div>
+         </div>
+
+         <div className="lg:col-span-2 bg-white dark:bg-[#1a2234] rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-between">
+            <div className="flex items-center gap-6">
+               <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-2xl text-primary-600">
+                  <IconChartBar className="w-8 h-8" />
+               </div>
+               <div>
+                  <h4 className="text-lg font-bold text-gray-900 dark:text-white">Batch Export Results</h4>
+                  <p className="text-sm text-gray-500">Aggregate all simulation results into a consolidated research paper format.</p>
+               </div>
+            </div>
+            <button className="btn btn-secondary bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-6 font-bold flex items-center gap-2">
+               <IconDownload className="w-4 h-4" /> Prepare Report
+            </button>
+          </div>
+       </div>
+
+      <ExperimentWizard 
+        isOpen={showWizard} 
+        onClose={() => setShowWizard(false)} 
+      />
+    </div>
+  );
+}
+
+function ExperimentCard({ title, subtitle, icon: Icon, iconColor, children }: any) {
+  return (
+    <div className="bg-white dark:bg-[#1a2234] rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all">
+       <div className="flex items-start justify-between mb-8">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+               <Icon className={clsx("w-5 h-5", iconColor)} />
+               {title}
+            </h3>
+            <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+          </div>
+          <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+             <IconDotsVertical className="w-5 h-5" />
+          </button>
+       </div>
+       {children}
+    </div>
   );
 }

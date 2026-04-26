@@ -1,4 +1,4 @@
-import { X, Keyboard } from 'lucide-react';
+import { IconX, IconKeyboard } from '@tabler/icons-react';
 import { useEffect } from 'react';
 
 interface ShortcutEntry {
@@ -48,7 +48,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShor
       >
         <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
-            <Keyboard className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+            <IconKeyboard className="h-5 w-5 text-primary-600 dark:text-primary-400" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Keyboard Shortcuts
             </h3>
@@ -57,7 +57,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShor
             onClick={onClose}
             className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <IconX className="h-5 w-5 text-gray-500" />
           </button>
         </div>
 

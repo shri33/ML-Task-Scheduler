@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowRight, Home, ShieldAlert } from 'lucide-react';
+import { IconArrowRight, IconHome, IconShieldFilled } from '@tabler/icons-react';
 
 export default function NotLoggedIn() {
   const navigate = useNavigate();
@@ -7,41 +7,36 @@ export default function NotLoggedIn() {
   const from = (location.state as { from?: string } | null)?.from;
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center px-6 relative overflow-hidden selection-red">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a0505] to-black" />
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] opacity-40" />
+    <div className="min-h-screen bg-slate-50 dark:bg-gray-950 text-gray-900 dark:text-white flex items-center justify-center px-6 relative overflow-hidden transition-colors">
+      <div className="absolute inset-0 bg-gradient-to-b from-primary-50/50 to-transparent dark:from-primary-900/10 dark:to-transparent" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(37,99,235,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(37,99,235,0.03)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
 
       <div className="relative z-10 max-w-2xl w-full text-center">
-        <div className="inline-flex items-center justify-center w-18 h-18 rounded-full border border-[#ef233c]/30 bg-[#ef233c]/10 mb-6">
-          <ShieldAlert className="h-8 w-8 text-[#ef233c]" />
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full border border-primary-200 dark:border-primary-800 bg-primary-100/50 dark:bg-primary-900/30 mb-6 shadow-sm">
+          <IconShieldFilled className="h-10 w-10 text-primary-600 dark:text-primary-400" />
         </div>
 
-        <h1 className="text-4xl md:text-6xl font-bold font-manrope tracking-tight mb-4">
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-4 text-gray-900 dark:text-white">
           You are not logged in
         </h1>
-        <p className="text-zinc-400 text-lg md:text-xl max-w-xl mx-auto leading-relaxed">
+        <p className="text-gray-500 dark:text-gray-400 text-lg md:text-xl max-w-xl mx-auto leading-relaxed">
           This page is protected. Please sign in first to continue{from ? ` to ${from}` : ''}.
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <button
             onClick={() => navigate('/login')}
-            className="group relative inline-flex items-center justify-center overflow-hidden rounded-full bg-black px-7 py-3 transition-transform active:scale-95 border border-white/10"
+            className="btn btn-primary text-base px-8 py-3.5 gap-2 shadow-lg shadow-primary-500/25 w-full sm:w-auto"
           >
-            <span className="absolute inset-0 border border-white/10 rounded-full" />
-            <span className="absolute inset-[-100%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,transparent_75%,#ef233c_100%)] opacity-100" />
-            <span className="absolute inset-[2px] rounded-full bg-gradient-to-b from-[#24030a] via-[#0a0002] to-black" />
-            <span className="relative z-10 flex items-center gap-2 font-medium text-white">
-              Sign In
-              <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-            </span>
+            Sign In
+            <IconArrowRight className="h-5 w-5" />
           </button>
 
           <button
             onClick={() => navigate('/')}
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-7 py-3 text-white hover:bg-white/[0.06] transition-colors"
+            className="btn btn-secondary text-base px-8 py-3.5 gap-2 w-full sm:w-auto"
           >
-            <Home className="h-5 w-5" />
+            <IconHome className="h-5 w-5" />
             Go Home
           </button>
         </div>

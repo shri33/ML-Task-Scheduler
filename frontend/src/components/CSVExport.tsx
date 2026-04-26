@@ -1,4 +1,4 @@
-import { FileSpreadsheet, Loader2 } from 'lucide-react';
+import { IconFileSpreadsheet, IconLoader2 } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useToast } from '../contexts/ToastContext';
 
@@ -81,9 +81,9 @@ export default function CSVExport() {
         className="btn btn-secondary flex items-center gap-2"
       >
         {downloading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <IconLoader2 className="h-4 w-4 animate-spin" />
         ) : (
-          <FileSpreadsheet className="h-4 w-4" />
+          <IconFileSpreadsheet className="h-4 w-4" />
         )}
         {downloading ? 'Exporting...' : 'Export CSV'}
       </button>
@@ -102,7 +102,7 @@ export default function CSVExport() {
                   onClick={() => handleDownload(option)}
                   className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-3"
                 >
-                  <FileSpreadsheet className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <IconFileSpreadsheet className="h-4 w-4 text-green-600 dark:text-green-400" />
                   <div className="flex-1">
                     <p className="font-medium text-gray-900 dark:text-white text-sm">
                       {option.name}

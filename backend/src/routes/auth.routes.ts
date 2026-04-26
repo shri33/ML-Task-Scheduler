@@ -31,7 +31,13 @@ const DEMO_PASSWORD = 'password123';
 const OAUTH_STATE_COOKIE = 'oauth_state';
 
 function getFrontendBaseUrl(): string {
-  return process.env.FRONTEND_URL || process.env.CORS_ORIGIN || 'http://localhost:3000';
+  const envUrl = process.env.FRONTEND_URL;
+  if (envUrl && envUrl.startsWith('http')) return envUrl;
+  
+  const cors = process.env.CORS_ORIGIN;
+  if (cors && cors.startsWith('http')) return cors;
+  
+  return 'http://localhost:3000';
 }
 
 function getGoogleRedirectUri(req: Request): string {
@@ -143,59 +149,77 @@ router.get('/google/callback', async (req: Request, res: Response) => {
       return res.redirect(frontendAuthRedirect('/login?error=google_email_not_verified'));
     }
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email: profile.email }
-    });
+    let user;
+    try {
+      let existingUser = await prisma.user.findUnique({
+        where: { email: profile.email }
+      });
 
-    let user = existingUser;
-    if (!user) {
-      const generatedPassword = crypto.randomBytes(32).toString('hex');
-      const hashedPassword = await bcrypt.hash(generatedPassword, 12);
+      user = existingUser;
+      if (!user) {
+        const generatedPassword = crypto.randomBytes(32).toString('hex');
+        const hashedPassword = await bcrypt.hash(generatedPassword, 12);
 
-      user = await prisma.user.create({
-        data: {
-          email: profile.email,
-          name: profile.name || profile.email.split('@')[0],
-          password: hashedPassword,
-          notifications: {
-            create: {
-              emailOnTaskComplete: true,
-              emailOnTaskFailed: true,
-              emailDailySummary: false,
+        user = await prisma.user.create({
+          data: {
+            email: profile.email,
+            name: profile.name || profile.email.split('@')[0],
+            password: hashedPassword,
+            notifications: {
+              create: {
+                emailOnTaskComplete: true,
+                emailOnTaskFailed: true,
+                emailDailySummary: false,
+              }
             }
           }
+        });
+      }
+
+      if (!user.isActive) {
+        return res.redirect(frontendAuthRedirect('/login?error=account_deactivated'));
+      }
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLogin: new Date() }
+      });
+
+      const { accessToken, refreshToken } = generateTokens({
+        id: user.id,
+        email: user.email,
+        role: user.role
+      });
+
+      await prisma.refreshToken.create({
+        data: {
+          token: refreshToken,
+          userId: user.id,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         }
       });
-    }
 
-    if (!user.isActive) {
-      return res.redirect(frontendAuthRedirect('/login?error=account_deactivated'));
-    }
+      setTokenCookies(res, accessToken, refreshToken);
+      setCsrfCookie(res);
+      res.clearCookie(OAUTH_STATE_COOKIE, { path: '/' });
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLogin: new Date() }
-    });
-
-    const { accessToken, refreshToken } = generateTokens({
-      id: user.id,
-      email: user.email,
-      role: user.role
-    });
-
-    await prisma.refreshToken.create({
-      data: {
-        token: refreshToken,
-        userId: user.id,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      return res.redirect(frontendAuthRedirect('/dashboard'));
+    } catch (dbError) {
+      console.error('Database error during Google auth:', dbError);
+      // Fallback to DEMO USER if database is completely offline
+      if (DEMO_ENABLED) {
+        const { accessToken, refreshToken } = generateTokens({
+          id: DEMO_USER.id,
+          email: DEMO_USER.email,
+          role: DEMO_USER.role
+        });
+        setTokenCookies(res, accessToken, refreshToken);
+        setCsrfCookie(res);
+        res.clearCookie(OAUTH_STATE_COOKIE, { path: '/' });
+        return res.redirect(frontendAuthRedirect('/dashboard'));
       }
-    });
-
-    setTokenCookies(res, accessToken, refreshToken);
-    setCsrfCookie(res);
-    res.clearCookie(OAUTH_STATE_COOKIE, { path: '/' });
-
-    return res.redirect(frontendAuthRedirect('/dashboard'));
+      return res.redirect(frontendAuthRedirect('/login?error=google_auth_failed'));
+    }
   } catch {
     return res.redirect(frontendAuthRedirect('/login?error=google_auth_failed'));
   }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Edit2, Calendar } from 'lucide-react';
+import { IconX, IconEdit, IconCalendar } from '@tabler/icons-react';
 import { Task, CreateTaskInput } from '../types';
 import { taskApi } from '../lib/api';
 import { useToast } from '../contexts/ToastContext';
@@ -59,14 +59,14 @@ export default function TaskEditModal({ task, onClose, onUpdated }: TaskEditModa
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
-            <Edit2 className="h-5 w-5 text-primary-600" />
+            <IconEdit className="h-5 w-5 text-primary-600" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit Task</h3>
           </div>
           <button
             onClick={onClose}
             className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <IconX className="h-5 w-5 text-gray-500" />
           </button>
         </div>
 
@@ -148,7 +148,7 @@ export default function TaskEditModal({ task, onClose, onUpdated }: TaskEditModa
               Due Date (Optional)
             </label>
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <IconCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="datetime-local"
                 value={formData.dueDate ? new Date(formData.dueDate).toISOString().slice(0, 16) : ''}

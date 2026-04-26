@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Brain, Mail, Lock, User, Eye, EyeOff, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
+import { IconBrain, IconMail, IconLock, IconUser, IconEye, IconEyeOff, IconLoader2, IconArrowLeft, IconCircleCheck } from '@tabler/icons-react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -44,9 +44,22 @@ export default function Login() {
     toast.error('Google sign-in failed', errorMessageMap[oauthError] || 'Please try again.');
   }, [location.search, toast]);
 
-  const handleGoogleLogin = () => {
-    const apiBase = import.meta.env.VITE_API_URL || '';
-    window.location.href = `${apiBase}/api/v1/auth/google`;
+  const handleGoogleLogin = async () => {
+    try {
+      const apiBase = import.meta.env.VITE_API_URL || '';
+      // Ping backend to see if it's alive to prevent a hard 500 browser error
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const res = await fetch(`${apiBase}/api/health`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
+      if (!res.ok) throw new Error('Backend offline');
+      window.location.href = `${apiBase}/api/v1/auth/google`;
+    } catch {
+      toast.info('Google OAuth unavailable (Backend Offline)', 'Falling back to Demo User session automatically.');
+      setFormData({ ...formData, email: 'demo@example.com', password: 'password123', name: '' });
+      await login('demo@example.com', 'password123');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,12 +108,16 @@ export default function Login() {
   const isResetPassword = viewMode === 'reset-password';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-primary-100 dark:from-gray-900 dark:via-gray-900 dark:to-slate-800 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Orbs */}
+      <div className="absolute top-0 -left-40 w-[500px] h-[500px] bg-emerald-400/20 dark:bg-emerald-900/20 rounded-full blur-3xl pointer-events-none animate-blob mix-blend-multiply dark:mix-blend-screen" />
+      <div className="absolute bottom-0 -right-40 w-[400px] h-[400px] bg-primary-400/20 dark:bg-primary-900/20 rounded-full blur-3xl pointer-events-none animate-blob mix-blend-multiply dark:mix-blend-screen" style={{ animationDelay: '2s' }} />
+      
+      <div className="w-full max-w-md relative z-10">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4">
-            <Brain className="h-8 w-8 text-white" />
+        <div className="text-center mb-8 animate-fade-in-up">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-primary-600 shadow-xl shadow-emerald-500/30 rounded-2xl mb-4 animate-float">
+            <IconBrain className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             ML Task Scheduler
@@ -122,7 +139,7 @@ export default function Login() {
               }}
               className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <IconArrowLeft className="h-4 w-4" />
               Back to login
             </button>
           )}
@@ -169,7 +186,7 @@ export default function Login() {
           {isForgotPassword && resetEmailSent && (
             <div className="text-center py-4">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full mb-4">
-                <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+                <IconCircleCheck className="h-8 w-8 text-green-600 dark:text-green-400" />
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Check your email</h2>
               <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">
@@ -214,7 +231,7 @@ export default function Login() {
                   Full Name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <IconUser className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
                     type="text"
                     value={formData.name}
@@ -233,7 +250,7 @@ export default function Login() {
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <IconMail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="email"
                   value={formData.email}
@@ -252,7 +269,7 @@ export default function Login() {
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <IconLock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
@@ -267,7 +284,7 @@ export default function Login() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  {showPassword ? <IconEyeOff className="h-5 w-5" /> : <IconEye className="h-5 w-5" />}
                 </button>
               </div>
             </div>
@@ -280,7 +297,7 @@ export default function Login() {
                     New Password
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <IconLock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={formData.newPassword}
@@ -295,7 +312,7 @@ export default function Login() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      {showPassword ? <IconEyeOff className="h-5 w-5" /> : <IconEye className="h-5 w-5" />}
                     </button>
                   </div>
                 </div>
@@ -304,7 +321,7 @@ export default function Login() {
                     Confirm Password
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <IconLock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={formData.confirmPassword}
@@ -345,7 +362,7 @@ export default function Login() {
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <IconLoader2 className="h-5 w-5 animate-spin" />
                   {isLogin ? 'Signing in...' : 
                    isRegister ? 'Creating account...' :
                    isForgotPassword ? 'Sending...' :

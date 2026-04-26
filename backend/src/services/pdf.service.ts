@@ -16,7 +16,7 @@ class PDFService {
       prisma.task.findMany({
         include: { resource: { select: { name: true } } },
         orderBy: { createdAt: 'desc' },
-        take: 50
+        take: 100
       }),
       prisma.resource.findMany(),
       this.getTaskStats()
@@ -66,8 +66,8 @@ class PDFService {
     doc.font('Helvetica').fontSize(8);
     let y = tableTop + 20;
 
-    tasks.slice(0, 20).forEach((task) => {
-      if (y > 700) {
+    tasks.forEach((task) => {
+      if (y > 720) {
         doc.addPage();
         y = 50;
       }
@@ -99,7 +99,15 @@ class PDFService {
 
     resources.forEach((resource) => {
       doc.fontSize(10).font('Helvetica');
-      doc.text(`${resource.name}: ${resource.currentLoad}% load (${resource.status})`);
+      doc.text(`${resource.name}: ${resource.currentLoad}% load (${resource.status}) - Capacity: ${resource.capacity}`);
+      
+      // Add a small load indicator
+      const barWidth = 100;
+      const currentY = doc.y;
+      doc.rect(450, currentY - 10, barWidth, 8).stroke();
+      doc.rect(450, currentY - 10, (resource.currentLoad / 100) * barWidth, 8)
+         .fill(resource.currentLoad > 80 ? '#ef4444' : '#22c55e');
+      doc.fillColor('black'); // Reset fill color for text
     });
 
     // Footer

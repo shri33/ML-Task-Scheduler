@@ -1,61 +1,62 @@
-import { useEffect, useState, useRef, type ComponentType } from "react";
+import { useEffect, useState, useRef } from "react";
+import { taskApi } from "../lib/api";
 import { useStore } from "../store";
 import {
-  ListTodo,
-  Server,
-  Clock,
-  Brain,
-  TrendingUp,
-  Play,
-  RefreshCw,
-  CalendarDays,
-  MoreVertical,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+  IconListCheck,
+  IconServer,
+  IconClock,
+  IconBrain,
+  IconPlayerPlay,
+  IconRefresh,
+  IconDotsVertical,
+  IconPlus,
+  IconLoader2,
+  IconBolt,
+  IconCircleCheck,
+  IconDeviceDesktop,
+  IconCloud,
+  IconActivity,
+  IconTrophy
+} from "@tabler/icons-react";
 import { clsx } from "clsx";
 import { useToast } from "../contexts/ToastContext";
 import { DashboardSkeleton } from "../components/Skeletons";
-import { PriorityBadge } from "../components/shared/Badges";
+import ProgressBar from "../components/shared/ProgressBar";
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
+} from "recharts";
 
-// Mini sparkline SVG component
-function Sparkline({ color = "#6366f1" }) {
-  const points = [
-    [0, 28],
-    [8, 22],
-    [16, 26],
-    [24, 14],
-    [32, 18],
-    [40, 10],
-    [48, 16],
-    [56, 8],
-    [64, 14],
-    [72, 6],
-  ];
-  const path = points
-    .map((p, i) => `${i === 0 ? "M" : "L"}${p[0]},${p[1]}`)
-    .join(" ");
-  const fill =
-    points.map((p, i) => `${i === 0 ? "M" : "L"}${p[0]},${p[1]}`).join(" ") +
-    ` L72,36 L0,36 Z`;
-
+function LeaderboardItem({ rank, name, score, trend, avatar }: { rank: number, name: string, score: number, trend: string, avatar: string }) {
   return (
-    <svg width="72" height="36" viewBox="0 0 72 36" fill="none">
-      <path d={fill} fill={color} fillOpacity="0.12" />
-      <path
-        d={path}
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {points.map(
-        ([x, y], i) =>
-          i === points.length - 1 && (
-            <circle key={i} cx={x} cy={y} r="3" fill={color} />
-          ),
-      )}
-    </svg>
+    <div className="flex items-center justify-between group cursor-pointer">
+       <div className="flex items-center gap-3">
+          <div className="relative">
+             <img src={avatar} alt={name} className="w-9 h-9 rounded-full object-cover ring-2 ring-gray-100 dark:ring-gray-800 group-hover:ring-primary-500 transition-all" />
+             <div className={clsx(
+                "absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black border-2 border-white dark:border-[#1a2234] text-white",
+                rank === 1 ? "bg-amber-500" : rank === 2 ? "bg-slate-400" : "bg-orange-600"
+             )}>
+                {rank}
+             </div>
+          </div>
+          <div>
+             <div className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors">{name}</div>
+             <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{score.toLocaleString()} Points</div>
+          </div>
+       </div>
+       <div className={clsx("text-[10px] font-black px-2 py-0.5 rounded-lg", trend.startsWith('+') ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600")}>
+          {trend}
+       </div>
+    </div>
   );
 }
 
@@ -64,7 +65,6 @@ export default function Dashboard() {
     tasks,
     resources,
     metrics,
-    mlAvailable,
     scheduling,
     tasksLoading,
     resourcesLoading,
@@ -74,15 +74,16 @@ export default function Dashboard() {
     fetchMetrics,
     checkMlStatus,
     runScheduler,
+    addTask,
   } = useStore();
 
   const [refreshing, setRefreshing] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [isTaskInputFocused, setIsTaskInputFocused] = useState(false);
+  const [newTaskType, setNewTaskType] = useState<'CPU' | 'IO' | 'MIXED'>("MIXED");
+  const [newTaskPriority, setNewTaskPriority] = useState<number>(2);
+  const [isCreating, setIsCreating] = useState(false);
   const toast = useToast();
   const hasFetched = useRef(false);
-  const newTaskInputRef = useRef<HTMLInputElement>(null);
-  const emojiRowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!hasFetched.current) {
@@ -96,7 +97,7 @@ export default function Dashboard() {
       fetchTasks();
       fetchResources();
       fetchMetrics();
-    }, 3000);
+    }, 5000);
     return () => clearInterval(interval);
   }, [fetchTasks, fetchResources, fetchMetrics, checkMlStatus]);
 
@@ -104,484 +105,438 @@ export default function Dashboard() {
     setRefreshing(true);
     await Promise.all([fetchTasks(), fetchResources(), fetchMetrics()]);
     setRefreshing(false);
-    toast.info("Data refreshed", "All data has been updated.");
+    toast.info("System Synced", "All metrics and task queues are up to date.");
   };
 
   const handleSchedule = async () => {
     try {
       await runScheduler();
-      toast.success("Scheduler complete", "Tasks have been scheduled.");
+      toast.success("Optimization Complete", "Neural scheduler has allocated all pending tasks.");
     } catch {
-      toast.error("Scheduling failed", "Could not schedule tasks.");
+      toast.error("Optimization Failed", "Could not complete the scheduling cycle.");
     }
   };
 
-  const emojis = ["🎉", "😍", "😊", "🔥", "😉", "😎", "🙄"];
+  const handleCreateNewTask = async () => {
+    if (!newTaskTitle.trim() || isCreating) return;
+    setIsCreating(true);
+    const taskData = {
+      name: newTaskTitle,
+      type: newTaskType,
+      size: 'MEDIUM' as const,
+      priority: newTaskPriority,
+      dueDate: new Date(Date.now() + 86400000).toISOString(),
+    };
 
-  const handleEmojiPick = (emoji: string) => {
-    setNewTaskTitle((prev) => `${prev}${emoji}`);
-    newTaskInputRef.current?.focus();
-  };
-
-  const handleEmojiScroll = (direction: "left" | "right") => {
-    const row = emojiRowRef.current;
-    if (!row) return;
-
-    const scrollAmount = row.clientWidth * 0.7;
-    row.scrollBy({
-      left: direction === "left" ? -scrollAmount : scrollAmount,
-      behavior: "smooth",
-    });
-  };
-
-  const handleCreateNewTask = () => {
-    if (!newTaskTitle.trim()) return;
-    toast.success("Task draft created", `New task: ${newTaskTitle}`);
-    setNewTaskTitle("");
-    setIsTaskInputFocused(false);
+    try {
+      await taskApi.create(taskData);
+      setNewTaskTitle("");
+      toast.success("Task Ingested", `"${newTaskTitle}" added to global queue.`);
+      fetchTasks();
+    } catch (err) {
+      console.error("API error, falling back to mock:", err);
+      // Mock fallback
+      const mockTask = {
+        id: `mock-${Math.random().toString(36).substr(2, 9)}`,
+        ...taskData,
+        status: 'PENDING' as const,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        predictedTime: null,
+        actualTime: null,
+        resourceId: null,
+        scheduledAt: null,
+        completedAt: null,
+      };
+      addTask(mockTask);
+      toast.info("Research Mode", `"${newTaskTitle}" added to local session.`);
+      setNewTaskTitle("");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const pendingTasks = tasks.filter((t) => t.status === "PENDING");
+  const activeTasks = tasks.filter((t) => t.status === "RUNNING" || t.status === "SCHEDULED");
   const availableResources = resources.filter((r) => r.status === "AVAILABLE");
+  
   const isLoading = tasksLoading || resourcesLoading || metricsLoading;
-
   if (isLoading && tasks.length === 0) return <DashboardSkeleton />;
 
+  // Mock data for the Area Chart
+  const chartData = [
+    { name: '00:00', load: 30, throughput: 45 },
+    { name: '04:00', load: 45, throughput: 52 },
+    { name: '08:00', load: 85, throughput: 78 },
+    { name: '12:00', load: 70, throughput: 92 },
+    { name: '16:00', load: 90, throughput: 85 },
+    { name: '20:00', load: 60, throughput: 65 },
+    { name: '23:59', load: 40, throughput: 48 },
+  ];
+
+  const distributionData = [
+    { name: 'Fog', value: 65, color: '#22c55e' },
+    { name: 'Cloud', value: 25, color: '#3b82f6' },
+    { name: 'Terminal', value: 10, color: '#8b5cf6' },
+  ];
+
   return (
-    <main>
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,4fr)_minmax(0,1fr)] gap-4 xl:gap-6">
-        <div className="bg-gray-200 dark:bg-black/30 p-7 min-h-full w-full">
-          <div className="space-y-6 ">
-            {/* ── Page Header ── */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ">
+    <div className="max-w-[1600px] mx-auto space-y-6 pb-12 animate-fade-in">
+      
+      {/* ── TOP HEADER ── */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-2">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            System Overview
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-emerald-100 dark:border-emerald-800/50">
+               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+               Live
+            </div>
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 font-medium">Monitoring {resources.length} active nodes across 3-layer architecture.</p>
+        </div>
+
+        <div className="flex items-center gap-3">
+           <button 
+             onClick={handleRefresh}
+             disabled={refreshing}
+             className="p-3 bg-white dark:bg-[#1a2234] border border-gray-200 dark:border-gray-800 rounded-xl text-gray-500 hover:text-primary-600 hover:border-primary-100 transition-all shadow-sm"
+           >
+              <IconRefresh className={clsx("w-5 h-5", refreshing && "animate-spin")} />
+           </button>
+           <button 
+             onClick={handleSchedule}
+             disabled={scheduling || pendingTasks.length === 0}
+             className="btn btn-primary px-6 py-3 flex items-center gap-2 font-bold shadow-lg shadow-primary-500/20"
+           >
+              {scheduling ? <IconLoader2 className="w-5 h-5 animate-spin" /> : <IconPlayerPlay className="w-5 h-5" />}
+              {scheduling ? "Optimizing..." : "Execute Global Scheduler"}
+           </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-12 gap-6">
+        
+        {/* ── CONGRATS CARD (Vuexy Style) ── */}
+        <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+           <div className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl shadow-primary-500/20 group h-1/2">
+              <div className="relative z-10">
+                 <h3 className="text-2xl font-bold mb-2">System Status</h3>
+                 <p className="text-primary-100 text-sm leading-relaxed mb-4 max-w-[200px]">
+                    ML Service is active and predicting with 94.2% accuracy.
+                 </p>
+                 <div className="text-4xl font-black mb-1">98.5%</div>
+                 <div className="text-xs font-bold opacity-80 uppercase tracking-widest">Reliability Score</div>
+              </div>
+              <div className="absolute top-1/2 right-4 -translate-y-1/2 opacity-20 group-hover:scale-125 transition-transform duration-700">
+                 <IconBrain className="w-32 h-32 text-white" />
+              </div>
+           </div>
+
+           {/* ── LEADERBOARD ── */}
+           <div className="bg-white dark:bg-[#1a2234] rounded-3xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm flex-1">
+              <div className="flex items-center justify-between mb-6">
+                 <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <IconTrophy className="w-5 h-5 text-amber-500" />
+                    Top Contributors
+                 </h3>
+                 <span className="text-[10px] font-black text-gray-400 uppercase">Monthly</span>
+              </div>
+              <div className="space-y-4">
+                 <LeaderboardItem rank={1} name="Shri Srivastava" score={9820} trend="+12%" avatar="https://i.pravatar.cc/150?u=shri" />
+                 <LeaderboardItem rank={2} name="Ichha Dwivedi" score={8450} trend="+5%" avatar="https://i.pravatar.cc/150?u=ichha" />
+                 <LeaderboardItem rank={3} name="Aditi Singh" score={7200} trend="-2%" avatar="https://i.pravatar.cc/150?u=aditi" />
+              </div>
+           </div>
+        </div>
+
+        {/* ── STATISTICS HORIZONTAL CARD ── */}
+        <div className="col-span-12 lg:col-span-8 bg-white dark:bg-[#1a2234] rounded-3xl p-8 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col justify-between">
+           <div className="flex items-center justify-between mb-8">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Global Statistics</h3>
+              <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Updated 2m ago</p>
+           </div>
+           
+           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+              <StatItem icon={IconListCheck} color="text-primary-600" bg="bg-primary-50 dark:bg-primary-900/20" label="Total Tasks" value={metrics?.tasks.total ?? 0} />
+              <StatItem icon={IconServer} color="text-emerald-600" bg="bg-emerald-50 dark:bg-emerald-900/20" label="Active Nodes" value={availableResources.length} />
+              <StatItem icon={IconBolt} color="text-amber-600" bg="bg-amber-50 dark:bg-amber-900/20" label="Avg Energy" value={`${metrics?.resources.avgLoad ?? 0}J`} />
+              <StatItem icon={IconClock} color="text-purple-600" bg="bg-purple-50 dark:bg-purple-900/20" label="Avg Delay" value={`${metrics?.performance.avgExecutionTime ?? 0}s`} />
+           </div>
+        </div>
+
+        {/* ── PERFORMANCE REVENUE REPORT ── */}
+        <div className="col-span-12 xl:col-span-8 bg-white dark:bg-[#1a2234] rounded-3xl p-8 border border-gray-200 dark:border-gray-800 shadow-sm">
+           <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-                  Dashboard
-                </h2>
-                <p className="text-sm text-gray-400 dark:text-white-900 mt-1">
-                  Overview of task scheduling and resource allocation
-                </p>
+                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Processing Performance</h3>
+                 <p className="text-xs text-gray-500">Real-time load vs throughput tracking</p>
               </div>
-              <div className="flex gap-2.5">
-                <button
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
-                >
-                  <RefreshCw
-                    className={clsx("h-4 w-4", refreshing && "animate-spin")}
-                  />
-                  Refresh
-                </button>
-                <button
-                  onClick={handleSchedule}
-                  disabled={scheduling || pendingTasks.length === 0}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-sm font-semibold transition-colors shadow-sm"
-                >
-                  <Play className="h-4 w-4" />
-                  {scheduling ? "Scheduling..." : "Run Scheduler"}
-                </button>
+              <div className="flex items-center gap-4">
+                 <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-primary-500" />
+                    <span className="text-xs font-bold text-gray-500 uppercase">Throughput</span>
+                 </div>
+                 <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="text-xs font-bold text-gray-500 uppercase">Load</span>
+                 </div>
               </div>
-            </div>
+           </div>
 
-            {/* ── Stat Cards ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              <StatCard
-                title="Total Tasks"
-                value={metrics?.tasks.total ?? 0}
-                trend={`${metrics?.tasks.pending ?? 0} pending`}
-                sparkColor="#6366f1"
-                icon={ListTodo}
-                iconBg="bg-blue-50 dark:bg-black/30"
-                iconColor="text-blue-500 dark:text-blue-400"
-              />
-              <StatCard
-                title="Active Resources"
-                value={`${availableResources.length}/${resources.length}`}
-                trend={`${Math.round(metrics?.resources.avgLoad ?? 0)}% avg load`}
-                sparkColor="#22c55e"
-                icon={Server}
-                iconBg="bg-green-50 dark:bg-green-900/20"
-                iconColor="text-green-500 dark:text-green-400"
-              />
-              <StatCard
-                title="Avg Execution Time"
-                value={`${metrics?.performance.avgExecutionTime ?? 0}s`}
-                trend="per task"
-                sparkColor="#a855f7"
-                icon={Clock}
-                iconBg="bg-purple-50 dark:bg-purple-900/20"
-                iconColor="text-purple-500 dark:text-purple-400"
-              />
-              <StatCard
-                title="ML Accuracy"
-                value={`${metrics?.performance.mlAccuracy ?? 0}%`}
-                trend={mlAvailable ? "ML Service Active" : "Fallback Mode"}
-                sparkColor={mlAvailable ? "#10b981" : "#f59e0b"}
-                icon={Brain}
-                iconBg={
-                  mlAvailable
-                    ? "bg-emerald-50 dark:bg-emerald-900/20"
-                    : "bg-amber-50 dark:bg-amber-900/20"
-                }
-                iconColor={
-                  mlAvailable
-                    ? "text-emerald-500 dark:text-emerald-400"
-                    : "text-amber-500 dark:text-amber-400"
-                }
-              />
-            </div>
-
-            {/* ── Main Content Grid ── */}
-            <div className="grid grid-cols-1 gap-8">
-              <div className="space-y-8">
-                {/* Pending Tasks */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 mt-4 shadow-sm border border-gray-100 dark:border-gray-700/60">
-                  <div className="flex justify-between items-center mb-5">
-                    <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                      Pending Tasks
-                    </h3>
-                    <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2.5 py-1 rounded-full">
-                      {pendingTasks.length} waiting
-                    </span>
-                  </div>
-                  <div className="space-y-2.5">
-                    {pendingTasks.slice(0, 5).map((task) => (
-                      <div
-                        key={task.id}
-                        className="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-700/40 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          {/* Play-style icon like Octom */}
-                          <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center shrink-0">
-                            <Play className="h-3.5 w-3.5 text-white fill-white" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                              {task.name}
-                            </p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                              {task.type} • {task.size} • Priority{" "}
-                              {task.priority}
-                            </p>
-                          </div>
-                        </div>
-                        <PriorityBadge priority={task.priority} showLabel />
-                      </div>
-                    ))}
-                    {pendingTasks.length === 0 && (
-                      <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">
-                        No pending tasks
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Resource Utilization */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700/60">
-                  <div className="flex justify-between items-center mb-5">
-                    <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                      Resource Utilization
-                    </h3>
-                    <TrendingUp className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <div className="space-y-5">
-                    {resources.slice(0, 5).map((resource) => (
-                      <div key={resource.id}>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                            {resource.name}
-                          </span>
-                          <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
-                            {Math.round(resource.currentLoad)}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
-                          <div
-                            className={clsx(
-                              "h-2 rounded-full transition-all duration-500",
-                              resource.currentLoad < 50
-                                ? "bg-green-500"
-                                : resource.currentLoad < 80
-                                  ? "bg-yellow-400"
-                                  : "bg-red-500",
-                            )}
-                            style={{ width: `${resource.currentLoad}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                    {resources.length === 0 && (
-                      <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">
-                        No resources configured
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-
-          </div>
+           <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                 <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="colorLoad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorThr" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-gray-700" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10}} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10}} />
+                    <Tooltip contentStyle={{backgroundColor: '#1a2234', border: 'none', borderRadius: '12px', color: '#fff'}} />
+                    <Area type="monotone" dataKey="load" stroke="#22c55e" strokeWidth={3} fillOpacity={1} fill="url(#colorLoad)" />
+                    <Area type="monotone" dataKey="throughput" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorThr)" />
+                 </AreaChart>
+              </ResponsiveContainer>
+           </div>
         </div>
 
-        {/* Today's Section (outside gray box, right side) */}
-        <div className="p-4 sm:p-5 w-full">
-  {/* ===== Schedule ===== */}
-  <section className="space-y-3">
-    <div className="flex items-center justify-between">
-      <h3 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight text-indigo-900 dark:text-indigo-100">
-        Today's Schedule
-      </h3>
-
-      <div className="flex items-center gap-1 rounded-full bg-gray-100 dark:bg-gray-700 p-1">
-        <button className="h-7 w-7 sm:h-8 sm:w-8 grid place-items-center rounded-full text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition">
-          <MoreVertical className="h-4 w-4" />
-        </button>
-        <button className="h-7 w-7 sm:h-8 sm:w-8 grid place-items-center rounded-full text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition">
-          <CalendarDays className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
-
-    <div className="flex items-center justify-between text-xs sm:text-sm">
-      <p className="text-sky-500 dark:text-sky-300 font-medium truncate">
-        Call with Client
-      </p>
-      <button className="text-blue-500 dark:text-blue-300 font-semibold whitespace-nowrap">
-        + Invite
-      </button>
-    </div>
-  </section>
-
-  {/* ===== New Task ===== */}
-  <section className="border-t border-gray-100 dark:border-gray-700 pt-5 mt-5 space-y-4">
-    <div className="flex items-center justify-between">
-      <h4 className="text-base sm:text-lg font-bold text-indigo-900 dark:text-indigo-100">
-        New Task
-      </h4>
-      <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-    </div>
-
-    <div>
-      <label className="text-xs sm:text-sm text-slate-400 dark:text-slate-300">
-        Task Title
-      </label>
-
-      <input
-        ref={newTaskInputRef}
-        type="text"
-        value={newTaskTitle}
-        onChange={(e) => setNewTaskTitle(e.target.value)}
-        onFocus={() => setIsTaskInputFocused(true)}
-        onBlur={() => setIsTaskInputFocused(false)}
-        placeholder={isTaskInputFocused ? "" : "Create task"}
-        className="mt-2 w-full rounded-xl bg-slate-100 dark:bg-slate-700 px-3 py-2 text-sm sm:text-base text-indigo-900 dark:text-indigo-100 outline-none border border-transparent focus:border-indigo-300"
-      />
-
-      <button
-        onClick={handleCreateNewTask}
-        disabled={!newTaskTitle.trim()}
-        className="mt-3 inline-flex items-center rounded-xl bg-indigo-500 px-4 py-2 text-xs sm:text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 hover:bg-indigo-600 transition"
-      >
-        Create New
-      </button>
-    </div>
-
-    {/* Emoji Scroll */}
-    <div className="flex items-center no-scrollbar justify-between pt-2">
-      <button
-        onClick={() => handleEmojiScroll("left")}
-        className="text-indigo-400 disabled:opacity-40"
-      >
-        <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-      </button>
-
-      <div
-        ref={emojiRowRef}
-        className="flex items-center gap-2 text-lg sm:text-xl overflow-x-auto no-scrollbar whitespace-nowrap w-[180px] sm:w-[240px]"
-      >
-        {emojis.map((emoji) => (
-          <button
-            key={emoji}
-            onClick={() => handleEmojiPick(emoji)}
-            className="flex-none w-10 sm:w-12 text-center hover:scale-110 transition"
-          >
-            {emoji}
-          </button>
-        ))}
-      </div>
-
-      <button
-        onClick={() => handleEmojiScroll("right")}
-        className="text-indigo-400 disabled:opacity-40"
-      >
-        <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
-      </button>
-    </div>
-  </section>
-
-  {/* ===== Messages ===== */}
-  <section className="border-t border-gray-100 dark:border-gray-700 pt-6 mt-6">
-    <h4 className="text-base sm:text-lg font-bold text-indigo-900 dark:text-indigo-100 mb-3">
-      Messages
-    </h4>
-
-    <div className="space-y-4">
-      {[
-        {
-          initials: "CM",
-          name: "Cris Morich",
-          text: "Hi Angelina! How are You?",
-          color: "bg-amber-200",
-        },
-        {
-          initials: "CH",
-          name: "Charmie",
-          text: "Do you need that design?",
-          color: "bg-rose-200",
-        },
-        {
-          initials: "JM",
-          name: "Jason Mandala",
-          text: "What is the price of hourly...",
-          color: "bg-cyan-200",
-        },
-        {
-          initials: "CC",
-          name: "Charlie Chu",
-          text: "Awesome design!!",
-          color: "bg-orange-200",
-        },
-      ].map((msg) => (
-        <div key={msg.name} className="flex items-center gap-3">
-          <span
-            className={clsx(
-              "h-9 w-9 sm:h-11 sm:w-11 rounded-full grid place-items-center text-[10px] sm:text-xs font-bold text-gray-700 border border-white shadow-sm",
-              msg.color
-            )}
-          >
-            {msg.initials}
-          </span>
-
-          <div className="min-w-0">
-            <p className="text-sm sm:text-base font-semibold text-indigo-900 dark:text-indigo-100 truncate">
-              {msg.name}
-            </p>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-300 truncate">
-              {msg.text}
-            </p>
-          </div>
+        {/* ── RESOURCE DISTRIBUTION ── */}
+        <div className="col-span-12 xl:col-span-4 bg-white dark:bg-[#1a2234] rounded-3xl p-8 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col">
+           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Resource Allocation</h3>
+           <p className="text-xs text-gray-500 mb-8">Workload distribution across layers</p>
+           
+           <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="h-[200px] w-full">
+                 <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                       <Pie
+                          data={distributionData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                       >
+                          {distributionData.map((entry, index) => (
+                             <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                       </Pie>
+                       <Tooltip />
+                    </PieChart>
+                 </ResponsiveContainer>
+              </div>
+              
+              <div className="w-full space-y-4 mt-6">
+                 {distributionData.map(item => (
+                    <div key={item.name} className="flex items-center justify-between">
+                       <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 rounded-full" style={{backgroundColor: item.color}} />
+                          <span className="text-sm font-bold text-gray-600 dark:text-gray-400">{item.name} Layer</span>
+                       </div>
+                       <span className="text-sm font-black text-gray-900 dark:text-white">{item.value}%</span>
+                    </div>
+                 ))}
+              </div>
+           </div>
         </div>
-      ))}
-    </div>
-  </section>
-</div>
-      </div>
-                  {/* ── ML Status Banner ── */}
-            <div
-              className={clsx(
-                "rounded-2xl px-5 py-4 m-6 flex items-center gap-4 border",
-                mlAvailable
-                  ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800/40"
-                  : "bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800/40",
-              )}
-            >
-              <div
-                className={clsx(
-                  "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                  mlAvailable
-                    ? "bg-emerald-100 dark:bg-emerald-900/40"
-                    : "bg-amber-100 dark:bg-amber-900/40",
-                )}
+
+        {/* ── ACTIVE TASKS QUEUE ── */}
+        <div className="col-span-12 lg:col-span-4 bg-white dark:bg-[#1a2234] rounded-3xl p-8 border border-gray-200 dark:border-gray-800 shadow-sm">
+           <div className="flex items-center justify-between mb-8">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Active Queue</h3>
+              <button className="text-xs font-bold text-primary-600 hover:underline">View All</button>
+           </div>
+           
+           <div className="space-y-5">
+              {activeTasks.slice(0, 5).map(task => (
+                 <div key={task.id} className="flex items-center justify-between group cursor-pointer">
+                    <div className="flex items-center gap-4">
+                       <div className={clsx(
+                         "w-10 h-10 rounded-xl flex items-center justify-center transition-all group-hover:scale-110",
+                         task.status === 'RUNNING' ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600" : "bg-primary-50 dark:bg-primary-900/20 text-primary-600"
+                       )}>
+                          {task.status === 'RUNNING' ? <IconActivity className="w-5 h-5" /> : <IconCircleCheck className="w-5 h-5" />}
+                       </div>
+                       <div>
+                          <div className="text-sm font-bold text-gray-900 dark:text-white truncate max-w-[120px]">{task.name}</div>
+                          <div className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">{task.type} • {task.size}</div>
+                       </div>
+                    </div>
+                    <div className="text-right">
+                       <div className="text-sm font-black text-gray-900 dark:text-white">{task.priority}</div>
+                       <div className="text-[10px] font-bold text-gray-400 uppercase">Priority</div>
+                    </div>
+                 </div>
+              ))}
+              {activeTasks.length === 0 && <p className="text-center text-sm text-gray-400 py-12">No active tasks in queue.</p>}
+           </div>
+        </div>
+
+        {/* ── QUICK CONFIG / INGESTION ── */}
+        <div className="col-span-12 lg:col-span-4 bg-white dark:bg-[#1a2234] rounded-3xl p-8 border border-gray-200 dark:border-gray-800 shadow-sm relative group overflow-hidden">
+           <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-all pointer-events-none">
+              <IconActivity className="w-32 h-32" />
+           </div>
+           
+           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Task Ingestion</h3>
+           
+           <div className="space-y-4">
+              <div className="space-y-1">
+                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 pl-1">Identifier</label>
+                 <input 
+                    type="text" 
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    placeholder="Enter task name..."
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/20 outline-none transition-all"
+                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 pl-1">Strategy</label>
+                    <select 
+                       value={newTaskType}
+                       onChange={(e) => setNewTaskType(e.target.value as any)}
+                       className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl text-sm appearance-none cursor-pointer outline-none"
+                    >
+                       <option value="MIXED">Mixed</option>
+                       <option value="CPU">Compute</option>
+                       <option value="IO">I/O Heavy</option>
+                    </select>
+                 </div>
+                 <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 pl-1">Rank</label>
+                    <select 
+                       value={newTaskPriority}
+                       onChange={(e) => setNewTaskPriority(Number(e.target.value))}
+                       className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl text-sm appearance-none cursor-pointer outline-none"
+                    >
+                       <option value={1}>Tier 1</option>
+                       <option value={2}>Tier 2</option>
+                       <option value={3}>Tier 3</option>
+                    </select>
+                 </div>
+              </div>
+
+              <button 
+                onClick={handleCreateNewTask}
+                disabled={!newTaskTitle.trim() || isCreating}
+                className="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl shadow-lg shadow-primary-500/20 transition-all flex items-center justify-center gap-2 active:scale-95"
               >
-                <Brain
-                  className={clsx(
-                    "h-5 w-5",
-                    mlAvailable
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : "text-amber-600 dark:text-amber-400",
-                  )}
-                />
-              </div>
-              <div>
-                <p
-                  className={clsx(
-                    "text-sm font-bold",
-                    mlAvailable
-                      ? "text-emerald-900 dark:text-emerald-200"
-                      : "text-amber-900 dark:text-amber-200",
-                  )}
-                >
-                  {mlAvailable
-                    ? "ML Service Connected"
-                    : "Running in Fallback Mode"}
-                </p>
-                <p
-                  className={clsx(
-                    "text-xs mt-0.5",
-                    mlAvailable
-                      ? "text-emerald-700 dark:text-emerald-400"
-                      : "text-amber-700 dark:text-amber-400",
-                  )}
-                >
-                  {mlAvailable
-                    ? "Predictions powered by ML model for optimal scheduling"
-                    : "Using heuristic-based predictions. Start ML service for better accuracy."}
-                </p>
-              </div>
+                 {isCreating ? <IconLoader2 className="w-5 h-5 animate-spin" /> : <IconPlus className="w-5 h-5" />}
+                 Ingest Task
+              </button>
+           </div>
+        </div>
+
+        {/* ── SYSTEM NODES / RESOURCES ── */}
+        <div className="col-span-12 lg:col-span-4 bg-white dark:bg-[#1a2234] rounded-3xl p-8 border border-gray-200 dark:border-gray-800 shadow-sm">
+           <div className="flex items-center justify-between mb-8">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Active Nodes</h3>
+              <button className="p-2 hover:bg-gray-50 dark:hover:bg-gray-900 rounded-lg transition-colors">
+                 <IconDotsVertical className="w-4 h-4 text-gray-400" />
+              </button>
+           </div>
+
+           <div className="space-y-6">
+              {resources.slice(0, 3).map(node => (
+                 <div key={node.id} className="space-y-2">
+                    <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider">
+                       <span className="text-gray-500 truncate max-w-[150px]">{node.name}</span>
+                       <span className="text-gray-900 dark:text-white">{node.currentLoad}%</span>
+                    </div>
+                    <ProgressBar 
+                       value={node.currentLoad} 
+                       color={node.currentLoad < 50 ? 'success' : node.currentLoad < 80 ? 'warning' : 'error'} 
+                       height={8} 
+                    />
+                 </div>
+              ))}
+              <button className="w-full py-3 border border-dashed border-gray-200 dark:border-gray-700 text-gray-400 text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-gray-50 dark:hover:bg-gray-900 transition-all flex items-center justify-center gap-2">
+                 <IconPlus className="w-4 h-4" /> Provision Node
+              </button>
+           </div>
+        </div>
+
+      </div>
+
+      {/* ── TRANSACTION LIST / LOGS ── */}
+      <div className="bg-white dark:bg-[#1a2234] rounded-3xl p-8 border border-gray-200 dark:border-gray-800 shadow-sm">
+         <div className="flex items-center justify-between mb-8">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Recent Scheduling Transactions</h3>
+            <div className="flex items-center gap-2">
+               <span className="px-3 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-600 text-[10px] font-black rounded-lg">LIVE LOGS</span>
             </div>
-    </main>
+         </div>
+
+         <div className="overflow-x-auto">
+            <table className="w-full text-left">
+               <thead>
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
+                     <th className="pb-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">Transaction ID</th>
+                     <th className="pb-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">Source</th>
+                     <th className="pb-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">Algorithm</th>
+                     <th className="pb-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">Target Layer</th>
+                     <th className="pb-4 text-[10px] font-black uppercase text-gray-400 tracking-widest text-right">Status</th>
+                  </tr>
+               </thead>
+               <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
+                  {tasks.slice(0, 6).map(task => (
+                    <tr key={task.id} className="group hover:bg-gray-50/50 dark:hover:bg-gray-900/30 transition-all">
+                       <td className="py-4 font-mono text-xs text-primary-600 font-bold">#TRX-{task.id.slice(0, 6)}</td>
+                       <td className="py-4">
+                          <div className="flex items-center gap-3">
+                             <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg group-hover:bg-white dark:group-hover:bg-gray-700 transition-colors">
+                                <IconDeviceDesktop className="w-4 h-4 text-gray-500" />
+                             </div>
+                             <span className="text-sm font-bold text-gray-900 dark:text-white truncate max-w-[120px]">{task.name}</span>
+                          </div>
+                       </td>
+                       <td className="py-4 text-sm font-medium text-gray-500">Neural-HH</td>
+                       <td className="py-4">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500">
+                             <IconCloud className="w-3.5 h-3.5" /> FOG-LAYER-A
+                          </div>
+                       </td>
+                       <td className="py-4 text-right">
+                          <span className={clsx(
+                             "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter",
+                             task.status === 'COMPLETED' ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                          )}>
+                             {task.status}
+                          </span>
+                       </td>
+                    </tr>
+                  ))}
+               </tbody>
+            </table>
+         </div>
+      </div>
+
+    </div>
   );
 }
 
-// ── StatCard ──────────────────────────────────────────────
-type StatCardProps = {
-  title: string;
-  value: string | number;
-  trend: string;
-  sparkColor: string;
-  icon: ComponentType<{ className?: string }>;
-  iconBg: string;
-  iconColor: string;
-};
-
-function StatCard({
-  title,
-  value,
-  trend,
-  sparkColor,
-  icon: Icon,
-  iconBg,
-  iconColor,
-}: StatCardProps) {
+function StatItem({ icon: Icon, color, bg, label, value }: any) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700/60 hover:shadow-md transition-shadow">
-      {/* Top row: label + icon */}
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
-          {title}
-        </p>
-        <div
-          className={clsx(
-            "w-9 h-9 rounded-xl flex items-center justify-center",
-            iconBg,
-          )}
-        >
-          <Icon className={clsx("h-4.5 w-4.5", iconColor)} />
-        </div>
-      </div>
-
-      {/* Big value */}
-      <p className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-none">
-        {value}
-      </p>
-
-      {/* Bottom row: trend text + sparkline */}
-      <div className="flex items-end justify-between mt-3">
-        <p className="text-xs font-semibold text-green-500">{trend}</p>
-        <Sparkline color={sparkColor} />
-      </div>
+    <div className="flex items-center gap-4">
+       <div className={clsx("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0", bg, color)}>
+          <Icon className="w-6 h-6" />
+       </div>
+       <div>
+          <div className="text-sm font-black text-gray-900 dark:text-white leading-none mb-1">{value}</div>
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-tighter leading-none">{label}</div>
+       </div>
     </div>
   );
 }

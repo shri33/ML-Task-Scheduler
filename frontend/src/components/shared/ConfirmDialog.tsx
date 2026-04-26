@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { AlertTriangle, Trash2, CheckCircle } from 'lucide-react';
+import { IconAlertTriangle, IconTrash, IconCircleCheck } from '@tabler/icons-react';
 import { clsx } from 'clsx';
 
 interface ConfirmDialogProps {
@@ -44,9 +44,9 @@ export default function ConfirmDialog({
   if (!isOpen) return null;
 
   const icons = {
-    danger: <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />,
-    warning: <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />,
-    info: <CheckCircle className="h-6 w-6 text-primary-600 dark:text-primary-400" />,
+    danger: <IconTrash className="h-6 w-6 text-red-600 dark:text-red-400" />,
+    warning: <IconAlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />,
+    info: <IconCircleCheck className="h-6 w-6 text-primary-600 dark:text-primary-400" />,
   };
 
   const confirmColors = {

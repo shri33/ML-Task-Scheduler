@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { clsx } from 'clsx';
-import { Calendar, AlertTriangle } from 'lucide-react';
+import { IconCalendar, IconAlertTriangle } from '@tabler/icons-react';
 
 export const TypeBadge = memo(function TypeBadge({ type }: { type: string }) {
   const colors: Record<string, string> = {
@@ -107,7 +107,7 @@ export const DueDateBadge = memo(function DueDateBadge({ dueDate, status }: { du
   if (isOverdue) {
     return (
       <span className="flex items-center gap-1 text-red-600 dark:text-red-400 text-sm">
-        <AlertTriangle className="h-3.5 w-3.5" />
+        <IconAlertTriangle className="h-3.5 w-3.5" />
         <span className="font-medium">Overdue</span>
       </span>
     );
@@ -116,7 +116,7 @@ export const DueDateBadge = memo(function DueDateBadge({ dueDate, status }: { du
   if (isNearDue) {
     return (
       <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400 text-sm">
-        <Calendar className="h-3.5 w-3.5" />
+        <IconCalendar className="h-3.5 w-3.5" />
         <span>{formatDate(due)}</span>
       </span>
     );
@@ -124,7 +124,7 @@ export const DueDateBadge = memo(function DueDateBadge({ dueDate, status }: { du
 
   return (
     <span className="flex items-center gap-1 text-gray-600 dark:text-gray-400 text-sm">
-      <Calendar className="h-3.5 w-3.5" />
+      <IconCalendar className="h-3.5 w-3.5" />
       <span>{formatDate(due)}</span>
     </span>
   );

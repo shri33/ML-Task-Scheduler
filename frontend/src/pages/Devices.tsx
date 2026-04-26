@@ -1,31 +1,15 @@
 import { useState, useEffect } from 'react';
-import { 
-  Camera, 
-  Settings, 
-  Wifi, 
-  WifiOff, 
-  AlertTriangle, 
-  Plus, 
-  RefreshCw, 
-  Trash2, 
-  Edit,
-  Server,
-  Cpu,
-  Activity,
-  X,
-  Save,
-  Bot
-} from 'lucide-react';
+import { IconCamera, IconSettings, IconWifi, IconPlus, IconRefresh, IconTrash, IconEdit, IconServer, IconCpu, IconActivity, IconX, IconRobot, IconSearch } from '@tabler/icons-react';
 import { useToast } from '../contexts/ToastContext';
 import { clsx } from 'clsx';
 import { deviceApi, Device, DeviceStats } from '../lib/api';
 
 const deviceTypeIcons: Record<string, React.ReactNode> = {
-  CAMERA: <Camera className="h-7 w-7" />,
-  ROBOT_ARM: <Bot className="h-7 w-7" />,
-  IOT_SENSOR: <Cpu className="h-7 w-7" />,
-  EDGE_SERVER: <Server className="h-7 w-7" />,
-  ACTUATOR: <Activity className="h-7 w-7" />,
+  CAMERA: <IconCamera className="h-7 w-7" />,
+  ROBOT_ARM: <IconRobot className="h-7 w-7" />,
+  IOT_SENSOR: <IconCpu className="h-7 w-7" />,
+  EDGE_SERVER: <IconServer className="h-7 w-7" />,
+  ACTUATOR: <IconActivity className="h-7 w-7" />,
 };
 
 const deviceTypeLabels: Record<string, string> = {
@@ -44,19 +28,9 @@ const deviceTypeColors: Record<string, string> = {
   ACTUATOR: 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400',
 };
 
-const statusColors: Record<string, string> = {
-  ONLINE: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  OFFLINE: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
-  MAINTENANCE: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  ERROR: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-};
 
-const statusIcons: Record<string, React.ReactNode> = {
-  ONLINE: <Wifi className="h-4 w-4" />,
-  OFFLINE: <WifiOff className="h-4 w-4" />,
-  MAINTENANCE: <Settings className="h-4 w-4" />,
-  ERROR: <AlertTriangle className="h-4 w-4" />,
-};
+
+
 
 export default function Devices() {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -198,67 +172,67 @@ export default function Devices() {
     setIsModalOpen(true);
   };
 
-  return (<>
-  <div className='dark:bg-black/50'>
-    <div className="space-y-6 pt-6 mb-6 mx-6 ">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+  return (
+    <div className="max-w-[1600px] mx-auto space-y-8 animate-fade-in-up">
+      
+      {/* ── Page Header ── */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="page-title">IoT Devices</h1>
-          <p className="page-subtitle">
-            Manage cameras, robot arms, sensors, and edge servers
+          <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
+            Edge Intelligence
+            <span className="px-3 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 text-[10px] font-black uppercase tracking-widest rounded-full">Terminal Devices</span>
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Managing terminal nodes and sensory peripherals across the fog layer.
           </p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-        >
-          <Plus className="h-5 w-5" />
-          Add Device
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => { fetchDevices(); fetchStats(); }}
+            className="btn btn-secondary flex items-center gap-2 px-4 h-11"
+          >
+            <IconRefresh className={clsx("h-4 w-4", isLoading && "animate-spin")} />
+            Sync Hardware
+          </button>
+          <button
+            onClick={openCreateModal}
+            className="btn btn-primary flex items-center gap-2 px-6 h-11 shadow-lg shadow-primary-500/20"
+          >
+            <IconPlus className="h-4 w-4" />
+            Provision Device
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Total Devices</p>
-            <p className="text-3xl font-extrabold font-mono text-gray-900 dark:text-white mt-1">{stats.total}</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700 border-l-4 border-l-green-500">
-            <p className="text-xs font-semibold uppercase tracking-wider text-green-600 dark:text-green-400">Online</p>
-            <p className="text-3xl font-extrabold font-mono text-green-600 dark:text-green-400 mt-1">{stats.online}</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700 border-l-4 border-l-gray-400">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Offline</p>
-            <p className="text-3xl font-extrabold font-mono text-gray-600 dark:text-gray-400 mt-1">{stats.offline}</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700 border-l-4 border-l-yellow-500">
-            <p className="text-xs font-semibold uppercase tracking-wider text-yellow-600 dark:text-yellow-400">Maintenance</p>
-            <p className="text-3xl font-extrabold font-mono text-yellow-600 dark:text-yellow-400 mt-1">{stats.maintenance}</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700 border-l-4 border-l-red-500">
-            <p className="text-xs font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">Error</p>
-            <p className="text-3xl font-extrabold font-mono text-red-600 dark:text-red-400 mt-1">{stats.error}</p>
-          </div>
+          <DeviceStatCard label="Total" value={stats.total} color="text-gray-600" />
+          <DeviceStatCard label="Online" value={stats.online} color="text-emerald-600" active />
+          <DeviceStatCard label="Offline" value={stats.offline} color="text-gray-400" />
+          <DeviceStatCard label="Maintenance" value={stats.maintenance} color="text-amber-600" />
+          <DeviceStatCard label="Error" value={stats.error} color="text-rose-600" />
         </div>
       )}
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-4">
-        <input
-          type="text"
-          placeholder="Search devices..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-        />
+      {/* Filter Toolbar */}
+      <div className="bg-white dark:bg-[#1a2234] rounded-2xl p-4 border border-gray-100 dark:border-gray-800 shadow-sm flex flex-wrap items-center gap-4">
+        <div className="flex-1 min-w-[240px] relative">
+          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search terminal nodes by name, IP, or location..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-800/50 border border-transparent focus:border-primary-500 rounded-xl text-sm outline-none transition-all"
+          />
+        </div>
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          className="px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border border-transparent focus:border-primary-500 rounded-xl text-xs font-bold uppercase tracking-wider outline-none transition-all cursor-pointer"
         >
-          <option value="">All Types</option>
+          <option value="">All Architectures</option>
           {Object.entries(deviceTypeLabels).map(([value, label]) => (
             <option key={value} value={value}>{label}</option>
           ))}
@@ -266,117 +240,103 @@ export default function Devices() {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          className="px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border border-transparent focus:border-primary-500 rounded-xl text-xs font-bold uppercase tracking-wider outline-none transition-all cursor-pointer"
         >
-          <option value="">All Status</option>
+          <option value="">All States</option>
           <option value="ONLINE">Online</option>
           <option value="OFFLINE">Offline</option>
           <option value="MAINTENANCE">Maintenance</option>
           <option value="ERROR">Error</option>
         </select>
-        <button
-          onClick={() => { fetchDevices(); fetchStats(); }}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-        >
-          <RefreshCw className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-        </button>
       </div>
 
       {/* Device Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm animate-pulse">
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-64 bg-gray-50 dark:bg-gray-800/40 rounded-3xl animate-pulse border border-gray-100 dark:border-gray-800" />
           ))}
         </div>
       ) : devices.length === 0 ? (
-        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl">
-          <Server className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No devices found</h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">Get started by adding your first device.</p>
-          <button
-            onClick={openCreateModal}
-            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-          >
-            Add Device
-          </button>
+        <div className="bg-white dark:bg-[#1a2234] rounded-3xl p-20 text-center border border-gray-100 dark:border-gray-800 shadow-sm">
+          <div className="w-24 h-24 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+            <IconServer className="h-12 w-12 text-gray-300 dark:text-gray-600" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Registry is Empty</h3>
+          <p className="text-gray-500 max-w-sm mx-auto mb-8">No edge devices detected in the current sector. Provision a new terminal node to begin data ingestion.</p>
+          <button onClick={openCreateModal} className="btn btn-primary px-8">Provision Device</button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {devices.map((device) => (
             <div
               key={device.id}
-              className={clsx(
-                'bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 dark:border-gray-700',
-                device.status === 'ONLINE' && 'status-strip-online',
-                device.status === 'OFFLINE' && 'status-strip-offline',
-                device.status === 'ERROR' && 'status-strip-error',
-                device.status === 'MAINTENANCE' && 'status-strip-maintenance',
-              )}
+              className="group bg-white dark:bg-[#1a2234] rounded-3xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-xl hover:border-primary-500/30 transition-all duration-300 relative overflow-hidden"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
+              {/* Type-based background accent */}
+              <div className={clsx(
+                "absolute -top-12 -right-12 w-32 h-32 rounded-full blur-3xl opacity-10 transition-opacity group-hover:opacity-20",
+                deviceTypeColors[device.type]?.split(' ')[0]
+              )} />
+
+              <div className="flex items-start justify-between mb-6">
+                <div className="flex items-center gap-4">
                   <div className={clsx(
-                    'p-3 rounded-xl',
+                    'w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner transition-transform group-hover:scale-110 duration-300',
                     deviceTypeColors[device.type] || 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                   )}>
                     {deviceTypeIcons[device.type]}
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-900 dark:text-white">{device.name}</h3>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{deviceTypeLabels[device.type]}</p>
+                    <h3 className="font-bold text-gray-900 dark:text-white text-lg leading-tight group-hover:text-primary-600 transition-colors">{device.name}</h3>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">{deviceTypeLabels[device.type]}</p>
                   </div>
                 </div>
-                <span className={clsx(
-                  'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold',
-                  statusColors[device.status]
+                <div className={clsx(
+                  'px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border',
+                  device.status === 'ONLINE' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800' :
+                  device.status === 'ERROR' ? 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800' :
+                  'bg-gray-50 text-gray-500 border-gray-100 dark:bg-gray-800 dark:border-gray-700'
                 )}>
-                  {device.status === 'ONLINE' ? (
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                    </span>
-                  ) : (
-                    statusIcons[device.status]
-                  )}
+                  {device.status === 'ONLINE' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
                   {device.status}
-                </span>
+                </div>
               </div>
 
-              {device.ipAddress && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                  <span className="font-medium">IP:</span> {device.ipAddress}{device.port && `:${device.port}`}
-                </p>
-              )}
-              {device.location && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                  <span className="font-medium">Location:</span> {device.location}
-                </p>
-              )}
-              {device.lastHeartbeat && (
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Last seen: {new Date(device.lastHeartbeat).toLocaleString()}
-                </p>
-              )}
+              <div className="space-y-3 mb-6">
+                {device.ipAddress && (
+                  <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+                    <IconWifi className="w-4 h-4 text-primary-500" />
+                    <span className="font-mono">{device.ipAddress}{device.port && `:${device.port}`}</span>
+                  </div>
+                )}
+                {device.location && (
+                  <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+                    <IconSettings className="w-4 h-4 text-violet-500" />
+                    <span>{device.location}</span>
+                  </div>
+                )}
+                {device.lastHeartbeat && (
+                  <div className="text-[10px] text-gray-400 font-medium italic pl-7">
+                    Pulse: {new Date(device.lastHeartbeat).toLocaleString()}
+                  </div>
+                )}
+              </div>
 
-              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-3 pt-4 border-t border-gray-50 dark:border-gray-800">
                 <button
                   onClick={() => handleEdit(device)}
-                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  className="btn btn-secondary flex-1 text-xs py-2 h-9"
                 >
-                  <Edit className="h-4 w-4" />
-                  Edit
+                  <IconEdit className="h-3.5 w-3.5 mr-1.5" />
+                  Configure
                 </button>
                 <button
                   onClick={() => handleDelete(device)}
-                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                  className="btn btn-secondary flex-1 text-xs py-2 h-9 text-rose-600 hover:text-rose-700 border-rose-100 hover:border-rose-200"
                 >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
+                  <IconTrash className="h-3.5 w-3.5 mr-1.5" />
+                  Decommission
                 </button>
               </div>
             </div>
@@ -384,62 +344,53 @@ export default function Devices() {
         </div>
       )}
 
-      {/* Create/Edit Modal */}
+      {/* Provisioning Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 m-4">
-            <div className="flex items-center justify-between mb-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setIsModalOpen(false)}>
+          <div className="w-full max-w-lg bg-white dark:bg-[#1a2234] rounded-3xl shadow-2xl overflow-hidden animate-scale-in" onClick={e => e.stopPropagation()}>
+            <div className="px-8 py-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                {editingDevice ? 'Edit Device' : 'Add New Device'}
+                {editingDevice ? 'Modify Terminal Config' : 'Hardware Provisioning'}
               </h2>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <X className="h-5 w-5 text-gray-500" />
+              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+                <IconX className="h-5 w-5 text-gray-400" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Device Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="e.g. Main Camera, Robot Arm #1"
-                  required
-                />
-              </div>
+            <form onSubmit={handleSubmit} className="p-8 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className="label">Device Name</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="input"
+                    placeholder="e.g. Fog-Node-01-Alpha"
+                    required
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Device Type *
-                </label>
-                <select
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value as Device['type'] })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  required
-                >
-                  {Object.entries(deviceTypeLabels).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {editingDevice && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Status
-                  </label>
+                  <label className="label">Hardware Architecture</label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as Device['type'] })}
+                    className="select"
+                    required
+                  >
+                    {Object.entries(deviceTypeLabels).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="label">Operational Status</label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as Device['status'] })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="select"
                   >
                     <option value="ONLINE">Online</option>
                     <option value="OFFLINE">Offline</option>
@@ -447,83 +398,62 @@ export default function Devices() {
                     <option value="ERROR">Error</option>
                   </select>
                 </div>
-              )}
 
-              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    IP Address
-                  </label>
+                  <label className="label">Static IP</label>
                   <input
                     type="text"
                     value={formData.ipAddress}
                     onChange={(e) => setFormData({ ...formData, ipAddress: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="192.168.1.100"
+                    className="input font-mono"
+                    placeholder="10.0.0.1"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Port
-                  </label>
+                  <label className="label">Control Port</label>
                   <input
                     type="number"
                     value={formData.port}
                     onChange={(e) => setFormData({ ...formData, port: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="input font-mono"
                     placeholder="8080"
-                    min="1"
-                    max="65535"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="label">Geographic/Network Location</label>
+                  <input
+                    type="text"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    className="input"
+                    placeholder="Sector 7-G / Cloud Gateway B"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Location
-                </label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="e.g. Factory Floor A, Lab Room 101"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Device description..."
-                  rows={2}
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-                >
-                  <Save className="h-4 w-4" />
-                  {editingDevice ? 'Update' : 'Create'}
+              <div className="flex gap-4 pt-4">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary flex-1">Abort</button>
+                <button type="submit" className="btn btn-primary flex-1 shadow-lg shadow-primary-500/20">
+                  {editingDevice ? 'Apply Changes' : 'Initialize Node'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-    </div></div></>
+    </div>
+  );
+}
+
+function DeviceStatCard({ label, value, color, active }: any) {
+  return (
+    <div className={clsx(
+      "bg-white dark:bg-[#1a2234] rounded-2xl p-5 border shadow-sm transition-all duration-300",
+      active ? "border-primary-500/50 shadow-md scale-[1.02]" : "border-gray-100 dark:border-gray-800"
+    )}>
+      <div className="text-3xl font-extrabold font-mono text-gray-900 dark:text-white leading-none">{value}</div>
+      <div className={clsx("text-[10px] font-black uppercase tracking-widest mt-2", color)}>{label}</div>
+    </div>
   );
 }

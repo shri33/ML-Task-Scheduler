@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Edit2 } from 'lucide-react';
+import { IconX, IconEdit } from '@tabler/icons-react';
 import { Resource, UpdateResourceInput } from '../types';
 import { resourceApi } from '../lib/api';
 import { useToast } from '../contexts/ToastContext';
@@ -57,14 +57,14 @@ export default function ResourceEditModal({ resource, onClose, onUpdated }: Reso
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
-            <Edit2 className="h-5 w-5 text-primary-600" />
+            <IconEdit className="h-5 w-5 text-primary-600" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit Resource</h3>
           </div>
           <button
             onClick={onClose}
             className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <IconX className="h-5 w-5 text-gray-500" />
           </button>
         </div>
 

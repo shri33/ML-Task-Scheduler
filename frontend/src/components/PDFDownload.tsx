@@ -1,4 +1,4 @@
-import { FileText, Download, Loader2 } from 'lucide-react';
+import { IconFileText, IconDownload, IconLoader2 } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { clsx } from 'clsx';
@@ -97,9 +97,9 @@ export function PDFDownloadButtons() {
             )}
           >
             {downloading === report.endpoint ? (
-              <Loader2 className="h-5 w-5 text-primary-600 animate-spin" />
+              <IconLoader2 className="h-5 w-5 text-primary-600 animate-spin" />
             ) : (
-              <FileText className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <IconFileText className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             )}
           </div>
           <div className="flex-1 min-w-0">
@@ -110,7 +110,7 @@ export function PDFDownloadButtons() {
               {report.description}
             </p>
           </div>
-          <Download className="h-4 w-4 text-gray-400 flex-shrink-0" />
+          <IconDownload className="h-4 w-4 text-gray-400 flex-shrink-0" />
         </button>
       ))}
     </div>
@@ -160,9 +160,9 @@ export default function PDFDownload() {
         className="btn btn-secondary flex items-center gap-2"
       >
         {downloading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <IconLoader2 className="h-4 w-4 animate-spin" />
         ) : (
-          <Download className="h-4 w-4" />
+          <IconDownload className="h-4 w-4" />
         )}
         {downloading ? 'Downloading...' : 'Export PDF'}
       </button>

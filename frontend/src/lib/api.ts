@@ -156,8 +156,8 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError as Error, null);
-        // Only redirect if not already on login page (prevents reload loop)
-        if (!window.location.pathname.startsWith('/login')) {
+        // Only redirect if not already on login page and not in demo mode (prevents reload loop)
+        if (!window.location.pathname.startsWith('/login') && !localStorage.getItem('ml-scheduler-demo-mode')) {
           window.location.href = '/login';
         }
         return Promise.reject(refreshError);
@@ -171,6 +171,9 @@ api.interceptors.response.use(
 );
 
 
+
+// Helper to check if we should use mock data
+const isDemoMode = () => !!localStorage.getItem('ml-scheduler-demo-mode');
 
 // ============================================
 // AUTH API
@@ -221,6 +224,13 @@ export const authApi = {
 // Task API
 export const taskApi = {
   getAll: async (status?: string): Promise<Task[]> => {
+    if (isDemoMode()) {
+      return [
+        { id: '1', name: 'Process Video Stream', type: 'CPU', size: 'LARGE', priority: 1, status: 'SCHEDULED', dueDate: new Date(Date.now() + 3600000).toISOString(), predictedTime: 45.2, actualTime: null, resourceId: 'res-1', createdAt: new Date().toISOString(), scheduledAt: new Date().toISOString(), completedAt: null },
+        { id: '2', name: 'Train Mini Model', type: 'MIXED', size: 'MEDIUM', priority: 2, status: 'PENDING', dueDate: null, predictedTime: 120.5, actualTime: null, resourceId: null, createdAt: new Date().toISOString(), scheduledAt: null, completedAt: null },
+        { id: '3', name: 'Log Analytics', type: 'IO', size: 'SMALL', priority: 3, status: 'COMPLETED', dueDate: null, predictedTime: 2.1, actualTime: 2.0, resourceId: 'res-2', createdAt: new Date(Date.now() - 7200000).toISOString(), scheduledAt: new Date(Date.now() - 3600000).toISOString(), completedAt: new Date().toISOString() },
+      ];
+    }
     const params = status ? { status } : {};
     const response = await api.get<ApiResponse<Task[]>>('/v1/tasks', { params });
     return response.data.data;
@@ -251,6 +261,7 @@ export const taskApi = {
   },
 
   getStats: async () => {
+    if (isDemoMode()) return { total: 3, pending: 1, scheduled: 1, running: 0, completed: 1, failed: 0 };
     const response = await api.get<ApiResponse<{ total: number; pending: number; scheduled: number; running: number; completed: number; failed: number }>>('/v1/tasks/stats');
     return response.data.data;
   },
@@ -259,6 +270,12 @@ export const taskApi = {
 // Resource API
 export const resourceApi = {
   getAll: async (status?: string): Promise<Resource[]> => {
+    if (isDemoMode()) {
+      return [
+        { id: 'res-1', name: 'Edge Node Alpha', capacity: 100, currentLoad: 85, status: 'AVAILABLE', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: 'res-2', name: 'Cloud Instance Beta', capacity: 100, currentLoad: 20, status: 'AVAILABLE', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      ];
+    }
     const params = status ? { status } : {};
     const response = await api.get<ApiResponse<Resource[]>>('/v1/resources', { params });
     return response.data.data;
@@ -297,22 +314,26 @@ export const resourceApi = {
 // Schedule API
 export const scheduleApi = {
   run: async (taskIds?: string[]): Promise<{ results: ScheduleResult[]; count: number; scheduledAt: string }> => {
+    if (isDemoMode()) return { results: [], count: 3, scheduledAt: new Date().toISOString() };
     const response = await api.post<ApiResponse<{ results: ScheduleResult[]; count: number; scheduledAt: string }>>('/v1/schedule', { taskIds });
     return response.data.data;
   },
 
   getHistory: async (limit?: number): Promise<ScheduleHistory[]> => {
+    if (isDemoMode()) return [];
     const params = limit ? { limit } : {};
     const response = await api.get<ApiResponse<ScheduleHistory[]>>('/v1/schedule/history', { params });
     return response.data.data;
   },
 
   getComparison: async () => {
+    if (isDemoMode()) return { withML: { count: 3, avgError: 2.1, avgTime: 45.0 }, withoutML: { count: 3, avgError: 5.4, avgTime: 62.0 } };
     const response = await api.get<ApiResponse<{ withML: { count: number; avgError: number; avgTime: number }; withoutML: { count: number; avgError: number; avgTime: number } }>>('/v1/schedule/comparison');
     return response.data.data;
   },
 
   getMlStatus: async () => {
+    if (isDemoMode()) return { mlServiceAvailable: true, fallbackMode: false };
     const response = await api.get<ApiResponse<{ mlServiceAvailable: boolean; fallbackMode: boolean }>>('/v1/schedule/ml-status');
     return response.data.data;
   },
@@ -321,6 +342,13 @@ export const scheduleApi = {
 // Metrics API
 export const metricsApi = {
   get: async (): Promise<Metrics> => {
+    if (isDemoMode()) {
+      return { 
+        tasks: { total: 3, pending: 1, scheduled: 1, running: 0, completed: 1, failed: 0 },
+        resources: { total: 2, available: 2, busy: 0, offline: 0, avgLoad: 52.5 },
+        performance: { avgExecutionTime: 2.0, mlAccuracy: 98.2, totalScheduled: 3 }
+      };
+    }
     const response = await api.get<ApiResponse<Metrics>>('/v1/metrics');
     return response.data.data;
   },
@@ -337,6 +365,13 @@ export const metricsApi = {
 // ============================================
 export const deviceApi = {
   getAll: async (params?: { type?: string; status?: string; search?: string }): Promise<Device[]> => {
+    if (isDemoMode()) {
+      return [
+        { id: 'dev-1', name: 'Assembly Camera 01', type: 'CAMERA', status: 'ONLINE', ipAddress: '192.168.1.101', port: 8080, location: 'Sector A', createdAt: new Date().toISOString() },
+        { id: 'dev-2', name: 'Welding Arm B', type: 'ROBOT_ARM', status: 'MAINTENANCE', location: 'Sector B', createdAt: new Date().toISOString() },
+        { id: 'dev-3', name: 'Temp Sensor Vault', type: 'IOT_SENSOR', status: 'ONLINE', ipAddress: '192.168.1.205', createdAt: new Date().toISOString() },
+      ];
+    }
     const response = await api.get<ApiResponse<Device[]>>('/v1/devices', { params });
     return response.data.data;
   },
@@ -381,6 +416,7 @@ export const deviceApi = {
   },
 
   getStats: async (): Promise<DeviceStats> => {
+    if (isDemoMode()) return { total: 3, online: 2, offline: 0, error: 0, maintenance: 1, byType: { CAMERA: 1, ROBOT_ARM: 1, IOT_SENSOR: 1 } };
     const response = await api.get<ApiResponse<DeviceStats>>('/v1/devices/stats/overview');
     return response.data.data;
   },

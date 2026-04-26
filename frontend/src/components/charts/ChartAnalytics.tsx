@@ -91,16 +91,20 @@ export function TaskStatusChart({ data }: { data: TaskStatusData }) {
           padding: 20,
           usePointStyle: true,
           pointStyle: 'circle',
+          color: 'currentColor',
+          font: { size: 12 }
         },
       },
       title: {
-        display: true,
-        text: 'Task Status Distribution',
-        font: { size: 16, weight: 'bold' as const },
-        padding: { bottom: 20 },
+        display: false
       },
     },
-    cutout: '60%',
+    cutout: '75%',
+    elements: {
+      arc: {
+        borderWidth: 0
+      }
+    }
   };
 
   return (
@@ -146,10 +150,7 @@ export function ResourceLoadChart({ data }: { data: ResourceLoadData[] }) {
         display: false,
       },
       title: {
-        display: true,
-        text: 'Resource Load Distribution',
-        font: { size: 16, weight: 'bold' as const },
-        padding: { bottom: 20 },
+        display: false
       },
     },
     scales: {
@@ -157,9 +158,11 @@ export function ResourceLoadChart({ data }: { data: ResourceLoadData[] }) {
         beginAtZero: true,
         max: 100,
         grid: {
-          color: 'rgba(0, 0, 0, 0.05)',
+          color: 'rgba(156, 163, 175, 0.1)',
         },
         ticks: {
+          color: '#9ca3af',
+          font: { size: 11 },
           callback: (value: number | string) => `${value}%`,
         },
       },
@@ -167,6 +170,10 @@ export function ResourceLoadChart({ data }: { data: ResourceLoadData[] }) {
         grid: {
           display: false,
         },
+        ticks: {
+          color: '#9ca3af',
+          font: { size: 11 }
+        }
       },
     },
   };
@@ -478,6 +485,11 @@ export function GaugeChart({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const isDark = document.documentElement.classList.contains('dark');
+    const bgTrack = isDark ? '#334155' : '#e5e7eb';
+    const textColor = isDark ? '#f1f5f9' : '#1f2937';
+    const labelColor = isDark ? '#94a3b8' : '#6b7280';
+
     const centerX = canvas.width / 2;
     const centerY = canvas.height - 30;
     const radius = Math.min(centerX, centerY) - 20;
@@ -488,8 +500,8 @@ export function GaugeChart({
     // Draw background arc
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, Math.PI, 0);
-    ctx.lineWidth = 20;
-    ctx.strokeStyle = '#e5e7eb';
+    ctx.lineWidth = 12;
+    ctx.strokeStyle = bgTrack;
     ctx.stroke();
 
     // Draw value arc
@@ -498,21 +510,21 @@ export function GaugeChart({
 
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, Math.PI, endAngle);
-    ctx.lineWidth = 20;
+    ctx.lineWidth = 12;
     ctx.strokeStyle = colorMap[color];
     ctx.lineCap = 'round';
     ctx.stroke();
 
     // Draw value text
-    ctx.font = 'bold 28px Inter, system-ui, sans-serif';
-    ctx.fillStyle = '#1f2937';
+    ctx.font = 'bold 24px Plus Jakarta Sans, system-ui, sans-serif';
+    ctx.fillStyle = textColor;
     ctx.textAlign = 'center';
-    ctx.fillText(`${Math.round(value)}%`, centerX, centerY - 20);
+    ctx.fillText(`${Math.round(value)}%`, centerX, centerY - 15);
 
     // Draw label
-    ctx.font = '14px Inter, system-ui, sans-serif';
-    ctx.fillStyle = '#6b7280';
-    ctx.fillText(label, centerX, centerY + 10);
+    ctx.font = '500 12px Plus Jakarta Sans, system-ui, sans-serif';
+    ctx.fillStyle = labelColor;
+    ctx.fillText(label.toUpperCase(), centerX, centerY + 15);
   }, [value, max, color, label]);
 
   return (

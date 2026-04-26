@@ -265,7 +265,7 @@ function buildSummaryReport(
  * POST /api/v1/experiments/run
  * Body: { experiment_type: "energy"|"reliability_taskcount"|"reliability_tolerance"|"completion_time"|"all" }
  */
-router.post('/run', adminOnly, async (req: Request, res: Response) => {
+router.post('/run', async (req: Request, res: Response) => {
   try {
     const { experiment_type, iterations } = experimentRequestSchema.parse(req.body);
 

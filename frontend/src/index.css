@@ -2,13 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ═══════════════════════════════════════════
-   RED NOIR THEME - CUSTOM ANIMATIONS
-═══════════════════════════════════════════ */
-:root {
-  --accent-red: #ef233c;
-  --accent-red-glow: rgba(239, 35, 60, 0.5);
-}
+
 
 html {
   scroll-behavior: smooth;
@@ -49,10 +43,7 @@ html {
 .font-inter { font-family: 'Inter', sans-serif; }
 
 /* Selection styling */
-.selection-red::selection {
-  background: #ef233c;
-  color: white;
-}
+
 
 .text-stroke {
   -webkit-text-stroke: 1px rgba(255, 255, 255, 0.1);
@@ -61,27 +52,20 @@ html {
 
 /* Light mode (default) */
 body {
-  @apply text-gray-900 font-sans min-h-screen bg-slate-50 bg-gradient-to-br from-indigo-50/50 via-white to-blue-50/50 selection:bg-indigo-100;
+  @apply text-gray-900 font-sans min-h-screen bg-slate-50 bg-gradient-to-br from-emerald-50 via-white to-blue-50 selection:bg-emerald-100;
 }
 
 /* Dark mode */
 .dark body,
 .dark {
-  @apply text-gray-100 bg-gray-950 bg-gradient-to-br from-gray-950 via-gray-900 to-slate-900 selection:bg-indigo-900;
+  @apply text-gray-100 bg-gray-950 bg-gradient-to-br from-gray-950 via-gray-900 to-slate-900 selection:bg-emerald-900;
 }
 
-/* Red Noir Landing Page mode */
-.red-noir {
-  @apply bg-black text-white selection:bg-[#ef233c] selection:text-white;
-}
 
-.red-noir body {
-  @apply bg-black;
-}
 
 /* Page title - strong display heading */
 .page-title {
-  @apply text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-cyan-600 dark:from-indigo-400 dark:to-cyan-400;
+  @apply text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-primary-500 to-indigo-600 dark:from-emerald-400 dark:via-white dark:to-primary-400;
 }
 
 .page-subtitle {
@@ -102,7 +86,7 @@ body {
 }
 
 .btn-primary {
-  @apply bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:from-indigo-500 hover:to-blue-500 hover:shadow-lg hover:shadow-indigo-500/30 active:scale-[0.97] hover:-translate-y-0.5 border border-indigo-500/50;
+  @apply bg-gradient-to-r from-emerald-500 to-primary-600 text-white hover:from-emerald-600 hover:to-primary-700 hover:shadow-xl hover:shadow-emerald-500/20 active:scale-[0.97] hover:-translate-y-0.5 border border-emerald-500/50;
 }
 
 .btn-secondary {
@@ -113,12 +97,56 @@ body {
   @apply bg-gradient-to-r from-red-600 to-rose-600 text-white hover:from-red-500 hover:to-rose-500 hover:shadow-lg hover:shadow-red-500/30 active:scale-[0.97] hover:-translate-y-0.5 border border-red-500/50;
 }
 
+/* Shiny Snake Border Button */
+.btn-shiny {
+  @apply relative overflow-hidden transition-all duration-300 active:scale-95;
+  background: transparent;
+  padding: 2px; /* This creates the border thickness */
+}
+
+.btn-shiny::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300%;
+  height: 300%;
+  background: conic-gradient(
+    from var(--gradient-angle),
+    transparent 0%,
+    transparent 20%,
+    theme('colors.emerald.500') 45%,
+    theme('colors.primary.500') 50%,
+    theme('colors.emerald.500') 55%,
+    transparent 80%,
+    transparent 100%
+  );
+  animation: border-spin 3s linear infinite;
+}
+
+.btn-shiny .btn-inner {
+  @apply relative z-10 w-full h-full flex items-center justify-center rounded-[inherit] px-6 py-3 transition-all duration-300;
+  background: linear-gradient(to right, theme('colors.emerald.500'), theme('colors.primary.600'));
+}
+
+.btn-shiny:hover .btn-inner {
+  background: linear-gradient(to right, theme('colors.emerald.600'), theme('colors.primary.700'));
+  @apply shadow-lg shadow-emerald-500/20;
+}
+
+.dark .btn-shiny .btn-inner {
+  background: linear-gradient(to right, theme('colors.emerald.600'), theme('colors.primary.700'));
+}
+
+
+
 .input {
-  @apply w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-200 shadow-sm hover:border-gray-300 dark:hover:border-gray-600;
+  @apply w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all duration-200 shadow-sm hover:border-gray-300 dark:hover:border-gray-600;
 }
 
 .select {
-  @apply w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-200 shadow-sm hover:border-gray-300 dark:hover:border-gray-600 appearance-none;
+  @apply w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all duration-200 shadow-sm hover:border-gray-300 dark:hover:border-gray-600 appearance-none;
 }
 
 .label {
@@ -201,15 +229,24 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100 dark:bg-gray-800;
+  @apply bg-transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  @apply bg-gray-300/50 dark:bg-gray-600/50 rounded-full border-2 border-transparent bg-clip-padding transition-colors;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400 dark:bg-gray-500;
+  @apply bg-emerald-500/80 dark:bg-emerald-400/80;
+}
+
+::-webkit-scrollbar-thumb:active {
+  @apply bg-primary-600 dark:bg-primary-500;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
 /* Mobile responsiveness improvements */
@@ -226,3 +263,87 @@ body {
     @apply px-2 py-2;
   }
 }
+/* Marquee Animation */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+.animate-shine {
+  animation: shine 2s infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes bounce-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Minimal Background Particles */
+@keyframes particle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-40px); }
+}
+
+@keyframes particle-drift {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(20px); }
+}
+
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: screen;
+}
+
+.dark .particle {
+  mix-blend-mode: plus-lighter;
+}
+
+
+/* Jumping Balls Background Animation */
+@keyframes ball-jump {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-25vh) scale(1.1); }
+}
+
+@keyframes ball-drift {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(10vw); }
+}
+
+.jumping-ball {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.15;
+  animation: ball-jump 10s ease-in-out infinite, ball-drift 15s ease-in-out infinite;
+}
+
+.dark .jumping-ball {
+  opacity: 0.08;
+  filter: blur(120px);
+}
+

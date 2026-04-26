@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, X, Filter } from 'lucide-react';
+import { IconSearch, IconX, IconFilter } from '@tabler/icons-react';
 import { clsx } from 'clsx';
 
 interface SearchFilterProps {
@@ -43,7 +43,7 @@ export function SearchFilter({ placeholder = 'Search...', onSearch, filters }: S
       <div className="flex gap-2">
         {/* Search Input */}
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             ref={inputRef}
             type="text"
@@ -58,7 +58,7 @@ export function SearchFilter({ placeholder = 'Search...', onSearch, filters }: S
                 onClick={() => setQuery('')}
                 className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
-                <X className="h-3.5 w-3.5 text-gray-400" />
+                <IconX className="h-3.5 w-3.5 text-gray-400" />
               </button>
             )}
             <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
@@ -78,7 +78,7 @@ export function SearchFilter({ placeholder = 'Search...', onSearch, filters }: S
                 : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
             )}
           >
-            <Filter className="h-4 w-4" />
+            <IconFilter className="h-4 w-4" />
             <span className="text-sm font-medium hidden sm:inline">Filters</span>
           </button>
         )}

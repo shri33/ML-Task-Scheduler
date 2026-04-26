@@ -1,5 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { IconAlertTriangle, IconRefresh, IconHome } from '@tabler/icons-react';
 
 interface Props {
   children: ReactNode;
@@ -58,7 +58,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           <div className="max-w-lg w-full text-center">
             <div className="flex justify-center mb-6">
               <div className="h-20 w-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
-                <AlertTriangle className="h-10 w-10 text-red-600 dark:text-red-400" />
+                <IconAlertTriangle className="h-10 w-10 text-red-600 dark:text-red-400" />
               </div>
             </div>
 
@@ -88,7 +88,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                 onClick={this.handleReload}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
               >
-                <RefreshCw className="h-5 w-5" />
+                <IconRefresh className="h-5 w-5" />
                 Refresh Page
               </button>
 
@@ -96,7 +96,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                 onClick={this.handleGoHome}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
-                <Home className="h-5 w-5" />
+                <IconHome className="h-5 w-5" />
                 Go to Dashboard
               </button>
             </div>
