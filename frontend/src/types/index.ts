@@ -32,6 +32,7 @@ export interface Resource {
   capacity: number;
   currentLoad: number;
   status: 'AVAILABLE' | 'BUSY' | 'OFFLINE';
+  layer: 'FOG' | 'CLOUD' | 'TERMINAL';
   createdAt: string;
   updatedAt: string;
   _count?: {
@@ -94,6 +95,11 @@ export interface ResourceStats {
   busy: number;
   offline: number;
   avgLoad: number;
+  distribution: {
+    FOG: number;
+    CLOUD: number;
+    TERMINAL: number;
+  };
 }
 
 export interface Metrics {

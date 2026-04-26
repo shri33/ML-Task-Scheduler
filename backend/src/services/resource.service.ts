@@ -10,6 +10,7 @@ interface ResourceWithLoad {
   capacity: number;
   currentLoad: number;
   status: string;
+  layer: 'FOG' | 'CLOUD' | 'TERMINAL';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,7 +20,8 @@ export class ResourceService {
     const resource = await prisma.resource.create({
       data: {
         name: data.name,
-        capacity: data.capacity
+        capacity: data.capacity,
+        layer: (data as any).layer || 'FOG'
       }
     });
     await mlService.clearAllPredictions();
@@ -149,11 +151,19 @@ export class ResourceService {
     const available = resources.filter((r: ResourceWithLoad) => r.status === 'AVAILABLE').length;
     const busy = resources.filter((r: ResourceWithLoad) => r.status === 'BUSY').length;
     const offline = resources.filter((r: ResourceWithLoad) => r.status === 'OFFLINE').length;
+    
+    // Distribution by layer
+    const distribution = {
+      FOG: resources.filter((r: ResourceWithLoad) => r.layer === 'FOG').length,
+      CLOUD: resources.filter((r: ResourceWithLoad) => r.layer === 'CLOUD').length,
+      TERMINAL: resources.filter((r: ResourceWithLoad) => r.layer === 'TERMINAL').length,
+    };
+
     const avgLoad = resources.length > 0 
       ? resources.reduce((sum: number, r: ResourceWithLoad) => sum + r.currentLoad, 0) / resources.length 
       : 0;
 
-    return { total, available, busy, offline, avgLoad: Math.round(avgLoad * 100) / 100 };
+    return { total, available, busy, offline, avgLoad: Math.round(avgLoad * 100) / 100, distribution };
   }
 }
 

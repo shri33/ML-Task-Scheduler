@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { taskApi } from "../lib/api";
+import { taskApi, metricsApi } from "../lib/api";
 import { useStore } from "../store";
 import {
   IconListCheck,
@@ -82,6 +82,7 @@ export default function Dashboard() {
   const [newTaskType, setNewTaskType] = useState<'CPU' | 'IO' | 'MIXED'>("MIXED");
   const [newTaskPriority, setNewTaskPriority] = useState<number>(2);
   const [isCreating, setIsCreating] = useState(false);
+  const [chartData, setChartData] = useState<{ name: string; load: number; throughput: number }[]>([]);
   const toast = useToast();
   const hasFetched = useRef(false);
 
@@ -97,7 +98,12 @@ export default function Dashboard() {
       fetchTasks();
       fetchResources();
       fetchMetrics();
+      metricsApi.getDashboard().then(setChartData).catch(console.error);
     }, 5000);
+    
+    // Initial fetch
+    metricsApi.getDashboard().then(setChartData).catch(console.error);
+
     return () => clearInterval(interval);
   }, [fetchTasks, fetchResources, fetchMetrics, checkMlStatus]);
 
@@ -163,21 +169,12 @@ export default function Dashboard() {
   const isLoading = tasksLoading || resourcesLoading || metricsLoading;
   if (isLoading && tasks.length === 0) return <DashboardSkeleton />;
 
-  // Mock data for the Area Chart
-  const chartData = [
-    { name: '00:00', load: 30, throughput: 45 },
-    { name: '04:00', load: 45, throughput: 52 },
-    { name: '08:00', load: 85, throughput: 78 },
-    { name: '12:00', load: 70, throughput: 92 },
-    { name: '16:00', load: 90, throughput: 85 },
-    { name: '20:00', load: 60, throughput: 65 },
-    { name: '23:59', load: 40, throughput: 48 },
-  ];
+  // Chart data is now fetched from the API and stored in chartData state
 
   const distributionData = [
-    { name: 'Fog', value: 65, color: '#22c55e' },
-    { name: 'Cloud', value: 25, color: '#3b82f6' },
-    { name: 'Terminal', value: 10, color: '#8b5cf6' },
+    { name: 'Fog', value: metrics?.resources.distribution.FOG || 0, color: '#22c55e' },
+    { name: 'Cloud', value: metrics?.resources.distribution.CLOUD || 0, color: '#3b82f6' },
+    { name: 'Terminal', value: metrics?.resources.distribution.TERMINAL || 0, color: '#8b5cf6' },
   ];
 
   return (

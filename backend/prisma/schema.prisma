@@ -35,6 +35,12 @@ enum ResourceStatus {
   OFFLINE
 }
 
+enum ResourceLayer {
+  FOG
+  CLOUD
+  TERMINAL
+}
+
 model Task {
   id            String     @id @default(uuid())
   name          String
@@ -77,6 +83,7 @@ model Resource {
   capacity    Int
   currentLoad Float          @default(0)
   status      ResourceStatus @default(AVAILABLE)
+  layer       ResourceLayer  @default(FOG)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   deletedAt   DateTime? // Soft delete

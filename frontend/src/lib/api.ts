@@ -261,7 +261,15 @@ export const taskApi = {
   },
 
   getStats: async () => {
-    if (isDemoMode()) return { total: 3, pending: 1, scheduled: 1, running: 0, completed: 1, failed: 0 };
+    if (isDemoMode()) return { 
+      total: 3, 
+      pending: 1, 
+      scheduled: 1, 
+      running: 0, 
+      completed: 1, 
+      failed: 0,
+      distribution: { FOG: 2, CLOUD: 1, TERMINAL: 0 }
+    };
     const response = await api.get<ApiResponse<{ total: number; pending: number; scheduled: number; running: number; completed: number; failed: number }>>('/v1/tasks/stats');
     return response.data.data;
   },
@@ -272,8 +280,8 @@ export const resourceApi = {
   getAll: async (status?: string): Promise<Resource[]> => {
     if (isDemoMode()) {
       return [
-        { id: 'res-1', name: 'Edge Node Alpha', capacity: 100, currentLoad: 85, status: 'AVAILABLE', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-        { id: 'res-2', name: 'Cloud Instance Beta', capacity: 100, currentLoad: 20, status: 'AVAILABLE', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: 'res-1', name: 'Edge Node Alpha', capacity: 100, currentLoad: 85, status: 'AVAILABLE', layer: 'FOG', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: 'res-2', name: 'Cloud Instance Beta', capacity: 100, currentLoad: 20, status: 'AVAILABLE', layer: 'CLOUD', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
       ];
     }
     const params = status ? { status } : {};
@@ -345,7 +353,7 @@ export const metricsApi = {
     if (isDemoMode()) {
       return { 
         tasks: { total: 3, pending: 1, scheduled: 1, running: 0, completed: 1, failed: 0 },
-        resources: { total: 2, available: 2, busy: 0, offline: 0, avgLoad: 52.5 },
+        resources: { total: 2, available: 2, busy: 0, offline: 0, avgLoad: 52.5, distribution: { FOG: 1, CLOUD: 1, TERMINAL: 0 } },
         performance: { avgExecutionTime: 2.0, mlAccuracy: 98.2, totalScheduled: 3 }
       };
     }
@@ -356,6 +364,11 @@ export const metricsApi = {
   getTimeline: async (days?: number) => {
     const params = days ? { days } : {};
     const response = await api.get<ApiResponse<{ date: string; tasksScheduled: number; avgExecutionTime: number; mlAccuracy: number }[]>>('/v1/metrics/timeline', { params });
+    return response.data.data;
+  },
+
+  getDashboard: async () => {
+    const response = await api.get<ApiResponse<{ name: string; load: number; throughput: number }[]>>('/v1/metrics/dashboard');
     return response.data.data;
   },
 };
