@@ -35,30 +35,7 @@ import {
   Cell
 } from "recharts";
 
-function LeaderboardItem({ rank, name, score, trend, avatar }: { rank: number, name: string, score: number, trend: string, avatar: string }) {
-  return (
-    <div className="flex items-center justify-between group cursor-pointer">
-       <div className="flex items-center gap-3">
-          <div className="relative">
-             <img src={avatar} alt={name} className="w-9 h-9 rounded-full object-cover ring-2 ring-gray-100 dark:ring-gray-800 group-hover:ring-primary-500 transition-all" />
-             <div className={clsx(
-                "absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black border-2 border-white dark:border-[#1a2234] text-white",
-                rank === 1 ? "bg-amber-500" : rank === 2 ? "bg-slate-400" : "bg-orange-600"
-             )}>
-                {rank}
-             </div>
-          </div>
-          <div>
-             <div className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors">{name}</div>
-             <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{score.toLocaleString()} Points</div>
-          </div>
-       </div>
-       <div className={clsx("text-[10px] font-black px-2 py-0.5 rounded-lg", trend.startsWith('+') ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600")}>
-          {trend}
-       </div>
-    </div>
-  );
-}
+
 
 export default function Dashboard() {
   const {
@@ -66,6 +43,7 @@ export default function Dashboard() {
     resources,
     metrics,
     scheduling,
+    mlAvailable,
     tasksLoading,
     resourcesLoading,
     metricsLoading,
@@ -82,34 +60,37 @@ export default function Dashboard() {
   const [newTaskPriority, setNewTaskPriority] = useState<number>(2);
   const [isCreating, setIsCreating] = useState(false);
   const [chartData, setChartData] = useState<{ name: string; load: number; throughput: number }[]>([]);
-  const [anomalies, setAnomalies] = useState<any[]>([]);
+
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const anomalyCountRef = useRef(0);
   const toast = useToast();
   const hasFetched = useRef(false);
 
   useEffect(() => {
-    if (!hasFetched.current) {
-      hasFetched.current = true;
+    const doFetch = () => {
+      // Skip polling when tab is hidden to reduce server load
+      if (document.hidden) return;
       fetchTasks();
       fetchResources();
       fetchMetrics();
       checkMlStatus();
-    }
-    const interval = setInterval(() => {
-      fetchTasks();
-      fetchResources();
-      fetchMetrics();
+      setLastUpdated(new Date());
       metricsApi.getDashboard().then(setChartData).catch(console.error);
       metricsApi.getAnomalies().then(data => {
-        if (data?.anomalies?.length > 0 && data.anomalies.length !== anomalies.length) {
-          setAnomalies(data.anomalies);
+        if (data?.anomalies?.length > 0 && data.anomalies.length !== anomalyCountRef.current) {
+          anomalyCountRef.current = data.anomalies.length;
           toast.warning('Anomalies Detected', `Found ${data.anomalies.length} performance outliers in recent tasks.`);
         }
       }).catch(console.error);
-    }, 5000);
-    
-    // Initial fetch
-    metricsApi.getDashboard().then(setChartData).catch(console.error);
+    };
 
+    if (!hasFetched.current) {
+      hasFetched.current = true;
+      doFetch();
+    }
+
+    // Poll every 15s instead of 5s to reduce backend pressure
+    const interval = setInterval(doFetch, 15000);
     return () => clearInterval(interval);
   }, [fetchTasks, fetchResources, fetchMetrics, checkMlStatus]);
 
@@ -205,35 +186,54 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-12 gap-6">
         
-        {/* ── CONGRATS CARD (Vuexy Style) ── */}
+        {/* ── SYSTEM STATUS CARD (API-driven) ── */}
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
            <div className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl shadow-primary-500/20 group h-1/2">
               <div className="relative z-10">
                  <h3 className="text-2xl font-bold mb-2">System Status</h3>
                  <p className="text-primary-100 text-sm leading-relaxed mb-4 max-w-[200px]">
-                    ML Service is active and predicting with 94.2% accuracy.
+                    {mlAvailable ? 'ML Service is active and scheduling tasks.' : 'ML offline — using heuristic fallback.'}
                  </p>
-                 <div className="text-4xl font-black mb-1">98.5%</div>
-                 <div className="text-xs font-bold opacity-80 uppercase tracking-widest">Reliability Score</div>
+                 <div className="text-4xl font-black mb-1">
+                    {metrics?.performance.mlAccuracy != null ? `${(metrics.performance.mlAccuracy * 100).toFixed(1)}%` : '—'}
+                 </div>
+                 <div className="text-xs font-bold opacity-80 uppercase tracking-widest">ML Accuracy</div>
               </div>
               <div className="absolute top-1/2 right-4 -translate-y-1/2 opacity-20 group-hover:scale-125 transition-transform duration-700">
                  <IconBrain className="w-32 h-32 text-white" />
               </div>
            </div>
 
-           {/* ── LEADERBOARD ── */}
+           {/* ── TASK COMPLETION SUMMARY ── */}
            <div className="bg-white dark:bg-[#1a2234] rounded-3xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm flex-1">
               <div className="flex items-center justify-between mb-6">
                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <IconTrophy className="w-5 h-5 text-amber-500" />
-                    Top Contributors
+                    Task Summary
                  </h3>
-                 <span className="text-[10px] font-black text-gray-400 uppercase">Monthly</span>
+                 <span className="text-[10px] font-black text-gray-400 uppercase">Live</span>
               </div>
               <div className="space-y-4">
-                 <LeaderboardItem rank={1} name="Shri Srivastava" score={9820} trend="+12%" avatar="https://i.pravatar.cc/150?u=shri" />
-                 <LeaderboardItem rank={2} name="Ichha Dwivedi" score={8450} trend="+5%" avatar="https://i.pravatar.cc/150?u=ichha" />
-                 <LeaderboardItem rank={3} name="Aditi Singh" score={7200} trend="-2%" avatar="https://i.pravatar.cc/150?u=aditi" />
+                 <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-gray-600 dark:text-gray-400">Completed</span>
+                    <span className="text-sm font-black text-emerald-600">{metrics?.tasks.completed ?? 0}</span>
+                 </div>
+                 <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-gray-600 dark:text-gray-400">Scheduled</span>
+                    <span className="text-sm font-black text-primary-600">{metrics?.tasks.scheduled ?? 0}</span>
+                 </div>
+                 <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-gray-600 dark:text-gray-400">Failed</span>
+                    <span className="text-sm font-black text-rose-600">{metrics?.tasks.failed ?? 0}</span>
+                 </div>
+                 <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-gray-600 dark:text-gray-400">Pending</span>
+                    <span className="text-sm font-black text-amber-600">{metrics?.tasks.pending ?? 0}</span>
+                 </div>
+                 <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                    <span className="text-sm font-bold text-gray-600 dark:text-gray-400">Total Scheduled</span>
+                    <span className="text-sm font-black text-gray-900 dark:text-white">{metrics?.performance.totalScheduled ?? 0}</span>
+                 </div>
               </div>
            </div>
         </div>
@@ -242,7 +242,7 @@ export default function Dashboard() {
         <div className="col-span-12 lg:col-span-8 bg-white dark:bg-[#1a2234] rounded-3xl p-8 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col justify-between">
            <div className="flex items-center justify-between mb-8">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">Global Statistics</h3>
-              <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Updated 2m ago</p>
+              <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Updated {Math.round((Date.now() - lastUpdated.getTime()) / 1000)}s ago</p>
            </div>
            
            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -409,9 +409,11 @@ export default function Dashboard() {
                        onChange={(e) => setNewTaskPriority(Number(e.target.value))}
                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl text-sm appearance-none cursor-pointer outline-none"
                     >
-                       <option value={1}>Tier 1</option>
-                       <option value={2}>Tier 2</option>
-                       <option value={3}>Tier 3</option>
+                       <option value={1}>P1 — Low</option>
+                       <option value={2}>P2 — Normal</option>
+                       <option value={3}>P3 — High</option>
+                       <option value={4}>P4 — Urgent</option>
+                       <option value={5}>P5 — Critical</option>
                     </select>
                  </div>
               </div>
@@ -490,10 +492,10 @@ export default function Dashboard() {
                              <span className="text-sm font-bold text-gray-900 dark:text-white truncate max-w-[120px]">{task.name}</span>
                           </div>
                        </td>
-                       <td className="py-4 text-sm font-medium text-gray-500">Neural-HH</td>
+                       <td className="py-4 text-sm font-medium text-gray-500">{task.type}</td>
                        <td className="py-4">
                           <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500">
-                             <IconCloud className="w-3.5 h-3.5" /> FOG-LAYER-A
+                             <IconCloud className="w-3.5 h-3.5" /> {task.resource?.name || task.size}
                           </div>
                        </td>
                        <td className="py-4 text-right">

@@ -1,7 +1,7 @@
 import { taskApi, scheduleApi, metricsApi, fogApi } from '../lib/api';
 import { Task, CreateTaskInput } from '../types';
 
-export const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 class ApiClient {
   async getTasks(): Promise<Task[]> {

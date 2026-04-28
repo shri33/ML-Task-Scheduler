@@ -12,6 +12,7 @@ import {
   IconChevronLeft
 } from '@tabler/icons-react';
 import { clsx } from 'clsx';
+import DemoModeBanner from '../components/DemoModeBanner';
 
 const FOLDERS = [
   { id: 'inbox', name: 'Inbox', icon: IconMail, count: 4, color: 'text-primary-600' },
@@ -75,6 +76,8 @@ export default function Email() {
   const [activeFolder, setActiveFolder] = useState('inbox');
 
   return (
+    <>
+    <div className="mb-4"><DemoModeBanner featureName="System Email" /></div>
     <div className="h-[calc(100vh-140px)] animate-fade-in flex bg-white dark:bg-[#1a2234] rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
       
       {/* ── SIDEBAR ── */}
@@ -180,5 +183,6 @@ export default function Email() {
          </footer>
       </div>
     </div>
+    </>
   );
 }

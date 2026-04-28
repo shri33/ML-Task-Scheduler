@@ -41,8 +41,11 @@ services:
     image: redis:7-alpine
     container_name: task-scheduler-redis
     restart: unless-stopped
+    command: redis-server --appendonly yes --appendfsync everysec --maxmemory 200mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -83,7 +86,7 @@ services:
       ML_SERVICE_URL: http://ml-service:5001
       CORS_ORIGIN: http://localhost:3000
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-minimum-32-char-length-1234567890}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in your environment}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     depends_on:
       db:
@@ -358,5 +361,6 @@ networks:
 
 volumes:
   postgres_data:
+  redis_data:
   prometheus_data:
   grafana_data:

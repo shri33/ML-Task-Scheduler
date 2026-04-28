@@ -12,8 +12,9 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().regex(/^\d+$/).transform(Number).default('3001'),
   
-  // Database (required)
-  DATABASE_URL: z.string().url().min(1, 'DATABASE_URL is required'),
+  // Database (required) — uses .min(1) instead of .url() because
+  // Prisma connection strings include query params that fail Zod URL validation
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   
   // Redis (optional in development)
   REDIS_URL: z.string().url().optional(),
@@ -27,6 +28,9 @@ const envSchema = z.object({
   // JWT Authentication (required — no default for security)
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters — set this in your environment'),
   JWT_EXPIRES_IN: z.string().default('7d'),
+  
+  // Refresh token (separate secret for refresh tokens)
+  REFRESH_TOKEN_SECRET: z.string().min(32).optional(),
   
   // Email (optional)
   SMTP_HOST: z.string().optional(),
@@ -47,6 +51,7 @@ const envSchema = z.object({
 const productionEnvSchema = envSchema.extend({
   CORS_ORIGIN: z.string().min(1, 'CORS_ORIGIN is required in production'),
   REDIS_URL: z.string().url().min(1, 'REDIS_URL is required in production'),
+  REFRESH_TOKEN_SECRET: z.string().min(32, 'REFRESH_TOKEN_SECRET must be set in production (separate from JWT_SECRET)'),
 });
 
 // Infer TypeScript type from schema

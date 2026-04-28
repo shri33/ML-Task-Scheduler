@@ -8,6 +8,7 @@ import {
   IconFilter
 } from '@tabler/icons-react';
 import { clsx } from 'clsx';
+import DemoModeBanner from '../components/DemoModeBanner';
 
 const INITIAL_BOARD = [
   {
@@ -47,6 +48,7 @@ export default function Kanban() {
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-6 animate-fade-in">
+      <DemoModeBanner featureName="Kanban Board" />
       
       {/* ── HEADER ── */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-[#1a2234] p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">

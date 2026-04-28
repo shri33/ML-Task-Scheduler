@@ -166,16 +166,20 @@ export class TaskService {
 
   async getStats() {
     const notDeleted = { deletedAt: null };
-    const [total, pending, scheduled, running, completed, failed] = await Promise.all([
-      prisma.task.count({ where: notDeleted }),
-      prisma.task.count({ where: { ...notDeleted, status: 'PENDING' } }),
-      prisma.task.count({ where: { ...notDeleted, status: 'SCHEDULED' } }),
-      prisma.task.count({ where: { ...notDeleted, status: 'RUNNING' } }),
-      prisma.task.count({ where: { ...notDeleted, status: 'COMPLETED' } }),
-      prisma.task.count({ where: { ...notDeleted, status: 'FAILED' } })
-    ]);
+    const groups = await prisma.task.groupBy({
+      by: ['status'],
+      where: notDeleted,
+      _count: { status: true },
+    });
 
-    return { total, pending, scheduled, running, completed, failed };
+    const result = { total: 0, pending: 0, scheduled: 0, running: 0, completed: 0, failed: 0 };
+    for (const g of groups) {
+      const count = g._count.status;
+      result.total += count;
+      const key = g.status.toLowerCase() as keyof typeof result;
+      if (key in result) (result as any)[key] = count;
+    }
+    return result;
   }
 }
 

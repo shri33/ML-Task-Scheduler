@@ -220,7 +220,16 @@ io.use((socket, next) => {
 });
 
 io.on('connection', (socket) => {
-  logger.info('Client connected', { socketId: socket.id });
+  const user = (socket as any).user;
+  const userId = user?.userId || user?.id;
+
+  // Join user-specific room for targeted events
+  if (userId) {
+    socket.join(`user:${userId}`);
+    logger.info('Client connected', { socketId: socket.id, userId });
+  } else {
+    logger.info('Client connected (unauthenticated)', { socketId: socket.id });
+  }
   
   socket.on('disconnect', () => {
     logger.info('Client disconnected', { socketId: socket.id });

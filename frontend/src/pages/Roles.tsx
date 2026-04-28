@@ -13,6 +13,7 @@ import {
   IconShieldLock
 } from '@tabler/icons-react';
 import { clsx } from 'clsx';
+import DemoModeBanner from '../components/DemoModeBanner';
 
 const ROLES_DATA = [
   { id: 1, name: 'Team Leader, Developer', totalUsers: 1, avatars: ['https://media.licdn.com/dms/image/v2/D4D03AQEcj0OjaV1cTA/profile-displayphoto-scale_400_400/B4DZlmASTzJgAg-/0/1758352977139?e=1778716800&v=beta&t=BSLicgDEEWtzCFIlfgDH_f1ovuIxWYLyrYq9FEKfh88'], color: 'text-primary-600', bg: 'bg-primary-50 dark:bg-primary-900/20' },
@@ -34,6 +35,7 @@ export default function Roles() {
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-8 animate-fade-in">
+      <DemoModeBanner featureName="Role Management" />
       
       {/* ── HEADER ── */}
       <div>

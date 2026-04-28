@@ -699,8 +699,10 @@ router.post('/forgot-password', authLimiter, async (req: Request, res: Response,
     });
 
     // In production, send email with reset link
-    // For demo, we'll just return success
-    console.log(`Password reset token for ${email}: ${resetToken}`);
+    // In dev, token is included in the response body below
+    if (process.env.NODE_ENV !== 'production') {
+      console.debug(`[DEV] Password reset requested for ${email}`);
+    }
 
     res.json({
       success: true,

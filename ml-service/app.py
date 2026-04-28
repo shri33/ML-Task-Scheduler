@@ -565,6 +565,7 @@ def model_registry():
     })
 
 @app.route('/api/model/switch', methods=['POST'])
+@require_api_key
 def switch_model():
     """
     Switch to a different ML model type
@@ -809,15 +810,8 @@ def retrain_from_db():
         logger.error(f"Retrain from DB failed: {e}")
         return jsonify({'error': safe_error(e)}), 500
 
-@app.route('/metrics', methods=['GET'])
-def prometheus_metrics():
-    """Prometheus-compatible metrics endpoint."""
-    lines = []
-    for key, val in _metrics.items():
-        prom_name = f'ml_service_{key}'
-        lines.append(f'# TYPE {prom_name} counter')
-        lines.append(f'{prom_name} {val}')
-    return '\n'.join(lines) + '\n', 200, {'Content-Type': 'text/plain; charset=utf-8'}
+# NOTE: /metrics endpoint is already defined above (line ~164).
+# Duplicate handler removed to avoid confusion.
 
 # ---------------------------------------------------------------------------
 # Research-Grade Endpoints

@@ -71,4 +71,11 @@ prisma.$use(async (params, next) => {
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
+// Graceful shutdown — prevent connection pool leaks on container restart
+async function gracefulShutdown() {
+  await prisma.$disconnect();
+}
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
+
 export default prisma;

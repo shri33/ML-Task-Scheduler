@@ -7,6 +7,7 @@ import { getSchedulingQueue } from '../queues';
 import { JOB_NAMES, TaskEventJobData } from '../queues/types';
 import logger from '../lib/logger';
 import { z } from 'zod';
+import { validateUUID, sanitizeBody } from '../middleware/validate.middleware';
 
 /** Emit a task event to the scheduling queue (non-blocking, best-effort). */
 async function emitTaskEvent(
@@ -34,6 +35,9 @@ const router = Router();
 
 // All task routes require authentication
 router.use(authenticate);
+
+// Sanitize all incoming body content to prevent XSS
+router.use(sanitizeBody);
 
 /**
  * @swagger
@@ -177,7 +181,7 @@ router.get('/stats', async (req: Request, res: Response, next: NextFunction) => 
  *       404:
  *         description: Task not found
  */
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', validateUUID('id'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const task = await taskService.findById(req.params.id);
     if (!task) {
@@ -255,7 +259,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
  *       404:
  *         description: Task not found
  */
-router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', validateUUID('id'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = updateTaskSchema.parse(req.body);
     const task = await taskService.update(req.params.id, data);
@@ -294,7 +298,7 @@ import { auditService } from '../services/audit.service';
  *       404:
  *         description: Task not found
  */
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', validateUUID('id'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req as AuthRequest).user?.userId;
     await taskService.delete(req.params.id);
@@ -350,7 +354,7 @@ const completeTaskSchema = z.object({
  *       200:
  *         description: Task marked as completed
  */
-router.post('/:id/complete', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/complete', validateUUID('id'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validation = completeTaskSchema.safeParse(req.body);
     if (!validation.success) {

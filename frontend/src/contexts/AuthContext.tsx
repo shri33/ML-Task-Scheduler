@@ -35,6 +35,13 @@ const DEMO_USER: AuthUser = {
 const DEMO_PASSWORD = 'password123';
 const DEMO_MODE_KEY = 'ml-scheduler-demo-mode';
 
+/**
+ * Demo mode is only enabled when VITE_ENABLE_DEMO=true is explicitly set.
+ * This prevents phantom sessions in production where backend failures
+ * would silently create fake authenticated users.
+ */
+const DEMO_ALLOWED = import.meta.env.VITE_ENABLE_DEMO === 'true';
+
 /** Safely parse JSON from a Response, returning null if the body is empty or not valid JSON */
 async function safeJson(response: Response): Promise<any> {
   const text = await response.text();
@@ -132,13 +139,15 @@ useEffect(() => {
         body: JSON.stringify({ email, password }),
       }, 8000);
     } catch {
-      // Network error or timeout — backend unreachable, try demo
-      return demoLogin(email, password);
+      // Network error or timeout — backend unreachable
+      if (DEMO_ALLOWED) return demoLogin(email, password);
+      throw new Error('Server unavailable. Please try again later.');
     }
 
-    // If backend returns 405/404/502/503 it means no API server — use demo mode
+    // If backend returns 405/404/502/503 it means no API server
     if (isBackendUnavailable(response)) {
-      return demoLogin(email, password);
+      if (DEMO_ALLOWED) return demoLogin(email, password);
+      throw new Error('Server unavailable. Please try again later.');
     }
 
     if (!response.ok) {
@@ -148,8 +157,8 @@ useEffect(() => {
 
     const data = await safeJson(response);
     if (!data?.data?.user) {
-      // Empty response — backend not returning JSON properly, try demo
-      return demoLogin(email, password);
+      if (DEMO_ALLOWED) return demoLogin(email, password);
+      throw new Error('Invalid server response. Please try again.');
     }
     setIsDemoMode(false);
     localStorage.removeItem(DEMO_MODE_KEY);
@@ -186,11 +195,13 @@ useEffect(() => {
         body: JSON.stringify({ email, password, name }),
       }, 8000);
     } catch {
-      return demoLogin(email, password);
+      if (DEMO_ALLOWED) return demoLogin(email, password);
+      throw new Error('Server unavailable. Please try again later.');
     }
 
     if (isBackendUnavailable(response)) {
-      return demoLogin(email, password);
+      if (DEMO_ALLOWED) return demoLogin(email, password);
+      throw new Error('Server unavailable. Please try again later.');
     }
 
     if (!response.ok) {
@@ -200,7 +211,8 @@ useEffect(() => {
 
     const data = await safeJson(response);
     if (!data?.data?.user) {
-      return demoLogin(email, password);
+      if (DEMO_ALLOWED) return demoLogin(email, password);
+      throw new Error('Invalid server response. Please try again.');
     }
     setIsDemoMode(false);
     localStorage.removeItem(DEMO_MODE_KEY);

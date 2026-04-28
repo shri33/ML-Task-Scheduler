@@ -58,6 +58,7 @@ model Task {
   createdAt     DateTime   @default(now())
   scheduledAt   DateTime?
   completedAt   DateTime?
+  updatedAt     DateTime   @updatedAt
   memoryRequirement Float?     @default(0) // In MB
   vramRequirement   Float?     @default(0) // In MB
   startupOverhead   Float?     @default(0) // In seconds
@@ -101,7 +102,7 @@ model ScheduleHistory {
   taskId        String
   task          Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   resourceId    String
-  resource      Resource @relation(fields: [resourceId], references: [id])
+  resource      Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
   userId        String?
   user          User?    @relation(fields: [userId], references: [id])
   algorithm     String

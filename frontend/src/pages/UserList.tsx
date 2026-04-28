@@ -14,6 +14,7 @@ import {
   IconCode
 } from '@tabler/icons-react';
 import { clsx } from 'clsx';
+import DemoModeBanner from '../components/DemoModeBanner';
 
 const USERS = [
   { id: 1, name: 'Shri Srivastava', email: 'shri@example.com', role: 'Team Leader, Developer', status: 'Active', plan: 'Enterprise', billing: 'Auto Debit', avatar: 'https://media.licdn.com/dms/image/v2/D4D03AQEcj0OjaV1cTA/profile-displayphoto-scale_400_400/B4DZlmASTzJgAg-/0/1758352977139?e=1778716800&v=beta&t=BSLicgDEEWtzCFIlfgDH_f1ovuIxWYLyrYq9FEKfh88' },
@@ -36,6 +37,7 @@ export default function UserList() {
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-8 animate-fade-in">
+      <DemoModeBanner featureName="User Management" />
       
       {/* ── STATS ROW ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

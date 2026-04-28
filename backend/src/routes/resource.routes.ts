@@ -4,6 +4,7 @@ import { createResourceSchema, updateResourceSchema } from '../validators/resour
 import { AppError } from '../middleware/errorHandler';
 import { authenticate, authorize, adminOnly, AuthRequest } from '../middleware/auth.middleware';
 import { z } from 'zod';
+import { validateUUID, sanitizeBody } from '../middleware/validate.middleware';
 
 type ResourceStatus = 'AVAILABLE' | 'BUSY' | 'OFFLINE';
 
@@ -11,6 +12,9 @@ const router = Router();
 
 // All resource routes require authentication
 router.use(authenticate);
+
+// Sanitize incoming body content
+router.use(sanitizeBody);
 
 // GET /api/resources - List all resources
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
@@ -45,7 +49,7 @@ router.get('/stats', async (req: Request, res: Response, next: NextFunction) => 
 });
 
 // GET /api/resources/:id - Get resource by ID
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', validateUUID('id'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const resource = await resourceService.findById(req.params.id);
     if (!resource) {
@@ -74,7 +78,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // PUT /api/resources/:id - Update resource
-router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', validateUUID('id'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = updateResourceSchema.parse(req.body);
     const resource = await resourceService.update(req.params.id, data);
@@ -90,7 +94,7 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // DELETE /api/resources/:id - Delete resource
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', validateUUID('id'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     await resourceService.delete(req.params.id);
     
@@ -109,7 +113,7 @@ const updateLoadSchema = z.object({
 });
 
 // PATCH /api/resources/:id/load - Update resource load
-router.patch('/:id/load', async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id/load', validateUUID('id'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validation = updateLoadSchema.safeParse(req.body);
     if (!validation.success) {

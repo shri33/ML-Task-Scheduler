@@ -1,14 +1,18 @@
 import { io, Socket } from 'socket.io-client';
 import { useStore } from '../store';
 
-// Get socket URL from env or use same origin (proxied by nginx)
+// Get socket URL from env or use backend default
 const getSocketUrl = (): string => {
   const apiUrl = import.meta.env?.VITE_API_URL as string | undefined;
   if (apiUrl) {
     return apiUrl.replace('/api', '');
   }
+  // Default: backend runs on port 3001 in local dev
   // In Docker, nginx proxies /socket.io to backend — use same origin
-  return '';
+  if (import.meta.env?.DEV) {
+    return 'http://localhost:3001';
+  }
+  return ''; // production: same origin via nginx
 };
 
 const SOCKET_URL = getSocketUrl();

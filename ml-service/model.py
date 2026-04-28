@@ -228,6 +228,9 @@ class TaskPredictor:
         # 2. Make Prediction
         predicted_time = self.model.predict(X)[0]
         
+        # Base time for monotonicity guard (matches _generate_synthetic_data formula)
+        base_time = task_size * 2
+        
         # 3. Reliability Guard: Prediction Clipping & Monotonicity
         # No task can take less than its startup overhead or a minimum of 0.2s
         min_feasible_time = max(0.2, startup_overhead * 0.8)
@@ -256,26 +259,50 @@ class TaskPredictor:
     
     def predict_batch(self, features_list):
         """
-        Vectorized batch prediction
+        Vectorized batch prediction with the same reliability guards
+        as single predict().
         Returns:
             list of (predicted_time, confidence) tuples
         """
         if self.model is None:
             raise ValueError("Model not loaded")
         
-        # features_list expected to have 5 elements per item now
+        # features_list expected to have 5 elements per item: [size, type, priority, load, overhead]
         X = np.array(features_list)
+        
+        # Clip features to valid ranges (same as predict)
+        X[:, 0] = np.clip(X[:, 0], 1, 3)   # task_size
+        X[:, 1] = np.clip(X[:, 1], 1, 3)   # task_type
+        X[:, 2] = np.clip(X[:, 2], 1, 5)   # priority
+        X[:, 3] = np.clip(X[:, 3], 0, 100) # resource_load
+        X[:, 4] = np.clip(X[:, 4], 0.1, 10.0) # startup_overhead
+        
         predictions = self.model.predict(X)
         
         results = []
         for pred, feat in zip(predictions, features_list):
-            # Calculate simple confidence score
-            conf = 0.85
-            if feat[0] == 3 and feat[3] > 80:
-                conf = 0.65
-            elif feat[1] == 3:
-                conf = 0.75
-            results.append((float(pred), conf))
+            task_size = feat[0]
+            resource_load = feat[3]
+            startup_overhead = feat[4] if len(feat) > 4 else 1.0
+            
+            # Monotonicity guard (same as predict)
+            base_time = task_size * 2
+            size_multiplier = 1.5 if task_size == 3 else (0.6 if task_size == 1 else 1.0)
+            adjusted = float(pred) * 0.8 + (base_time * size_multiplier) * 0.2
+            
+            # Feasibility guard
+            min_feasible_time = max(0.2, startup_overhead * 0.8)
+            adjusted = max(adjusted, min_feasible_time)
+            
+            # Confidence calculation (same logic as predict)
+            conf = 0.92
+            if resource_load > 92 or resource_load < 5:
+                conf -= 0.15
+            if task_size == 3 and resource_load > 85:
+                conf -= 0.10
+            conf = max(0.1, min(1.0, conf))
+            
+            results.append((adjusted, conf))
             
         return results
     

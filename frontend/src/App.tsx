@@ -2,6 +2,7 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
+import PageErrorBoundary from './components/PageErrorBoundary';
 import socketService from './lib/socket';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -64,7 +65,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/not-logged-in" replace state={{ from: location.pathname }} />;
   }
 
-  return <>{children}</>;
+  return <PageErrorBoundary>{children}</PageErrorBoundary>;
 }
 
 // Keyboard shortcuts handler component

@@ -212,13 +212,16 @@ class RedisService {
 
   // Basic distributed lock (advisory)
   async lock(key: string, ttlSeconds: number): Promise<boolean> {
-    if (!this.isAvailable()) return true; // Fail open if Redis is down (prefer duplicate scheduling over dead stop in dev)
+    // In production, fail-closed to prevent duplicate scheduling.
+    // In development, fail-open to avoid blocking when Redis is down.
+    const failOpen = process.env.NODE_ENV !== 'production';
+    if (!this.isAvailable()) return failOpen;
     try {
       const result = await this.client!.set(key, 'locked', 'EX', ttlSeconds, 'NX');
       return result === 'OK';
     } catch (error) {
       logger.error('Redis LOCK error', error instanceof Error ? error : new Error(String(error)));
-      return true; // Fail open
+      return failOpen;
     }
   }
 

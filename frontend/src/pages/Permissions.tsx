@@ -12,6 +12,7 @@ import {
   IconLock
 } from '@tabler/icons-react';
 import { clsx } from 'clsx';
+import DemoModeBanner from '../components/DemoModeBanner';
 
 const PERMISSIONS = [
   { id: 1, name: 'Manage Algorithm Lifecycle', assignedTo: ['Lead Researcher', 'Algorithm Developer'], createdDate: '14 Apr 2024, 08:43 PM' },
@@ -28,6 +29,7 @@ export default function Permissions() {
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-8 animate-fade-in">
+      <DemoModeBanner featureName="Permission Management" />
       
       {/* ── HEADER ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

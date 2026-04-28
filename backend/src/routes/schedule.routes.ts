@@ -158,9 +158,8 @@ router.get('/ml-status', async (req: Request, res: Response, next: NextFunction)
   }
 });
 
-// POST /api/schedule/preview - Preview what the scheduler would do
-// NOTE: This endpoint runs the full scheduler and DOES persist assignments.
-// The response includes an explanation of what was scheduled.
+// POST /api/schedule/preview - Run scheduling (same as POST /, alias for backward compat)
+// WARNING: This endpoint DOES persist assignments. It is NOT a dry-run.
 router.post('/preview', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { taskIds, algorithm } = scheduleRequestSchema.parse(req.body);
