@@ -71,8 +71,16 @@ export interface AlgorithmComparison {
   cuopt: { totalDelay: number; totalEnergy: number; reliability: number; executionTimeMs: number };
 }
 
+// In dev mode (Vite dev server), API runs on port 3001
+// In production (Docker/nginx), /api/ is proxied — use same origin
+const getApiBase = (): string => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL as string;
+  if (import.meta.env.DEV) return 'http://localhost:3001';
+  return ''; // production: nginx proxies /api/ to backend
+};
+
 const api = axios.create({
-  baseURL: (import.meta.env.VITE_API_URL || 'http://localhost:3001') + '/api',
+  baseURL: getApiBase() + '/api',
   headers: {
     'Content-Type': 'application/json',
   },

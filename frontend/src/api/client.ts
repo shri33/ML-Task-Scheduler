@@ -1,7 +1,9 @@
 import { taskApi, scheduleApi, metricsApi, fogApi } from '../lib/api';
 import { Task, CreateTaskInput } from '../types';
 
-export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Dev: localhost:3001; Production (Docker): same-origin via nginx proxy
+export const API_BASE = import.meta.env.VITE_API_URL
+  || (import.meta.env.DEV ? 'http://localhost:3001' : '');
 
 class ApiClient {
   async getTasks(): Promise<Task[]> {
