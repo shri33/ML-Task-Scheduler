@@ -67,21 +67,27 @@ export default function Dashboard() {
   const hasFetched = useRef(false);
 
   useEffect(() => {
-    const doFetch = () => {
+    const doFetch = async () => {
       // Skip polling when tab is hidden to reduce server load
       if (document.hidden) return;
-      fetchTasks();
-      fetchResources();
-      fetchMetrics();
-      checkMlStatus();
-      setLastUpdated(new Date());
-      metricsApi.getDashboard().then(setChartData).catch(console.error);
-      metricsApi.getAnomalies().then(data => {
-        if (data?.anomalies?.length > 0 && data.anomalies.length !== anomalyCountRef.current) {
-          anomalyCountRef.current = data.anomalies.length;
-          toast.warning('Anomalies Detected', `Found ${data.anomalies.length} performance outliers in recent tasks.`);
+      try {
+        await Promise.all([
+          fetchTasks(),
+          fetchResources(),
+          fetchMetrics(),
+          checkMlStatus()
+        ]);
+        setLastUpdated(new Date());
+        const dashData = await metricsApi.getDashboard();
+        setChartData(dashData);
+        const anomalyData = await metricsApi.getAnomalies();
+        if (anomalyData?.anomalies?.length > 0 && anomalyData.anomalies.length !== anomalyCountRef.current) {
+          anomalyCountRef.current = anomalyData.anomalies.length;
+          toast.warning('Anomalies Detected', `Found ${anomalyData.anomalies.length} performance outliers in recent tasks.`);
         }
-      }).catch(console.error);
+      } catch (err) {
+        console.error("Dashboard poll failed:", err);
+      }
     };
 
     if (!hasFetched.current) {
@@ -144,9 +150,9 @@ export default function Dashboard() {
   // Chart data is now fetched from the API and stored in chartData state
 
   const distributionData = [
-    { name: 'Fog', value: metrics?.resources.distribution.FOG || 0, color: '#22c55e' },
-    { name: 'Cloud', value: metrics?.resources.distribution.CLOUD || 0, color: '#3b82f6' },
-    { name: 'Terminal', value: metrics?.resources.distribution.TERMINAL || 0, color: '#8b5cf6' },
+    { name: 'Fog', value: metrics?.resources?.distribution?.FOG || 0, color: '#22c55e' },
+    { name: 'Cloud', value: metrics?.resources?.distribution?.CLOUD || 0, color: '#3b82f6' },
+    { name: 'Terminal', value: metrics?.resources?.distribution?.TERMINAL || 0, color: '#8b5cf6' },
   ];
 
   return (
@@ -195,7 +201,7 @@ export default function Dashboard() {
                     {mlAvailable ? 'ML Service is active and scheduling tasks.' : 'ML offline — using heuristic fallback.'}
                  </p>
                  <div className="text-4xl font-black mb-1">
-                    {metrics?.performance.mlAccuracy != null ? `${(metrics.performance.mlAccuracy * 100).toFixed(1)}%` : '—'}
+                    {metrics?.performance?.mlAccuracy != null ? `${metrics.performance.mlAccuracy}%` : '—'}
                  </div>
                  <div className="text-xs font-bold opacity-80 uppercase tracking-widest">ML Accuracy</div>
               </div>
@@ -216,23 +222,23 @@ export default function Dashboard() {
               <div className="space-y-4">
                  <div className="flex items-center justify-between">
                     <span className="text-sm font-bold text-gray-600 dark:text-gray-400">Completed</span>
-                    <span className="text-sm font-black text-emerald-600">{metrics?.tasks.completed ?? 0}</span>
+                    <span className="text-sm font-black text-emerald-600">{metrics?.tasks?.completed ?? 0}</span>
                  </div>
                  <div className="flex items-center justify-between">
                     <span className="text-sm font-bold text-gray-600 dark:text-gray-400">Scheduled</span>
-                    <span className="text-sm font-black text-primary-600">{metrics?.tasks.scheduled ?? 0}</span>
+                    <span className="text-sm font-black text-primary-600">{metrics?.tasks?.scheduled ?? 0}</span>
                  </div>
                  <div className="flex items-center justify-between">
                     <span className="text-sm font-bold text-gray-600 dark:text-gray-400">Failed</span>
-                    <span className="text-sm font-black text-rose-600">{metrics?.tasks.failed ?? 0}</span>
+                    <span className="text-sm font-black text-rose-600">{metrics?.tasks?.failed ?? 0}</span>
                  </div>
                  <div className="flex items-center justify-between">
                     <span className="text-sm font-bold text-gray-600 dark:text-gray-400">Pending</span>
-                    <span className="text-sm font-black text-amber-600">{metrics?.tasks.pending ?? 0}</span>
+                    <span className="text-sm font-black text-amber-600">{metrics?.tasks?.pending ?? 0}</span>
                  </div>
                  <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
                     <span className="text-sm font-bold text-gray-600 dark:text-gray-400">Total Scheduled</span>
-                    <span className="text-sm font-black text-gray-900 dark:text-white">{metrics?.performance.totalScheduled ?? 0}</span>
+                    <span className="text-sm font-black text-gray-900 dark:text-white">{metrics?.performance?.totalScheduled ?? 0}</span>
                  </div>
               </div>
            </div>
@@ -246,10 +252,10 @@ export default function Dashboard() {
            </div>
            
            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              <StatItem icon={IconListCheck} color="text-primary-600" bg="bg-primary-50 dark:bg-primary-900/20" label="Total Tasks" value={metrics?.tasks.total ?? 0} />
+              <StatItem icon={IconListCheck} color="text-primary-600" bg="bg-primary-50 dark:bg-primary-900/20" label="Total Tasks" value={metrics?.tasks?.total ?? 0} />
               <StatItem icon={IconServer} color="text-emerald-600" bg="bg-emerald-50 dark:bg-emerald-900/20" label="Active Nodes" value={availableResources.length} />
-              <StatItem icon={IconBolt} color="text-amber-600" bg="bg-amber-50 dark:bg-amber-900/20" label="Avg Energy" value={`${metrics?.resources.avgLoad ?? 0}J`} />
-              <StatItem icon={IconClock} color="text-purple-600" bg="bg-purple-50 dark:bg-purple-900/20" label="Avg Delay" value={`${metrics?.performance.avgExecutionTime ?? 0}s`} />
+              <StatItem icon={IconBolt} color="text-amber-600" bg="bg-amber-50 dark:bg-amber-900/20" label="Avg Energy" value={`${metrics?.resources?.avgLoad ?? 0}J`} />
+              <StatItem icon={IconClock} color="text-purple-600" bg="bg-purple-50 dark:bg-purple-900/20" label="Avg Delay" value={`${metrics?.performance?.avgExecutionTime ?? 0}s`} />
            </div>
         </div>
 

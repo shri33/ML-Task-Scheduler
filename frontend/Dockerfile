@@ -29,8 +29,10 @@ COPY . .
 # Build arguments for environment-specific builds
 ARG VITE_API_URL
 ARG VITE_WS_URL
+ARG VITE_ENABLE_DEMO
 ENV VITE_API_URL=${VITE_API_URL}
 ENV VITE_WS_URL=${VITE_WS_URL}
+ENV VITE_ENABLE_DEMO=${VITE_ENABLE_DEMO}
 
 # Build application
 RUN npm run build

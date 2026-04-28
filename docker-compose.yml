@@ -139,7 +139,7 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5001/api/health || exit 1"]
       interval: 10s
-      timeout: 5s
+      timeout: 30s
       retries: 10
       start_period: 15s
     networks:
@@ -166,8 +166,9 @@ services:
       dockerfile: Dockerfile
       target: production
       args:
-        VITE_API_URL: http://localhost:3001
-        VITE_WS_URL: http://localhost:3001
+        VITE_API_URL: ""
+        VITE_WS_URL: ""
+        VITE_ENABLE_DEMO: "true"
     container_name: task-scheduler-frontend
     restart: unless-stopped
     ports:

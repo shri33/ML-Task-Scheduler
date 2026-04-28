@@ -120,7 +120,11 @@ router.get('/pdf/resources', async (req: Request, res: Response, next: NextFunct
  */
 router.get('/csv/tasks', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const userId = (req as AuthRequest).user?.userId;
+    const filterUserId = userId?.startsWith('demo-') ? null : userId;
+
     const tasks = await prisma.task.findMany({
+      where: { userId: filterUserId, deletedAt: null },
       include: { resource: { select: { name: true } } },
       orderBy: { createdAt: 'desc' },
       take: 10000 // Prevent unbounded export
@@ -211,7 +215,11 @@ router.get('/csv/resources', async (req: Request, res: Response, next: NextFunct
  */
 router.get('/csv/schedule-history', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const userId = (req as AuthRequest).user?.userId;
+    const filterUserId = userId?.startsWith('demo-') ? null : userId;
+
     const history = await prisma.scheduleHistory.findMany({
+      where: { userId: filterUserId },
       include: { 
         task: { select: { name: true } }, 
         resource: { select: { name: true } } 

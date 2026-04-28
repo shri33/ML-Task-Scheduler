@@ -9,7 +9,6 @@ import {
   IconWifi,
   IconArrowRight,
   IconBrandGithub,
-  IconBrandLinkedin,
   IconCircleCheck,
   IconChevronRight,
   IconMoon,
@@ -565,21 +564,18 @@ export default function LandingPage() {
                   id: '2023ebcs593', 
                   role: 'Team Leader, Developer', 
                   img: 'https://media.licdn.com/dms/image/v2/D4D03AQEcj0OjaV1cTA/profile-displayphoto-scale_400_400/B4DZlmASTzJgAg-/0/1758352977139?e=1778716800&v=beta&t=BSLicgDEEWtzCFIlfgDH_f1ovuIxWYLyrYq9FEKfh88',
-                  li: 'https://www.linkedin.com/in/shri-srivastava-ab04a5175/'
                 },
                 { 
                   name: 'Ichha Dwivedi',   
                   id: '2023ebcs125', 
                   role: 'Developer',       
                   img: 'https://media.licdn.com/dms/image/v2/D5635AQF4HfjRIXfDrg/profile-framedphoto-shrink_400_400/B56ZskJ.5VJ8Ac-/0/1765838155604?e=1777762800&v=beta&t=OaVHII6Mm1ZT1yogIY5awzOKQwoCrdLa1MzfEwpWW-U',
-                  li: 'https://www.linkedin.com/in/ichha-dwivedi-55b246288/'
                 },
                 { 
                   name: 'Aditi Singh',     
                   id: '2023ebcs498', 
                   role: 'Developer',       
                   img: 'https://media.licdn.com/dms/image/v2/D4D03AQHbXw028qVAFA/profile-displayphoto-scale_400_400/B4DZi9lKpqH4Ao-/0/1755527296321?e=1778716800&v=beta&t=8l36p8D5Gf9VLS9UyXfv6PSh_6VQjQgt2MrQs6hXuOc',
-                  li: 'https://www.linkedin.com/in/aditi-singh-041866306/'
                 },
               ].map((m) => (
                 <div key={m.name} className="bg-white dark:bg-gray-900 rounded-3xl p-8 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center group">
@@ -595,14 +591,7 @@ export default function LandingPage() {
                   <div className="text-xs font-bold text-primary-600 dark:text-primary-400 mb-2 uppercase tracking-widest">{m.role}</div>
                   <div className="font-mono text-[10px] text-gray-400 dark:text-gray-500 mb-6">{m.id}</div>
                   
-                  <a 
-                    href={m.li} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="p-3 bg-slate-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-white dark:hover:bg-gray-700 transition-all border border-transparent hover:border-gray-100 dark:hover:border-gray-600"
-                  >
-                    <IconBrandLinkedin className="h-6 w-6" stroke={1.5} />
-                  </a>
+                  {/* LinkedIn links removed as requested */}
                 </div>
               ))}
             </div>

@@ -318,36 +318,43 @@ class TaskPredictor:
         """
         Detect anomalies in task execution times using Isolation Forest
         and simple prediction-error thresholds.
-        
-        Args:
-            X: features array (n_samples, 5)
-            actual_times: actual execution times array (n_samples,)
-            contamination: expected proportion of anomalies
-            
-        Returns:
-            list: indices of anomalies
         """
         if self.model is None:
             raise ValueError("Model not loaded")
 
-        # 1. Prediction-based anomalies (Z-score of residuals)
-        predicted_times = self.model.predict(X)
-        residuals = np.abs(actual_times - predicted_times)
-        mean_res = np.mean(residuals)
-        std_res = np.std(residuals)
-        
-        # Z-score > 3 is a common statistical outlier
-        z_score_anomalies = np.where(residuals > (mean_res + 3 * std_res))[0]
-        
-        # 2. Multi-variate anomalies (Isolation Forest)
-        # Combine features and actual times to find patterns that don't fit
-        combined_data = np.column_stack([X, actual_times])
-        iso_forest = IsolationForest(contamination=contamination, random_state=42)
-        iso_preds = iso_forest.fit_predict(combined_data)
-        iso_anomalies = np.where(iso_preds == -1)[0]
-        
-        # Return union of both methods
-        return sorted(list(set(z_score_anomalies) | set(iso_anomalies)))
+        if len(X) < 2:
+            return []  # Not enough data for meaningful anomaly detection
+
+        try:
+            # 1. Prediction-based anomalies (Z-score of residuals)
+            predicted_times = self.model.predict(X)
+            residuals = np.abs(actual_times - predicted_times)
+            mean_res = np.mean(residuals)
+            std_res = np.std(residuals)
+            
+            z_score_anomalies = []
+            if std_res > 1e-6:
+                # Z-score > 3 is a common statistical outlier
+                z_score_anomalies = np.where(residuals > (mean_res + 3 * std_res))[0].tolist()
+            
+            # 2. Multi-variate anomalies (Isolation Forest)
+            # Combine features and actual times to find patterns that don't fit
+            combined_data = np.column_stack([X, actual_times])
+            
+            # IsolationForest requires at least a few samples to work reliably
+            if len(combined_data) >= 5:
+                iso_forest = IsolationForest(contamination=contamination, random_state=42, n_estimators=100)
+                iso_preds = iso_forest.fit_predict(combined_data)
+                iso_anomalies = np.where(iso_preds == -1)[0].tolist()
+            else:
+                iso_anomalies = []
+            
+            # Return union of both methods
+            return sorted(list(set(z_score_anomalies) | set(iso_anomalies)))
+        except Exception as e:
+            # Log error internally but return empty to not crash the service
+            print(f"⚠️ Error in detect_anomalies: {e}")
+            return []
 
 
 # Test if run directly

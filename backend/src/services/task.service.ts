@@ -14,7 +14,7 @@ export class TaskService {
         type: data.type,
         size: data.size,
         priority: data.priority,
-        userId: userId,
+        userId: userId?.startsWith('demo-') ? null : userId,
         ...(data.dueDate ? { dueDate: new Date(data.dueDate) } : {})
       }
     });
@@ -30,7 +30,7 @@ export class TaskService {
     const where = {
       deletedAt: null,
       ...(status ? { status } : {}),
-      ...(userId ? { userId } : {})
+      userId: userId?.startsWith('demo-') ? null : userId
     };
 
     const [items, total] = await Promise.all([
@@ -80,7 +80,7 @@ export class TaskService {
       where: {
         status: 'PENDING',
         deletedAt: null,
-        ...(userId ? { userId } : {})
+        userId: userId?.startsWith('demo-') ? null : userId
       },
       orderBy: [
         { priority: 'desc' },

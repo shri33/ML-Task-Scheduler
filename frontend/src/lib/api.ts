@@ -141,7 +141,7 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
       try {
-        await axios.post('/api/v1/auth/refresh', {}, { baseURL: api.defaults.baseURL, withCredentials: true, timeout: 5000 });
+        await axios.post('/v1/auth/refresh', {}, { baseURL: api.defaults.baseURL, withCredentials: true, timeout: 5000 });
         processQueue(null, '');
         return api(originalRequest);
       } catch (refreshError) {

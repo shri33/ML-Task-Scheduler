@@ -9,6 +9,8 @@ if (!JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required');
 }
 
+const DEMO_ENABLED = process.env.NODE_ENV !== 'production' || process.env.DEMO_MODE === 'true';
+
 // JwtPayload interface now imported from token.utils
 
 export interface AuthRequest extends Request {
@@ -47,8 +49,7 @@ export const authenticate = async (
       const decoded = verifyAccessToken(token);
       
       // Skip database lookup for demo users (they don't exist in the DB)
-      const DEMO_ENABLED = process.env.NODE_ENV !== 'production';
-      if (DEMO_ENABLED && decoded.userId.startsWith('demo-')) {
+      if (decoded.userId.startsWith('demo-')) {
         req.user = decoded;
         return next();
       }
