@@ -266,34 +266,34 @@ router.get('/', async (req: Request, res: Response) => {
       pdfReports: [
         {
           name: 'Task Summary',
-          endpoint: '/api/reports/pdf/tasks',
+          endpoint: '/api/v1/reports/pdf/tasks',
           description: 'Summary of all tasks with status breakdown'
         },
         {
           name: 'ML Performance',
-          endpoint: '/api/reports/pdf/performance',
+          endpoint: '/api/v1/reports/pdf/performance',
           description: 'ML prediction accuracy and scheduling metrics'
         },
         {
           name: 'Resource Utilization',
-          endpoint: '/api/reports/pdf/resources',
+          endpoint: '/api/v1/reports/pdf/resources',
           description: 'Resource load and utilization analysis'
         }
       ],
       csvExports: [
         {
           name: 'Tasks CSV',
-          endpoint: '/api/reports/csv/tasks',
+          endpoint: '/api/v1/reports/csv/tasks',
           description: 'Export all tasks as CSV spreadsheet'
         },
         {
           name: 'Resources CSV',
-          endpoint: '/api/reports/csv/resources',
+          endpoint: '/api/v1/reports/csv/resources',
           description: 'Export all resources as CSV spreadsheet'
         },
         {
           name: 'Schedule History CSV',
-          endpoint: '/api/reports/csv/schedule-history',
+          endpoint: '/api/v1/reports/csv/schedule-history',
           description: 'Export scheduling history as CSV'
         }
       ]

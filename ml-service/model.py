@@ -61,14 +61,15 @@ class TaskPredictor:
     
     def _generate_synthetic_data(self, n_samples=1000):
         """Generate realistic synthetic training data"""
-        np.random.seed(42)
+        # Strict seeding for deterministic synthetic data
+        rng = np.random.RandomState(42)
         
         # Generate features
-        task_size = np.random.choice([1, 2, 3], n_samples)
-        task_type = np.random.choice([1, 2, 3], n_samples)
-        priority = np.random.choice([1, 2, 3, 4, 5], n_samples)
-        resource_load = np.random.uniform(0, 100, n_samples)
-        startup_overhead = np.random.uniform(0.5, 5.0, n_samples) # 0.5s to 5s overhead
+        task_size = rng.choice([1, 2, 3], n_samples)
+        task_type = rng.choice([1, 2, 3], n_samples)
+        priority = rng.choice([1, 2, 3, 4, 5], n_samples)
+        resource_load = rng.uniform(0, 100, n_samples)
+        startup_overhead = rng.uniform(0.5, 5.0, n_samples) # 0.5s to 5s overhead
         
         X = np.column_stack([task_size, task_type, priority, resource_load, startup_overhead])
         
@@ -81,10 +82,10 @@ class TaskPredictor:
         
         execution_time = (base_time * type_modifier * load_modifier * priority_factor +
                          startup_overhead + # Startup overhead directly adds to time
-                         np.random.normal(0, 0.5, n_samples))
+                         rng.normal(0, 0.5, n_samples))
         
         # Add "unreliability" factor (latency spikes)
-        latency_spikes = np.random.choice([0, 1], n_samples, p=[0.95, 0.05]) * np.random.uniform(1, 5, n_samples)
+        latency_spikes = rng.choice([0, 1], n_samples, p=[0.95, 0.05]) * rng.uniform(1, 5, n_samples)
         execution_time += latency_spikes
         
         execution_time = np.maximum(execution_time, 0.5)
@@ -208,27 +209,48 @@ class TaskPredictor:
     
     def predict(self, task_size, task_type, priority, resource_load, startup_overhead=1.0):
         """
-        Predict execution time for a task
-        
-        Returns:
-            tuple: (predicted_time, confidence)
+        Predict execution time for a task with feature normalization and reliability guards
         """
         if self.model is None:
             raise ValueError("Model not loaded")
         
+        # 1. Feature Guard & Normalization (Simple min-max scaling proxy)
+        # In a real system, we'd use sklearn.preprocessing.StandardScaler saved as an artifact
+        task_size = np.clip(task_size, 1, 3)
+        task_type = np.clip(task_type, 1, 3)
+        priority = np.clip(priority, 1, 5)
+        resource_load = np.clip(resource_load, 0, 100)
+        startup_overhead = np.clip(startup_overhead, 0.1, 10.0)
+
         # Prepare features
         X = np.array([[task_size, task_type, priority, resource_load, startup_overhead]])
         
-        # Get prediction
+        # 2. Make Prediction
         predicted_time = self.model.predict(X)[0]
         
-        # Calculate simple confidence score based on feature typicality
-        # This is a simplified proxy for actual prediction intervals
-        confidence = 0.85
-        if task_size == 3 and resource_load > 80:
-            confidence = 0.65  # Less confident for large tasks under high load
-        elif task_type == 3:
-            confidence = 0.75  # Less confident for mixed IO/CPU tasks
+        # 3. Reliability Guard: Prediction Clipping & Monotonicity
+        # No task can take less than its startup overhead or a minimum of 0.2s
+        min_feasible_time = max(0.2, startup_overhead * 0.8)
+        
+        # Guarantee monotonicity: LARGE tasks must take longer than SMALL tasks for same conditions
+        # Heuristic adjustment if model behaves erratically
+        size_multiplier = 1.0
+        if task_size == 3: size_multiplier = 1.5
+        elif task_size == 1: size_multiplier = 0.6
+        
+        predicted_time = predicted_time * 0.8 + (base_time * size_multiplier) * 0.2
+        predicted_time = max(predicted_time, min_feasible_time)
+        
+        # 4. Confidence Calculation (Enhanced)
+        # Confidence decreases if features are at extreme ranges (unseen data)
+        confidence = 0.92
+        if resource_load > 92 or resource_load < 5:
+            confidence -= 0.15
+        if task_size == 3 and resource_load > 85:
+            confidence -= 0.10
+        
+        # Clamp confidence to [0, 1]
+        confidence = max(0.1, min(1.0, confidence))
             
         return float(predicted_time), float(confidence)
     

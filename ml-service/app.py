@@ -161,6 +161,17 @@ def record_metric(name: str, value: float = 1.0):
     """Increment a simple counter / accumulator."""
     _metrics[name] = _metrics.get(name, 0) + value
 
+@app.route('/metrics', methods=['GET'])
+def metrics():
+    """Export metrics in Prometheus text format."""
+    lines = []
+    for name, value in _metrics.items():
+        # Help and Type are optional but recommended
+        lines.append(f"# HELP ml_{name} ML service metric: {name}")
+        lines.append(f"# TYPE ml_{name} counter" if "total" in name else f"# TYPE ml_{name} gauge")
+        lines.append(f"ml_{name} {value}")
+    return "\n".join(lines) + "\n", 200, {'Content-Type': 'text/plain; version=0.0.4'}
+
 # Request logging middleware
 @app.before_request
 def log_request():
@@ -179,14 +190,16 @@ logger.info(f"Model initialized: {predictor.model_type} - {predictor.get_version
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    """Health check endpoint"""
+    """Health check endpoint with model status validation"""
     predictor.check_for_updates()
+    is_ready = predictor.is_loaded()
+    
     return jsonify({
-        'status': 'ok',
+        'status': 'ok' if is_ready else 'loading',
         'service': 'ml-prediction-service',
-        'model_loaded': predictor.is_loaded(),
+        'model_loaded': is_ready,
         'model_version': predictor.get_version()
-    })
+    }), 200 if is_ready else 503
 
 @app.route('/api/predict', methods=['POST'])
 @rate_limit
@@ -209,6 +222,7 @@ def predict():
         task_type = int(data['taskType'])
         priority = int(data['priority'])
         resource_load = float(data['resourceLoad'])
+        startup_overhead = float(data.get('startupOverhead', 1.0))
         
         # Validate ranges
         if task_size not in [1, 2, 3]:
@@ -229,13 +243,13 @@ def predict():
                 "ml.priority": priority, "ml.resource_load": resource_load,
             }) as span:
                 predicted_time, confidence = predictor.predict(
-                    task_size, task_type, priority, resource_load
+                    task_size, task_type, priority, resource_load, startup_overhead
                 )
                 span.set_attribute("ml.predicted_time", predicted_time)
                 span.set_attribute("ml.confidence", confidence)
         else:
             predicted_time, confidence = predictor.predict(
-                task_size, task_type, priority, resource_load
+                task_size, task_type, priority, resource_load, startup_overhead
             )
         latency = time.time() - start
         record_metric('predict_requests_total')
@@ -304,7 +318,8 @@ def predict_batch():
                     errors.append({'index': idx, 'error': 'resourceLoad must be between 0 and 100'})
                     continue
                 
-                valid_tasks.append((idx, task.get('taskId'), [task_size, task_type, priority, resource_load]))
+                startup_overhead = float(task.get('startupOverhead', 1.0))
+                valid_tasks.append((idx, task.get('taskId'), [task_size, task_type, priority, resource_load, startup_overhead]))
                 
             except Exception as e:
                 errors.append({'index': idx, 'error': safe_error(e)})

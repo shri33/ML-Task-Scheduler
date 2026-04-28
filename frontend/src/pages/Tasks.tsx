@@ -62,24 +62,8 @@ export default function Tasks() {
       setShowForm(false);
       toast.success('Task created', `"${task.name}" has been created successfully.`);
     } catch (error) {
-      console.error("API error, falling back to mock:", error);
-      // Mock fallback for demo/research robustness
-      const mockTask: Task = {
-        id: `mock-${Math.random().toString(36).substr(2, 9)}`,
-        ...data,
-        status: 'PENDING',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        dueDate: data.dueDate || new Date(Date.now() + 86400000).toISOString(),
-        predictedTime: null,
-        actualTime: null,
-        resourceId: null,
-        scheduledAt: null,
-        completedAt: null,
-      };
-      addTask(mockTask);
-      setShowForm(false);
-      toast.info('Research Mode', `"${data.name}" added to local session (Backend Unavailable).`);
+      console.error("Task creation failed:", error);
+      toast.error('Creation Failed', 'Could not create the task. Please check your backend connection.');
     }
   };
 

@@ -45,7 +45,7 @@ export const authLimiter = rateLimit({
 // Rate limiter for scheduling operations (resource intensive)
 export const scheduleLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 10, // limit each IP to 10 schedule requests per minute
+  max: process.env.NODE_ENV === 'development' ? 500 : 10, // higher limit in dev for test suites
   message: {
     success: false,
     error: 'Too many scheduling requests, please wait before trying again.',

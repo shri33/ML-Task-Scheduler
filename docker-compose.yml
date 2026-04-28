@@ -15,10 +15,10 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U postgres -d task_scheduler"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
     networks:
       - internal
     logging:
@@ -26,6 +26,13 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          memory: 128M
 
   # ===========================================================================
   # REDIS (Cache + Queue)
@@ -38,7 +45,7 @@ services:
       - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
     networks:
@@ -48,6 +55,11 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   # ===========================================================================
   # BACKEND API
@@ -64,7 +76,7 @@ services:
     ports:
       - "3001:3001"
     environment:
-      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/${DB_NAME:-task_scheduler}?schema=public
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/${DB_NAME:-task_scheduler}?schema=public&connection_limit=20
       PORT: 3001
       NODE_ENV: ${NODE_ENV:-development}
       COOKIE_SECURE: "false"
@@ -73,7 +85,6 @@ services:
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-minimum-32-char-length-1234567890}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
-      GOOGLE_REDIRECT_URI: http://localhost:3001/api/v1/auth/google/callback
     depends_on:
       db:
         condition: service_healthy
@@ -84,11 +95,11 @@ services:
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/api/health"]
       interval: 10s
-      timeout: 15s
+      timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 20s
     command: >
-      sh -c "npx prisma db push && npm start"
+      sh -c "npx prisma migrate deploy && npm start"
     networks:
       - internal
       - public
@@ -97,6 +108,13 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          memory: 512M
 
   # ===========================================================================
   # ML SERVICE
@@ -113,13 +131,13 @@ services:
     environment:
       PORT: 5001
       FLASK_ENV: ${FLASK_ENV:-development}
-      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/${DB_NAME:-task_scheduler}?schema=public
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/${DB_NAME:-task_scheduler}?schema=public&connection_limit=5
       ML_API_KEY: ${ML_API_KEY:-ml-secret-key-change-in-production}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5001/api/health || exit 1"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
       start_period: 15s
     networks:
       - internal
@@ -128,6 +146,13 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          memory: 512M
 
   # ===========================================================================
   # FRONTEND (Nginx)
@@ -205,6 +230,125 @@ services:
       resources:
         limits:
           memory: 256M
+
+  # ===========================================================================
+  # BACKGROUND WORKERS
+  # ===========================================================================
+  prediction-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: task-scheduler-worker-prediction
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/${DB_NAME:-task_scheduler}?schema=public
+      REDIS_URL: redis://redis:6379
+      ML_SERVICE_URL: http://ml-service:5001
+      NODE_ENV: production
+      WORKER_CONCURRENCY: 5
+    command: node dist/workers/prediction.worker.js
+    depends_on:
+      redis:
+        condition: service_healthy
+      ml-service:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "exit 0"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+
+  scheduling-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: task-scheduler-worker-scheduling
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/${DB_NAME:-task_scheduler}?schema=public
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: production
+      SCHEDULING_WORKER_CONCURRENCY: 2
+    command: node dist/workers/scheduling.worker.js
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "exit 0"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+
+  notification-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: task-scheduler-worker-notification
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: production
+    command: node dist/workers/notification.worker.js
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "exit 0"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  retrain-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: task-scheduler-worker-retrain
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/${DB_NAME:-task_scheduler}?schema=public
+      REDIS_URL: redis://redis:6379
+      ML_SERVICE_URL: http://ml-service:5001
+      ML_API_KEY: ${ML_API_KEY:-ml-secret-key-change-in-production}
+      NODE_ENV: production
+    command: node dist/workers/autoRetrain.worker.js
+    depends_on:
+      redis:
+        condition: service_healthy
+      ml-service:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "exit 0"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
 networks:
   public:

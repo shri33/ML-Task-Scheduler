@@ -6,6 +6,7 @@ import { authenticate, authorize, adminOnly, AuthRequest } from '../middleware/a
 import { getSchedulingQueue } from '../queues';
 import { JOB_NAMES, TaskEventJobData } from '../queues/types';
 import logger from '../lib/logger';
+import { z } from 'zod';
 
 /** Emit a task event to the scheduling queue (non-blocking, best-effort). */
 async function emitTaskEvent(
@@ -272,6 +273,8 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
+import { auditService } from '../services/audit.service';
+
 /**
  * @swagger
  * /api/tasks/{id}:
@@ -293,7 +296,13 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
  */
 router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const userId = (req as AuthRequest).user?.userId;
     await taskService.delete(req.params.id);
+    
+    // Audit log
+    if (userId) {
+      await auditService.logTask(userId, 'DELETE', req.params.id);
+    }
     
     // Emit socket event
     const io = req.app.get('io');
@@ -306,6 +315,10 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
   } catch (error) {
     next(error);
   }
+});
+
+const completeTaskSchema = z.object({
+  actualTime: z.number().positive('Actual time must be positive')
 });
 
 /**
@@ -339,10 +352,12 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
  */
 router.post('/:id/complete', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { actualTime } = req.body;
-    if (typeof actualTime !== 'number') {
-      throw new AppError('actualTime is required and must be a number', 400);
+    const validation = completeTaskSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new AppError(validation.error.errors[0].message, 400);
     }
+    
+    const { actualTime } = validation.data;
     
     const task = await taskService.markCompleted(req.params.id, actualTime);
     

@@ -3,6 +3,7 @@ import prisma from '../lib/prisma';
 import { Prisma } from '@prisma/client';
 import logger from '../lib/logger';
 import { errorRecovery } from './errorRecovery.service';
+import { getRequestId } from '../utils/context';
 import redisService from '../lib/redis';
 import crypto from 'crypto';
 
@@ -95,18 +96,33 @@ export class MLService {
   }
 
   // ---------------------------------------------------------------------------
-  // Cache helpers
+  // Cache & Stampede Protection
   // ---------------------------------------------------------------------------
+  
+  /** In-memory cache to prevent concurrent redundant requests for the same key. */
+  private pendingRequests = new Map<string, Promise<PredictionResponse>>();
+
   private cacheKey(req: PredictionRequest): string {
-    const raw = `${req.taskSize}:${req.taskType}:${req.priority}:${Math.round(req.resourceLoad)}:${req.startupOverhead}`;
-    return `ml:pred:${crypto.createHash('md5').update(raw).digest('hex')}`;
+    // Sort keys for deterministic JSON serialization
+    const sorted = {
+      priority: req.priority,
+      resourceLoad: Math.round(req.resourceLoad * 10) / 10, // 0.1 precision
+      startupOverhead: Math.round(req.startupOverhead * 10) / 10,
+      taskSize: req.taskSize,
+      taskType: req.taskType
+    };
+    const raw = JSON.stringify(sorted);
+    return `ml:pred:${crypto.createHash('sha256').update(raw).digest('hex').slice(0, 16)}`;
   }
 
   private async getCached(key: string): Promise<PredictionResponse | null> {
-    return redisService.getJSON<PredictionResponse>(key);
+    const cached = await redisService.getJSON<PredictionResponse>(key);
+    if (cached) logger.info(`ML Cache Hit: ${key}`);
+    return cached;
   }
 
   private async setCache(key: string, value: PredictionResponse): Promise<void> {
+    logger.info(`Caching ML prediction: ${key}`);
     await redisService.setJSON(key, value, PREDICTION_CACHE_TTL);
   }
 
@@ -123,9 +139,6 @@ export class MLService {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Single prediction (with cache)
-  // ---------------------------------------------------------------------------
   async getPrediction(
     taskSize: string,
     taskType: string,
@@ -141,60 +154,88 @@ export class MLService {
       startupOverhead
     };
 
-    // Check Redis cache first
     const key = this.cacheKey(request);
-    const cached = await this.getCached(key);
-    if (cached) return cached;
 
-    // Check circuit breaker before making request
+    // 1. Check Redis cache first
+    const cached = await this.getCached(key);
+    if (cached) {
+      logger.info(`ML Cache Hit: ${key}`, { taskSize, taskType, priority });
+      return cached;
+    }
+
+    // 2. Check stampede protection (ongoing request for same key)
+    const pending = this.pendingRequests.get(key);
+    if (pending) {
+      logger.info(`ML Cache Stampede Protected: waiting for ${key}`);
+      return pending;
+    }
+
+    // 3. Check circuit breaker
     if (!errorRecovery.isServiceAvailable('ml-service')) {
       logger.warn('ML Service circuit breaker open, using fallback');
       return this.fallbackPrediction(taskSize, taskType, priority, resourceLoad);
     }
 
-    try {
-      const response = await axios.post<PredictionResponse>(
-        `${this.baseUrl}/api/predict`,
-        request,
-        { timeout: 5000 }
-      );
+    // 4. Create new request promise
+    const predictionPromise = (async () => {
+      const start = Date.now();
+      try {
+        const requestId = getRequestId();
+        const response = await axios.post<PredictionResponse>(
+          `${this.baseUrl}/api/predict`,
+          request,
+          { 
+            timeout: 5000,
+            headers: requestId ? { 'x-request-id': requestId } : undefined
+          }
+        );
 
-      errorRecovery.recordSuccess('ml-service');
-      await this.setCache(key, response.data);
-      return response.data;
-    } catch (error) {
-      errorRecovery.recordFailure('ml-service', error instanceof Error ? error : new Error(String(error)));
-      logger.warn('ML Service unavailable, using fallback prediction', { 
-        error: error instanceof Error ? error.message : String(error) 
-      });
-      return this.fallbackPrediction(taskSize, taskType, priority, resourceLoad);
-    }
+        errorRecovery.recordSuccess('ml-service');
+        const duration = Date.now() - start;
+        logger.info(`ML Prediction Success: ${key} in ${duration}ms`);
+        
+        await this.setCache(key, response.data);
+        return response.data;
+      } catch (error) {
+        errorRecovery.recordFailure('ml-service', error instanceof Error ? error : new Error(String(error)));
+        logger.warn('ML Service unavailable, using fallback prediction', { 
+          error: error instanceof Error ? error.message : String(error) 
+        });
+        return this.fallbackPrediction(taskSize, taskType, priority, resourceLoad);
+      } finally {
+        this.pendingRequests.delete(key);
+      }
+    })();
+
+    this.pendingRequests.set(key, predictionPromise);
+    return predictionPromise;
   }
 
-  // ---------------------------------------------------------------------------
-  // Batch prediction (single HTTP call instead of N sequential calls)
-  // ---------------------------------------------------------------------------
   async getBatchPredictions(
     items: BatchPredictionItem[]
   ): Promise<Map<string, PredictionResponse>> {
     const results = new Map<string, PredictionResponse>();
     const uncached: BatchPredictionItem[] = [];
-    const keyMap = new Map<string, string>(); // itemKey -> cacheKey
+    const itemKeyToCacheKey = new Map<string, string>();
 
-    // 1. Check cache for each item
-    for (const item of items) {
+    // 1. Check cache for all items in parallel
+    const cacheChecks = await Promise.all(items.map(async (item) => {
       const req: PredictionRequest = {
         taskSize: item.taskSize,
         taskType: item.taskType,
         priority: item.priority,
         resourceLoad: item.resourceLoad,
-        startupOverhead: item.startupOverhead
+        startupOverhead: item.startupOverhead || 1.0
       };
       const key = this.cacheKey(req);
       const itemKey = item.taskId || `${item.taskSize}:${item.taskType}:${item.priority}:${item.resourceLoad}`;
-      keyMap.set(itemKey, key);
-
+      
       const cached = await this.getCached(key);
+      return { item, itemKey, key, cached };
+    }));
+
+    for (const { item, itemKey, key, cached } of cacheChecks) {
+      itemKeyToCacheKey.set(itemKey, key);
       if (cached) {
         results.set(itemKey, cached);
       } else {
@@ -202,38 +243,39 @@ export class MLService {
       }
     }
 
-    if (uncached.length === 0) return results;
+    if (uncached.length === 0) {
+      logger.info(`ML Batch Cache Hit: 100% (${items.length}/${items.length})`);
+      return results;
+    }
 
-    // 2. Call batch endpoint for uncached items
+    // 2. Call batch endpoint for remaining items
     if (!errorRecovery.isServiceAvailable('ml-service')) {
       logger.warn('ML Service circuit breaker open, using fallback for batch');
       for (const item of uncached) {
-        const fb = this.fallbackPredictionNumeric(item.taskSize, item.taskType, item.priority, item.resourceLoad);
-        results.set(item.taskId!, fb);
+        results.set(item.taskId!, this.fallbackPredictionNumeric(item.taskSize, item.taskType, item.priority, item.resourceLoad));
       }
       return results;
     }
 
+    const start = Date.now();
     try {
+      const requestId = getRequestId();
       const response = await axios.post<{
         predictions: BatchPredictionResult[];
         modelVersion: string;
       }>(
         `${this.baseUrl}/api/predict/batch`,
-        { tasks: uncached.map(u => ({
-            taskId: u.taskId,
-            taskSize: u.taskSize,
-            taskType: u.taskType,
-            priority: u.priority,
-            resourceLoad: u.resourceLoad,
-            startupOverhead: u.startupOverhead
-          }))
-        },
-        { timeout: 15000 }
+        { tasks: uncached },
+        { 
+          timeout: 15000,
+          headers: requestId ? { 'x-request-id': requestId } : undefined
+        }
       );
 
       errorRecovery.recordSuccess('ml-service');
       const modelVersion = response.data.modelVersion;
+      const duration = Date.now() - start;
+      logger.info(`ML Batch Success: ${uncached.length} items in ${duration}ms`);
 
       for (const pred of response.data.predictions) {
         const itemKey = pred.taskId || '';
@@ -243,8 +285,9 @@ export class MLService {
           modelVersion
         };
         results.set(itemKey, res);
-        // Cache individual result
-        const cKey = keyMap.get(itemKey);
+        
+        // Cache individual result for future use
+        const cKey = itemKeyToCacheKey.get(itemKey);
         if (cKey) await this.setCache(cKey, res);
       }
     } catch (error) {
@@ -253,8 +296,7 @@ export class MLService {
         error: error instanceof Error ? error.message : String(error)
       });
       for (const item of uncached) {
-        const fb = this.fallbackPredictionNumeric(item.taskSize, item.taskType, item.priority, item.resourceLoad);
-        results.set(item.taskId!, fb);
+        results.set(item.taskId!, this.fallbackPredictionNumeric(item.taskSize, item.taskType, item.priority, item.resourceLoad));
       }
     }
 

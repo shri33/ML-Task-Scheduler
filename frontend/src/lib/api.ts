@@ -172,7 +172,17 @@ export const authApi = {
   },
 };
 
-export const taskApi = {
+export interface TaskApi {
+  getAll: (status?: string) => Promise<Task[]>;
+  create: (data: CreateTaskInput) => Promise<Task>;
+  delete: (id: string) => Promise<void>;
+  complete: (id: string, actualTime: number) => Promise<Task>;
+  getStats: () => Promise<any>;
+  getById: (id: string) => Promise<Task>;
+  update: (id: string, data: Partial<CreateTaskInput>) => Promise<Task>;
+}
+
+export const taskApi: TaskApi = {
   getAll: async (status?: string): Promise<Task[]> => {
     const params = status ? { status } : {};
     const response = await api.get<ApiResponse<Task[]>>('/v1/tasks', { params });
@@ -203,7 +213,16 @@ export const taskApi = {
   }
 };
 
-export const resourceApi = {
+export interface ResourceApi {
+  getAll: (status?: string) => Promise<Resource[]>;
+  updateLoad: (id: string, load: number) => Promise<Resource>;
+  getStats: () => Promise<any>;
+  create: (data: { name: string; capacity: number; layer?: string }) => Promise<Resource>;
+  update: (id: string, data: any) => Promise<Resource>;
+  delete: (id: string) => Promise<void>;
+}
+
+export const resourceApi: ResourceApi = {
   getAll: async (status?: string): Promise<Resource[]> => {
     const params = status ? { status } : {};
     const response = await api.get<ApiResponse<Resource[]>>('/v1/resources', { params });

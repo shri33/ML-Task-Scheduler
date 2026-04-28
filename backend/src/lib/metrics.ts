@@ -169,6 +169,13 @@ const dbConnectionsGauge = new Gauge({
   registers: [register],
 });
 
+const resourceUtilizationGauge = new Gauge({
+  name: 'resource_utilization_percent',
+  help: 'Current utilization percentage of a resource',
+  labelNames: ['resource_id', 'resource_name', 'layer'],
+  registers: [register],
+});
+
 // =============================================================================
 // MIDDLEWARE
 // =============================================================================
@@ -308,6 +315,15 @@ export const metrics = {
   // Record circuit breaker failure
   recordCircuitBreakerFailure(service: string) {
     circuitBreakerFailures.inc({ service });
+  },
+
+  // Record resource utilization (Phase 8 Hardening)
+  recordResourceUtilization(resourceId: string, name: string, layer: string, percent: number) {
+    resourceUtilizationGauge.set({ 
+      resource_id: resourceId, 
+      resource_name: name, 
+      layer 
+    }, percent);
   },
 };
 

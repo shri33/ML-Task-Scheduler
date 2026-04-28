@@ -22,6 +22,7 @@ import {
   type TerminalDevice,
   type SchedulingSolution,
 } from './fogComputing.service';
+import { redisService } from '../lib/redis';
 
 // Map enums to numbers (same mapping used by ML service)
 const sizeMap: Record<string, number> = { SMALL: 1, MEDIUM: 2, LARGE: 3 };
@@ -256,6 +257,16 @@ export class SchedulerService {
   ): Promise<ScheduleResult[]> {
     const startTime = Date.now();
     const timeBudget = context.timeBudgetMs ?? 30_000; // Default 30s max
+    const lockKey = `lock:scheduler:${context.seed ?? 'global'}`;
+
+    // Acquire distributed lock to prevent concurrent scheduling overlaps
+    const lockAcquired = await redisService.lock(lockKey, 60); // 60s timeout
+    if (!lockAcquired) {
+      logger.warn('Could not acquire scheduler lock. Another instance is likely running.', { lockKey });
+      throw new Error('Scheduler is currently busy. Please try again in a moment.');
+    }
+
+    try {
 
     // Set deterministic seed if provided (critical for research reproducibility)
     if (context.seed !== undefined) {
@@ -334,6 +345,10 @@ export class SchedulerService {
     logger.info(`Scheduling completed: ${results.length} tasks in ${latencyMs}ms using ${algorithm}`);
 
     return results;
+    } finally {
+      // Always release the lock
+      await redisService.unlock(lockKey);
+    }
   }
 
   // -----------------------------------------------------------------------

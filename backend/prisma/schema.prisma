@@ -234,7 +234,9 @@ model TrainingJob {
   modelVersion  String?
 
   @@index([status])
+  @@index([startedAt])
 }
+
 
 model AutoRetrainConfig {
   id                     String    @id @default(uuid())
@@ -398,4 +400,20 @@ model UserBehaviorProfile {
 
   @@index([userId])
   @@index([productivityPattern])
+}
+
+/// System-wide audit log for sensitive actions.
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String   // e.g., "DELETE_TASK", "UPDATE_SETTINGS"
+  target    String?  // e.g., task ID, resource ID
+  metadata  Json?    // Contextual data about the change
+  ip        String?
+  userAgent String?
+  timestamp DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([timestamp])
 }

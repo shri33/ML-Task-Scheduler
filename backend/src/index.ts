@@ -91,13 +91,19 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
 
-// Request ID for distributed tracing / log correlation
+// Request ID and Context for distributed tracing
 import crypto from 'crypto';
+import { requestContext } from './utils/context';
+
 app.use((req, res, next) => {
   const requestId = (req.headers['x-request-id'] as string) || crypto.randomUUID();
   req.headers['x-request-id'] = requestId;
   res.setHeader('x-request-id', requestId);
-  next();
+  
+  // Wrap the request in AsyncLocalStorage context
+  requestContext.run({ requestId, userId: (req as any).user?.id }, () => {
+    next();
+  });
 });
 
 // CSRF protection for browser-based mutating requests
@@ -223,14 +229,48 @@ io.on('connection', (socket) => {
 
 const PORT = env.PORT;
 
-// Initialize services and start server
+// Initialize services and start server with retry logic
 async function startServer() {
-  // Connect to Redis (optional, won't fail if unavailable)
-  try {
-    await redisService.connect();
-    logger.info('Redis connected successfully');
-  } catch (error) {
-    logger.warn('Redis not available, continuing without cache');
+  const MAX_RETRIES = 5;
+  const RETRY_INTERVAL = 5000; // 5 seconds
+
+  let dbConnected = false;
+  let redisConnected = false;
+  let retries = 0;
+
+  logger.info('Starting server initialization...');
+
+  while (retries < MAX_RETRIES && (!dbConnected || !redisConnected)) {
+    try {
+      // 1. Wait for Database
+      if (!dbConnected) {
+        await prisma.$queryRaw`SELECT 1`;
+        dbConnected = true;
+        logger.info('Database connected successfully');
+      }
+
+      // 2. Wait for Redis
+      if (!redisConnected) {
+        try {
+          await redisService.connect();
+          redisConnected = true;
+          logger.info('Redis connected successfully');
+        } catch (redisError) {
+          logger.warn('Redis not available yet, will retry...', { error: redisError instanceof Error ? redisError.message : String(redisError) });
+        }
+      }
+
+      if (dbConnected && (redisConnected || retries >= 2)) {
+        // We can start without Redis if it fails for too long (fail-safe)
+        break;
+      }
+    } catch (error) {
+      retries++;
+      logger.warn(`Startup attempt ${retries}/${MAX_RETRIES} failed. Retrying in ${RETRY_INTERVAL/1000}s...`, {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL));
+    }
   }
 
   // Setup Redis adapter for Socket.IO horizontal scaling
@@ -247,12 +287,18 @@ async function startServer() {
     }
   }
 
+  // Start HTTP server
   httpServer.listen(PORT, () => {
     logger.info(`Server running on http://localhost:${PORT}`);
     logger.info(`API Version: ${API_VERSION}`);
-    logger.info(`API Health: http://localhost:${PORT}/api/health`);
-    logger.info(`API Docs: http://localhost:${PORT}/api/docs`);
     logger.info(`Environment: ${env.NODE_ENV}`);
+    
+    // Log readiness
+    if (dbConnected && redisConnected) {
+      logger.info('System is FULLY READY (DB + Redis)');
+    } else {
+      logger.warn('System started in DEGRADED mode', { dbConnected, redisConnected });
+    }
   });
 }
 

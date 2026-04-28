@@ -78,39 +78,76 @@ export class NoResourcesAvailableError extends SchedulingError {
 }
 
 export const errorHandler = (
-  err: Error | AppError | ZodError,
+  err: any,
   req: Request,
   res: Response,
   _next: NextFunction
 ) => {
-  logger.error('Unhandled error', err);
+  const requestId = req.headers['x-request-id'] || 'unknown';
+  const isProduction = process.env.NODE_ENV === 'production';
 
+  // Log error with context
+  logger.error('Unhandled error', {
+    requestId,
+    method: req.method,
+    url: req.url,
+    error: err instanceof Error ? {
+      name: err.name,
+      message: err.message,
+      stack: isProduction ? undefined : err.stack
+    } : err
+  });
+
+  // 1. Operational Errors (AppError)
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({
       success: false,
-      error: err.message
+      error: err.message,
+      code: err.code,
+      requestId
     });
   }
 
+  // 2. Zod Validation Errors
   if (err instanceof ZodError) {
     return res.status(400).json({
       success: false,
-      error: 'Validation error',
-      details: err.errors
+      error: 'Validation failed',
+      details: err.errors.map(e => ({ path: e.path, message: e.message })),
+      requestId
     });
   }
 
-  // Prisma errors
-  if (err.name === 'PrismaClientKnownRequestError') {
-    return res.status(400).json({
+  // 3. Prisma Database Errors
+  if (err.name?.startsWith('Prisma') || err.code?.startsWith('P')) {
+    // Unique constraint violation
+    if (err.code === 'P2002') {
+      return res.status(409).json({
+        success: false,
+        error: 'A resource with this value already exists',
+        details: err.meta,
+        requestId
+      });
+    }
+
+    // Other Prisma errors (usually connection/infra)
+    const message = isProduction ? 'Database service error' : err.message;
+    return res.status(503).json({
       success: false,
-      error: 'Database operation failed'
+      error: message,
+      requestId
     });
   }
 
-  // Default error
-  return res.status(500).json({
+  // 4. Default Internal Server Error
+  const status = err.status || err.statusCode || 500;
+  const message = isProduction ? 'An unexpected error occurred' : err.message;
+
+  return res.status(status).json({
     success: false,
-    error: 'Internal server error'
+    error: message,
+    requestId,
+    // Include stack only in development for easier debugging
+    stack: isProduction ? undefined : err.stack
   });
 };

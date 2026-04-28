@@ -3,6 +3,7 @@ import { resourceService } from '../services/resource.service';
 import { createResourceSchema, updateResourceSchema } from '../validators/resource.validator';
 import { AppError } from '../middleware/errorHandler';
 import { authenticate, authorize, adminOnly, AuthRequest } from '../middleware/auth.middleware';
+import { z } from 'zod';
 
 type ResourceStatus = 'AVAILABLE' | 'BUSY' | 'OFFLINE';
 
@@ -103,13 +104,19 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
   }
 });
 
+const updateLoadSchema = z.object({
+  load: z.number().min(0, 'Load cannot be negative').max(100, 'Load cannot exceed 100')
+});
+
 // PATCH /api/resources/:id/load - Update resource load
 router.patch('/:id/load', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { load } = req.body;
-    if (typeof load !== 'number' || load < 0 || load > 100) {
-      throw new AppError('Load must be a number between 0 and 100', 400);
+    const validation = updateLoadSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new AppError(validation.error.errors[0].message, 400);
     }
+    
+    const { load } = validation.data;
     
     const resource = await resourceService.updateLoad(req.params.id, load);
     

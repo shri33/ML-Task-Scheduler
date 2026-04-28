@@ -52,6 +52,15 @@ async function seed() {
         role: 'VIEWER',
         isActive: true
       }
+    }),
+    prisma.user.create({
+      data: {
+        email: 'analyst@example.com',
+        password: hashedPassword,
+        name: 'Analyst User',
+        role: 'USER',
+        isActive: true
+      }
     })
   ]);
   console.log(`✅ Created ${users.length} users`);

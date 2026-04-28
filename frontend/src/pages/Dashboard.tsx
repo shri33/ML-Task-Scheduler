@@ -74,7 +74,6 @@ export default function Dashboard() {
     fetchMetrics,
     checkMlStatus,
     runScheduler,
-    addTask,
   } = useStore();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -147,23 +146,8 @@ export default function Dashboard() {
       toast.success("Task Ingested", `"${newTaskTitle}" added to global queue.`);
       fetchTasks();
     } catch (err) {
-      console.error("API error, falling back to mock:", err);
-      // Mock fallback
-      const mockTask = {
-        id: `mock-${Math.random().toString(36).substr(2, 9)}`,
-        ...taskData,
-        status: 'PENDING' as const,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        predictedTime: null,
-        actualTime: null,
-        resourceId: null,
-        scheduledAt: null,
-        completedAt: null,
-      };
-      addTask(mockTask);
-      toast.info("Research Mode", `"${newTaskTitle}" added to local session.`);
-      setNewTaskTitle("");
+      console.error("Task creation failed:", err);
+      toast.error("Ingestion Failed", `Could not add "${newTaskTitle}" to the queue. Please check your connection.`);
     } finally {
       setIsCreating(false);
     }

@@ -266,18 +266,28 @@ router.post('/tasks', async (req: Request, res: Response) => {
   });
 });
 
+const bulkFogTaskSchema = z.object({
+  tasks: z.array(fogTaskSchema)
+});
+
 /**
  * @route POST /api/fog/tasks/bulk
  * @desc Add multiple tasks at once (used by SDG)
  */
 router.post('/tasks/bulk', async (req: Request, res: Response) => {
   await initializeSampleData();
-  const { tasks: newTasks } = req.body;
   
-  if (!Array.isArray(newTasks)) {
-    return res.status(400).json({ success: false, error: 'Expected an array of tasks' });
+  const validation = bulkFogTaskSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Invalid tasks array',
+      details: validation.error.flatten().fieldErrors 
+    });
   }
 
+  const { tasks: newTasks } = validation.data;
+  
   const formattedTasks: Task[] = newTasks.map((t: any, i: number) => ({
     id: `task-ai-${Date.now()}-${i}`,
     name: t.name || `AI-Task-${i}`,

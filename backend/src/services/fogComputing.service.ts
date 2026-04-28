@@ -194,15 +194,23 @@ export function calculateObjectiveFunction(
     const energy = calculateEnergyConsumption(task, fogNode, device);
     const egressCost = calculateEgressCost(task, fogNode);
 
+    // Hardware constraint penalty (Phase 7 Hardening)
+    let hardwarePenalty = 0;
+    if (task.memoryRequirement > fogNode.totalMemory) {
+      hardwarePenalty += 1000 * (task.memoryRequirement / fogNode.totalMemory);
+    }
+    if (task.vramRequirement > fogNode.totalVram) {
+      hardwarePenalty += 1000 * (task.vramRequirement / fogNode.totalVram);
+    }
+
     totalDelay += device.delayWeight * delay;
     totalEnergy += device.energyWeight * energy;
-    totalEgressCost += egressCost;
+    totalEgressCost += egressCost + hardwarePenalty;
   }
 
-  // Final objective combines delay, energy, and financial cost
-  // We normalize egress cost with a weight (e.g., 0.5)
-  const objectiveValue = totalDelay + totalEnergy + (totalEgressCost * 10); // weight cost heavily
-  const fitness = objectiveValue > 0 ? 1 / objectiveValue : Infinity;
+  // Final objective combines delay, energy, and financial cost (including penalties)
+  const objectiveValue = totalDelay + totalEnergy + (totalEgressCost * 10);
+  const fitness = objectiveValue > 0 ? 1 / objectiveValue : 1e-10;
 
   return { totalDelay, totalEnergy, fitness };
 }
