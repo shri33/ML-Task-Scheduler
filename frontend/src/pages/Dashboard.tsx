@@ -79,9 +79,11 @@ export default function Dashboard() {
         ]);
         setLastUpdated(new Date());
         const dashData = await metricsApi.getDashboard();
-        setChartData(dashData);
+        if (Array.isArray(dashData)) {
+          setChartData(dashData);
+        }
         const anomalyData = await metricsApi.getAnomalies();
-        if (anomalyData?.anomalies?.length > 0 && anomalyData.anomalies.length !== anomalyCountRef.current) {
+        if (anomalyData?.anomalies && Array.isArray(anomalyData.anomalies) && anomalyData.anomalies.length > 0 && anomalyData.anomalies.length !== anomalyCountRef.current) {
           anomalyCountRef.current = anomalyData.anomalies.length;
           toast.warning('Anomalies Detected', `Found ${anomalyData.anomalies.length} performance outliers in recent tasks.`);
         }

@@ -60,7 +60,11 @@ export default function Experiments() {
   const [isGeneratingScenario, setIsGeneratingScenario] = useState(false);
 
   useEffect(() => {
-    experimentsApi.getResults().then(r => setSavedFiles(r.files)).catch(() => {});
+    experimentsApi.getResults().then(r => {
+      if (r && Array.isArray(r.files)) {
+        setSavedFiles(r.files);
+      }
+    }).catch(() => {});
   }, [result]);
 
   const runExperiment = useCallback(async () => {

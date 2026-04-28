@@ -69,7 +69,9 @@ export default function Devices() {
       if (debouncedSearch) params.search = debouncedSearch;
 
       const data = await deviceApi.getAll(params);
-      setDevices(data);
+      if (Array.isArray(data)) {
+        setDevices(data);
+      }
     } catch (error) {
       toast.error('Error', 'Failed to fetch devices');
     } finally {
@@ -80,7 +82,9 @@ export default function Devices() {
   const fetchStats = async () => {
     try {
       const data = await deviceApi.getStats();
-      setStats(data);
+      if (data && typeof data === 'object') {
+        setStats(data);
+      }
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     }

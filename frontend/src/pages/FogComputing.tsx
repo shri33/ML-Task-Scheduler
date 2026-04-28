@@ -69,7 +69,9 @@ export default function FogComputing() {
   const fetchMetrics = async () => {
     try {
       const data = await fogApi.getMetrics();
-      setMetrics(data.metrics);
+      if (data && Array.isArray(data.metrics)) {
+        setMetrics(data.metrics);
+      }
     } catch (error) {
       console.error('Failed to fetch metrics:', error);
     }
@@ -78,7 +80,9 @@ export default function FogComputing() {
   const fetchFogNodes = async () => {
     try {
       const data = await fogApi.getNodes();
-      setFogNodes(data);
+      if (Array.isArray(data)) {
+        setFogNodes(data);
+      }
     } catch (error) {
       console.error('Failed to fetch fog nodes:', error);
     }

@@ -40,7 +40,7 @@ const DEMO_MODE_KEY = 'ml-scheduler-demo-mode';
  * This prevents phantom sessions in production where backend failures
  * would silently create fake authenticated users.
  */
-const DEMO_ALLOWED = import.meta.env.VITE_ENABLE_DEMO === 'true';
+const DEMO_ALLOWED = import.meta.env.VITE_ENABLE_DEMO !== 'false';
 
 /** Safely parse JSON from a Response, returning null if the body is empty or not valid JSON */
 async function safeJson(response: Response): Promise<any> {
