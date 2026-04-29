@@ -442,9 +442,20 @@ export const userApi = {
     const response = await api.get<ApiResponse<User[]>>('/v1/users');
     return response.data.data;
   },
+  getById: async (id: string): Promise<User> => {
+    const response = await api.get<ApiResponse<User>>(`/v1/users/${id}`);
+    return response.data.data;
+  },
+  create: async (data: { email: string; name: string; password: string; role?: string }): Promise<User> => {
+    const response = await api.post<ApiResponse<User>>('/v1/users', data);
+    return response.data.data;
+  },
   update: async (id: string, data: Partial<User>): Promise<User> => {
     const response = await api.patch<ApiResponse<User>>(`/v1/users/${id}`, data);
     return response.data.data;
+  },
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/v1/users/${id}`);
   }
 };
 
@@ -539,6 +550,54 @@ export const chaosApi = {
   },
   stopAll: async (): Promise<any> => {
     const response = await api.post<ApiResponse<any>>('/v1/chaos/stop-all');
+    return response.data.data;
+  }
+};
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  start: string;
+  end?: string;
+  allDay: boolean;
+  color: string;
+  type: 'task';
+  meta?: {
+    status: string;
+    priority: number;
+    taskType: string;
+    resource?: string;
+  };
+}
+
+export const calendarApi = {
+  getEvents: async (start?: string, end?: string): Promise<CalendarEvent[]> => {
+    const params: any = {};
+    if (start) params.start = start;
+    if (end) params.end = end;
+    const response = await api.get<ApiResponse<CalendarEvent[]>>('/v1/calendar/events', { params });
+    return response.data.data;
+  },
+  createEvent: async (data: { title: string; startDate: string; description?: string; taskId?: string }): Promise<any> => {
+    const response = await api.post<ApiResponse<any>>('/v1/calendar/events', data);
+    return response.data.data;
+  },
+  updateEvent: async (id: string, data: { startDate?: string; endDate?: string }): Promise<any> => {
+    const response = await api.patch<ApiResponse<any>>(`/v1/calendar/events/${id}`, data);
+    return response.data.data;
+  },
+  deleteEvent: async (id: string): Promise<void> => {
+    await api.delete(`/v1/calendar/events/${id}`);
+  }
+};
+
+export const settingsApi = {
+  get: async (): Promise<any> => {
+    const response = await api.get<ApiResponse<any>>('/v1/users/settings');
+    return response.data.data;
+  },
+  update: async (data: any): Promise<any> => {
+    const response = await api.patch<ApiResponse<any>>('/v1/users/settings', data);
     return response.data.data;
   }
 };

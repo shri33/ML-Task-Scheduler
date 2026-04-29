@@ -24,6 +24,7 @@ import aiRoutes from './routes/ai.routes';
 import userRoutes from './routes/user.routes';
 import chatRoutes from './routes/chat.routes';
 import mailRoutes from './routes/mail.routes';
+import calendarRoutes from './routes/calendar.routes';
 import { handleSocketEvents } from './lib/socketHandlers';
 import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter, scheduleLimiter } from './middleware/rateLimit.middleware';
@@ -159,6 +160,7 @@ app.use('/api/v1/ml', mlRoutes);
 app.use('/api/v1/chaos', chaosRoutes);
 app.use('/api/v1/chat', chatRoutes);
 app.use('/api/v1/mail', mailRoutes);
+app.use('/api/v1/calendar', calendarRoutes);
 
 // Alias: /api/v1/scheduling/compare → fog compare endpoint
 app.use('/api/v1/scheduling', fogRoutes);
