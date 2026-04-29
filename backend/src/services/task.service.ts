@@ -4,11 +4,14 @@ import { mlService } from './ml.service';
 import { emailService } from './email.service';
 import logger from '../lib/logger';
 import redisService from '../lib/redis';
+import { emitToUser, emitToAll } from '../lib/socket';
+import { chaosService } from './chaos.service';
 
 type TaskStatus = 'PENDING' | 'SCHEDULED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 
 export class TaskService {
   async create(data: CreateTaskInput, userId?: string) {
+    await chaosService.applyChaos('database');
     const task = await prisma.task.create({
       data: {
         name: data.name,
@@ -21,10 +24,15 @@ export class TaskService {
     });
     await mlService.clearAllPredictions();
     await redisService.delByPattern('tasks:*');
+    
+    emitToUser(userId, 'task:created', task);
+    emitToAll('stats:updated', null);
+    
     return task;
   }
 
   async findAll(status?: TaskStatus, options?: { page?: number; limit?: number }, userId?: string) {
+    await chaosService.applyChaos('database');
     const page = Math.max(options?.page || 1, 1);
     const limit = Math.min(Math.max(options?.limit || 20, 1), 100);
     const skip = (page - 1) * limit;
@@ -116,6 +124,10 @@ export class TaskService {
     });
     await mlService.clearAllPredictions();
     await redisService.delByPattern('tasks:*');
+    
+    emitToUser(task.userId, 'task:updated', task);
+    emitToAll('stats:updated', null);
+    
     return task;
   }
 
@@ -126,6 +138,10 @@ export class TaskService {
       data: { deletedAt: new Date() }
     });
     await redisService.delByPattern('tasks:*');
+    
+    emitToUser(task.userId, 'task:deleted', { id: task.id });
+    emitToAll('stats:updated', null);
+    
     return task;
   }
 
@@ -145,10 +161,15 @@ export class TaskService {
       )
     );
     await redisService.delByPattern('tasks:*');
+    
+    emitToUser(userId, 'tasks:bulk_created', created);
+    emitToAll('stats:updated', null);
+    
     return created;
   }
 
   async assignToResource(taskId: string, resourceId: string, predictedTime?: number) {
+    await chaosService.applyChaos('database');
     const task = await prisma.task.update({
       where: { id: taskId },
       data: {
@@ -159,6 +180,9 @@ export class TaskService {
       }
     });
     await redisService.delByPattern('tasks:*');
+    
+    emitToUser(task.userId, 'task:scheduled', task);
+    
     return task;
   }
 
@@ -174,6 +198,9 @@ export class TaskService {
     });
 
     await redisService.delByPattern('tasks:*');
+    
+    emitToUser(task.userId, 'task:completed', task);
+    emitToAll('stats:updated', null);
 
     // Check for performance anomaly (if we have a prediction)
     if (task.predictedTime) {

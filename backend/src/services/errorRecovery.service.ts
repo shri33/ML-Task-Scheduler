@@ -4,6 +4,7 @@
  */
 
 import logger from '../lib/logger';
+import { emitToAll } from '../lib/socket';
 
 type ServiceName = 'database' | 'redis' | 'ml-service' | 'email';
 
@@ -60,6 +61,7 @@ class ErrorRecoveryService {
           successCount: 0,
         });
         logger.info(`Circuit breaker for ${service} moved to half-open state`);
+        emitToAll('system:health_updated', { service, state: 'half-open' });
         return true;
       }
       return false;
@@ -87,6 +89,7 @@ class ErrorRecoveryService {
           successCount: 0,
         });
         logger.info(`Circuit breaker for ${service} recovered to closed state`);
+        emitToAll('system:health_updated', { service, state: 'closed' });
       } else {
         this.circuitBreakers.set(service, {
           ...state,
@@ -120,6 +123,7 @@ class ErrorRecoveryService {
         successCount: 0,
       });
       logger.warn(`Circuit breaker for ${service} opened (failure in half-open)`);
+      emitToAll('system:health_updated', { service, state: 'open' });
     } else if (newFailures >= this.failureThreshold) {
       // Open the circuit
       this.circuitBreakers.set(service, {
@@ -129,6 +133,7 @@ class ErrorRecoveryService {
         successCount: 0,
       });
       logger.warn(`Circuit breaker for ${service} opened after ${newFailures} failures`);
+      emitToAll('system:health_updated', { service, state: 'open' });
     } else {
       this.circuitBreakers.set(service, {
         ...state,

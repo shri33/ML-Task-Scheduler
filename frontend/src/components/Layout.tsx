@@ -24,7 +24,9 @@ import {
   IconMail,
   IconMessages,
   IconColumns,
-  IconUsers
+  IconUsers,
+  IconBrain,
+  IconFlame
 } from "@tabler/icons-react";
 import { clsx } from "clsx";
 import { useTheme } from "../contexts/ThemeContext";
@@ -59,6 +61,7 @@ const navigationGroups = [
       { name: "Resources", href: "/resources", icon: IconServer },
       { name: "Devices", href: "/devices", icon: IconCpu },
       { name: "Fog Computing", href: "/fog-computing", icon: IconCloud },
+      { name: "Chaos Console", href: "/chaos-console", icon: IconFlame },
     ]
   },
   {
@@ -66,6 +69,7 @@ const navigationGroups = [
     items: [
       { name: "Analytics", href: "/analytics", icon: IconChartBar },
       { name: "Experiments", href: "/experiments", icon: IconFlask },
+      { name: "ML Models", href: "/ml-models", icon: IconBrain },
     ]
   },
   {

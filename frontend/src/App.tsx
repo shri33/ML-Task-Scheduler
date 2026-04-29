@@ -1,9 +1,8 @@
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import PageErrorBoundary from './components/PageErrorBoundary';
-import socketService from './lib/socket';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -26,6 +25,9 @@ const Login = lazy(() => import('./pages/Login'));
 const NotLoggedIn = lazy(() => import('./pages/NotLoggedIn'));
 const Register = lazy(() => import('./pages/Register'));
 const Experiments = lazy(() => import('./pages/Experiments'));
+const MlMonitoring = lazy(() => import('./pages/MlMonitoring'));
+const ChaosConsole = lazy(() => import('./pages/ChaosConsole'));
+const Reports = lazy(() => import('./pages/Reports'));
 const AlgorithmDetails = lazy(() => import('./pages/AlgorithmDetails'));
 const Roles = lazy(() => import('./pages/Roles'));
 const Permissions = lazy(() => import('./pages/Permissions'));
@@ -68,6 +70,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <PageErrorBoundary>{children}</PageErrorBoundary>;
 }
 
+import { SocketProvider } from './contexts/SocketContext';
+
 // Keyboard shortcuts handler component
 function KeyboardShortcutsHandler({ 
   onShowHelp 
@@ -103,16 +107,6 @@ function AppRoutes() {
 
   // Set document title based on current route
   useDocumentTitle();
-
-  // Initialize WebSocket connection when authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      socketService.connect();
-      return () => {
-        socketService.disconnect();
-      };
-    }
-  }, [isAuthenticated]);
 
   return (
     <>
@@ -231,6 +225,36 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/ml-models"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <MlMonitoring />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Reports />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chaos-console"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ChaosConsole />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/algorithm-details/:strategyId"
           element={
             <ProtectedRoute>
@@ -334,9 +358,11 @@ function App() {
       <ThemeProvider>
         <ToastProvider>
           <AuthProvider>
-            <Router>
-              <AppRoutes />
-            </Router>
+            <SocketProvider>
+              <Router>
+                <AppRoutes />
+              </Router>
+            </SocketProvider>
           </AuthProvider>
         </ToastProvider>
       </ThemeProvider>

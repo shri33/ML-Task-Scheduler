@@ -445,4 +445,50 @@ export const notificationApi = {
   }
 };
 
+export const mlApi = {
+  getModels: async (): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>('/v1/ml/models');
+    return response.data.data;
+  },
+  getConfig: async (): Promise<any> => {
+    const response = await api.get<ApiResponse<any>>('/v1/ml/config');
+    return response.data.data;
+  },
+  updateConfig: async (data: any): Promise<any> => {
+    const response = await api.patch<ApiResponse<any>>('/v1/ml/config', data);
+    return response.data.data;
+  },
+  runRetrain: async (reason?: string): Promise<{ jobId: string, message: string }> => {
+    const response = await api.post<ApiResponse<{ jobId: string, message: string }>>('/v1/ml/retrain', { reason });
+    return response.data.data;
+  },
+  getTrainingJobs: async (): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>('/v1/ml/training-jobs');
+    return response.data.data;
+  },
+  getInfo: async (): Promise<any> => {
+    const response = await api.get<ApiResponse<any>>('/v1/ml/info');
+    return response.data.data;
+  }
+};
+
+export const chaosApi = {
+  getExperiments: async (): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>('/v1/chaos/experiments');
+    return response.data.data;
+  },
+  startExperiment: async (params: { service: string; type: string; value: number }): Promise<any> => {
+    const response = await api.post<ApiResponse<any>>('/v1/chaos/start', params);
+    return response.data.data;
+  },
+  stopExperiment: async (params: { service: string; type: string }): Promise<any> => {
+    const response = await api.post<ApiResponse<any>>('/v1/chaos/stop', params);
+    return response.data.data;
+  },
+  stopAll: async (): Promise<any> => {
+    const response = await api.post<ApiResponse<any>>('/v1/chaos/stop-all');
+    return response.data.data;
+  }
+};
+
 export default api;

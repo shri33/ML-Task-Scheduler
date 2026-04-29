@@ -3,6 +3,7 @@ import { CreateResourceInput, UpdateResourceInput } from '../validators/resource
 import { mlService } from './ml.service';
 import redisService from '../lib/redis';
 import logger from '../lib/logger';
+import { emitToAll } from '../lib/socket';
 
 type ResourceStatus = 'AVAILABLE' | 'BUSY' | 'OFFLINE';
 
@@ -28,6 +29,10 @@ export class ResourceService {
     });
     await mlService.clearAllPredictions();
     await redisService.delByPattern('resources:*');
+    
+    emitToAll('resource:created', resource);
+    emitToAll('stats:updated', null);
+    
     return resource;
   }
 
@@ -108,6 +113,9 @@ export class ResourceService {
     });
     await mlService.clearAllPredictions();
     await redisService.delByPattern('resources:*');
+    
+    emitToAll('resource:updated', resource);
+    
     return resource;
   }
 
@@ -126,6 +134,10 @@ export class ResourceService {
     });
     await redisService.delByPattern('resources:*');
     await redisService.delByPattern('tasks:*'); // tasks were updated
+    
+    emitToAll('resource:deleted', { id });
+    emitToAll('stats:updated', null);
+    
     return resource;
   }
 
@@ -141,6 +153,9 @@ export class ResourceService {
     });
     await mlService.clearAllPredictions();
     await redisService.delByPattern('resources:*');
+    
+    emitToAll('resource:load_updated', resource);
+    
     return resource;
   }
 
@@ -165,6 +180,10 @@ export class ResourceService {
     // Invalidate ML prediction cache since load changed
     await mlService.clearAllPredictions();
     await redisService.delByPattern('resources:*');
+    
+    // We don't have the updated resource object here easily without a query, 
+    // but we can emit a general event
+    emitToAll('stats:updated', null);
   }
 
 

@@ -6,6 +6,7 @@ import { errorRecovery } from './errorRecovery.service';
 import { getRequestId } from '../utils/context';
 import redisService from '../lib/redis';
 import crypto from 'crypto';
+import { chaosService } from './chaos.service';
 
 interface PredictionRequest {
   taskSize: number;  // 1=SMALL, 2=MEDIUM, 3=LARGE
@@ -146,6 +147,7 @@ export class MLService {
     resourceLoad: number,
     startupOverhead: number = 1.0
   ): Promise<PredictionResponse> {
+    await chaosService.applyChaos('ml-service');
     const request: PredictionRequest = {
       taskSize: sizeMap[taskSize] || 2,
       taskType: typeMap[taskType] || 1,
@@ -453,6 +455,18 @@ export class MLService {
       logger.error('ML anomaly detection failed', {
         error: error instanceof Error ? error.message : String(error)
       });
+      return null;
+    }
+  }
+
+  /**
+   * Get SHAP explainability for a specific prediction
+   */
+  async getExplainability(taskId: string): Promise<any> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/api/explain/${taskId}`, { timeout: 5000 });
+      return response.data;
+    } catch {
       return null;
     }
   }

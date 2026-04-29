@@ -9,7 +9,6 @@ import {
   IconFilter,
   IconDownload,
   IconUserShield,
-  IconBrain,
   IconServer,
   IconShieldLock,
   IconCode,

@@ -48,6 +48,8 @@ if (isProduction() && !corsOrigin) {
   process.exit(1);
 }
 
+import { setIo } from './lib/socket';
+
 const io = new Server(httpServer, {
   cors: {
     origin: corsOrigin,
@@ -55,6 +57,9 @@ const io = new Server(httpServer, {
     credentials: true
   }
 });
+
+// Initialize global socket instance
+setIo(io);
 
 // API Version
 const API_VERSION = 'v1';
@@ -131,6 +136,9 @@ setupMetricsEndpoint(app);
 // ===============================
 // API v1 Routes (versioned)
 // ===============================
+import mlRoutes from './routes/ml.routes';
+import chaosRoutes from './routes/chaos.routes';
+
 app.use('/api/v1/auth', authRoutes);
 // Backward-compatible alias for auth routes (useful for OAuth callback URL mismatches)
 app.use('/api/auth', authRoutes);
@@ -144,6 +152,8 @@ app.use('/api/v1/devices', deviceRoutes);
 app.use('/api/v1/experiments', experimentsRoutes);
 app.use('/api/v1/ai', aiRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/ml', mlRoutes);
+app.use('/api/v1/chaos', chaosRoutes);
 
 // Alias: /api/v1/scheduling/compare → fog compare endpoint
 app.use('/api/v1/scheduling', fogRoutes);

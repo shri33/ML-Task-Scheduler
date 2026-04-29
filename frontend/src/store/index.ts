@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Task, Resource, Metrics, User, Notification } from '../types';
-import { taskApi, resourceApi, metricsApi, scheduleApi, userApi, notificationApi } from '../lib/api';
+import { taskApi, resourceApi, metricsApi, scheduleApi, userApi, notificationApi, mlApi, chaosApi } from '../lib/api';
 
 interface AppState {
   // Tasks
@@ -34,9 +34,23 @@ interface AppState {
   metricsLoading: boolean;
   fetchMetrics: () => Promise<void>;
 
-  // ML Status
+  // ML Management
   mlAvailable: boolean;
+  mlModels: any[];
+  trainingJobs: any[];
+  mlConfig: any | null;
+  mlDataLoading: boolean;
   checkMlStatus: () => Promise<void>;
+  fetchMlData: () => Promise<void>;
+  updateMlConfig: (data: any) => Promise<void>;
+  runRetrain: (reason?: string) => Promise<void>;
+
+  // Chaos Engineering
+  chaosExperiments: any[];
+  chaosLoading: boolean;
+  fetchChaosData: () => Promise<void>;
+  startChaosExperiment: (params: { service: string; type: string; value: number }) => Promise<void>;
+  stopChaosExperiment: (params: { service: string; type: string }) => Promise<void>;
 
   // Scheduling
   scheduling: boolean;
@@ -140,14 +154,83 @@ export const useStore = create<AppState>()((set, get) => ({
     }
   },
 
-  // ML Status
+  // ML Management
   mlAvailable: false,
+  mlModels: [],
+  trainingJobs: [],
+  mlConfig: null,
+  mlDataLoading: false,
   checkMlStatus: async () => {
     try {
       const status = await scheduleApi.getMlStatus();
       set({ mlAvailable: status.mlServiceAvailable });
     } catch (error) {
       set({ mlAvailable: false });
+    }
+  },
+  fetchMlData: async () => {
+    set({ mlDataLoading: true, error: null });
+    try {
+      const [models, jobs, config] = await Promise.all([
+        mlApi.getModels(),
+        mlApi.getTrainingJobs(),
+        mlApi.getConfig()
+      ]);
+      set({ mlModels: models, trainingJobs: jobs, mlConfig: config, mlDataLoading: false });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch ML data';
+      set({ mlDataLoading: false, error: message });
+    }
+  },
+  updateMlConfig: async (data: any) => {
+    try {
+      const updated = await mlApi.updateConfig(data);
+      set({ mlConfig: updated });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update ML config';
+      set({ error: message });
+    }
+  },
+  runRetrain: async (reason?: string) => {
+    try {
+      await mlApi.runRetrain(reason);
+      // Data will be refreshed via socket events
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to run retraining';
+      set({ error: message });
+    }
+  },
+
+  // Chaos Engineering
+  chaosExperiments: [],
+  chaosLoading: false,
+  fetchChaosData: async () => {
+    set({ chaosLoading: true, error: null });
+    try {
+      const experiments = await chaosApi.getExperiments();
+      set({ chaosExperiments: experiments, chaosLoading: false });
+    } catch (error) {
+      set({ chaosLoading: false });
+    }
+  },
+  startChaosExperiment: async (params: { service: string; type: string; value: number }) => {
+    try {
+      await chaosApi.startExperiment(params);
+      await get().fetchChaosData();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to start experiment';
+      set({ error: message });
+      throw error;
+    }
+  },
+  stopChaosExperiment: async (params: { service: string; type: string }) => {
+    try {
+      await chaosApi.stopExperiment(params);
+      await get().fetchChaosData();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to stop experiment';
+      set({ error: message });
+      throw error;
     }
   },
 

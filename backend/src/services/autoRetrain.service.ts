@@ -11,6 +11,7 @@ import axios from 'axios';
 import prisma from '../lib/prisma';
 import logger from '../lib/logger';
 import { errorRecovery } from './errorRecovery.service';
+import { emitToAll } from '../lib/socket';
 
 export interface RetrainResult {
   triggered: boolean;
@@ -69,6 +70,8 @@ export class AutoRetrainService {
       threshold: config.minDataPointsThreshold,
     });
 
+    emitToAll('model:retraining_started', { dataPoints: config.dataPointsSinceRetrain });
+
     const startMs = Date.now();
 
     // 3. Call /api/retrain/from-db (ML service reads PostgreSQL directly)
@@ -102,6 +105,13 @@ export class AutoRetrainService {
         r2Score: metrics?.r2_score,
         modelVersion,
         durationMs,
+      });
+
+      emitToAll('model:retrained', { 
+        version: modelVersion, 
+        r2Score: metrics?.r2_score,
+        rowsUsed,
+        durationMs
       });
 
       // 4. Reset counter and record timestamp
@@ -167,13 +177,18 @@ export class AutoRetrainService {
       const config = await prisma.autoRetrainConfig.findFirst();
       if (!config) return;
 
-      await prisma.autoRetrainConfig.update({
+      const updated = await prisma.autoRetrainConfig.update({
         where: { id: config.id },
         data: {
           dataPointsSinceRetrain: {
             increment: count,
           },
         },
+      });
+
+      emitToAll('model:data_accumulated', { 
+        current: updated.dataPointsSinceRetrain, 
+        threshold: updated.minDataPointsThreshold 
       });
     } catch (err) {
       // Non-fatal — don't let a counter failure crash the task completion path
