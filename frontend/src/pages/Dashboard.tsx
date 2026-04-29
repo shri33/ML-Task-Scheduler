@@ -1,23 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { taskApi, metricsApi } from "../lib/api";
 import { useStore } from "../store";
-import {
-  IconListCheck,
-  IconServer,
-  IconClock,
-  IconBrain,
-  IconPlayerPlay,
-  IconRefresh,
-  IconDotsVertical,
-  IconPlus,
-  IconLoader2,
-  IconBolt,
-  IconCircleCheck,
-  IconDeviceDesktop,
-  IconCloud,
-  IconActivity,
-  IconTrophy
-} from "@tabler/icons-react";
 import { clsx } from "clsx";
 import { useToast } from "../contexts/ToastContext";
 import { DashboardSkeleton } from "../components/Skeletons";
@@ -34,6 +17,138 @@ import {
   Pie,
   Cell
 } from "recharts";
+
+function IconBase({ children, className, ...props }: any) {
+   return (
+      <svg
+         viewBox="0 0 24 24"
+         fill="none"
+         stroke="currentColor"
+         strokeWidth="2"
+         strokeLinecap="round"
+         strokeLinejoin="round"
+         className={className}
+         {...props}
+      >
+         {children}
+      </svg>
+   );
+}
+
+const IconListCheck = (props: any) => (
+   <IconBase {...props}>
+      <path d="M8 6h13" />
+      <path d="M8 12h13" />
+      <path d="M8 18h13" />
+      <path d="M3 6l1 1 2-2" />
+      <path d="M3 12l1 1 2-2" />
+      <path d="M3 18l1 1 2-2" />
+   </IconBase>
+);
+
+const IconServer = (props: any) => (
+   <IconBase {...props}>
+      <rect x="4" y="4" width="16" height="6" rx="2" />
+      <rect x="4" y="14" width="16" height="6" rx="2" />
+      <path d="M8 7h.01M8 17h.01" />
+   </IconBase>
+);
+
+const IconClock = (props: any) => (
+   <IconBase {...props}>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 8v5l3 2" />
+   </IconBase>
+);
+
+const IconBrain = (props: any) => (
+   <IconBase {...props}>
+      <path d="M9 8a3 3 0 0 1 6 0v8a3 3 0 0 1-6 0V8Z" />
+      <path d="M7 10a2 2 0 0 0 0 4" />
+      <path d="M17 10a2 2 0 0 1 0 4" />
+      <path d="M9 6a3 3 0 0 0-3 3" />
+      <path d="M15 6a3 3 0 0 1 3 3" />
+   </IconBase>
+);
+
+const IconPlayerPlay = (props: any) => (
+   <IconBase {...props}>
+      <path d="M8 5l11 7-11 7V5Z" />
+   </IconBase>
+);
+
+const IconRefresh = (props: any) => (
+   <IconBase {...props}>
+      <path d="M20 6v5h-5" />
+      <path d="M4 18v-5h5" />
+      <path d="M19.5 11A8 8 0 0 0 6 7.5L4 11" />
+      <path d="M4.5 13A8 8 0 0 0 18 16.5L20 13" />
+   </IconBase>
+);
+
+const IconDotsVertical = (props: any) => (
+   <IconBase {...props}>
+      <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none" />
+   </IconBase>
+);
+
+const IconPlus = (props: any) => (
+   <IconBase {...props}>
+      <path d="M12 5v14M5 12h14" />
+   </IconBase>
+);
+
+const IconLoader2 = (props: any) => (
+   <IconBase {...props}>
+      <path d="M12 2a10 10 0 1 0 8.66 5" />
+      <path d="M20 4v4h-4" />
+   </IconBase>
+);
+
+const IconBolt = (props: any) => (
+   <IconBase {...props}>
+      <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8Z" />
+   </IconBase>
+);
+
+const IconCircleCheck = (props: any) => (
+   <IconBase {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8.5 12 2.5 2.5L16 9.5" />
+   </IconBase>
+);
+
+const IconDeviceDesktop = (props: any) => (
+   <IconBase {...props}>
+      <rect x="3" y="4" width="18" height="13" rx="2" />
+      <path d="M8 20h8" />
+      <path d="M12 17v3" />
+   </IconBase>
+);
+
+const IconCloud = (props: any) => (
+   <IconBase {...props}>
+      <path d="M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 9.5 3.5 3.5 0 0 0 7 18Z" />
+   </IconBase>
+);
+
+const IconActivity = (props: any) => (
+   <IconBase {...props}>
+      <path d="M3 12h4l3-8 4 16 3-8h4" />
+   </IconBase>
+);
+
+const IconTrophy = (props: any) => (
+   <IconBase {...props}>
+      <path d="M8 5h8v3a4 4 0 0 1-8 0V5Z" />
+      <path d="M9 18h6" />
+      <path d="M10 14v4M14 14v4" />
+      <path d="M6 5H4a2 2 0 0 0 2 4" />
+      <path d="M18 5h2a2 2 0 0 1-2 4" />
+   </IconBase>
+);
 
 
 

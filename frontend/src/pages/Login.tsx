@@ -45,21 +45,8 @@ export default function Login() {
   }, [location.search, toast]);
 
   const handleGoogleLogin = async () => {
-    try {
-      const apiBase = import.meta.env.VITE_API_URL || '';
-      // Ping backend to see if it's alive to prevent a hard 500 browser error
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
-      const res = await fetch(`${apiBase}/api/health`, { signal: controller.signal });
-      clearTimeout(timeoutId);
-      
-      if (!res.ok) throw new Error('Backend offline');
-      window.location.href = `${apiBase}/api/v1/auth/google`;
-    } catch {
-      toast.info('Google OAuth unavailable (Backend Offline)', 'Falling back to Demo User session automatically.');
-      setFormData({ ...formData, email: 'demo@example.com', password: 'password123', name: '' });
-      await login('demo@example.com', 'password123');
-    }
+    const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+    window.location.href = `${apiBase}/api/v1/auth/google`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

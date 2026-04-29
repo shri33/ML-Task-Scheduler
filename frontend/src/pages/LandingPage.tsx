@@ -22,6 +22,7 @@ import {
 } from '@tabler/icons-react';
 import { clsx } from 'clsx';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import FloatingParticles from '../components/FloatingParticles';
 import ShinyButton from '../components/ShinyButton';
 
@@ -143,8 +144,13 @@ const PAGES = [
 export default function LandingPage() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { isAuthenticated } = useAuth();
   const [barsVisible, setBarsVisible] = useState(false);
   const benchRef = useRef<HTMLDivElement>(null);
+
+  const handleEnterSystem = () => {
+    navigate(isAuthenticated ? '/dashboard' : '/login');
+  };
 
   useEffect(() => {
     const el = benchRef.current;
@@ -199,14 +205,14 @@ export default function LandingPage() {
               </button>
               <button
                 id="lp-nav-login"
-                onClick={() => navigate('/login')}
+                onClick={handleEnterSystem}
                 className="hidden sm:block btn btn-secondary text-sm py-2 px-4"
               >
                 Log In
               </button>
               <button
                 id="lp-nav-launch"
-                onClick={() => navigate('/login')}
+                onClick={handleEnterSystem}
                 className="btn btn-primary text-sm py-2 px-4 flex items-center gap-1.5"
               >
                 Launch App
@@ -310,7 +316,7 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14 animate-fade-in-up">
               <ShinyButton
                 id="lp-hero-launch"
-                onClick={() => navigate('/login')}
+                onClick={handleEnterSystem}
                 className="w-full sm:w-auto"
               >
                 Enter the System
@@ -648,7 +654,7 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
               <button
                 id="lp-cta-launch"
-                onClick={() => navigate('/login')}
+                onClick={handleEnterSystem}
                 className="btn btn-primary text-base px-10 py-3.5 gap-2 shadow-lg shadow-primary-500/25"
               >
                 Launch the App
