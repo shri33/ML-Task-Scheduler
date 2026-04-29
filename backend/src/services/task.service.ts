@@ -186,6 +186,15 @@ export class TaskService {
     return task;
   }
 
+  async updateStatus(taskId: string, status: any) {
+    const task = await prisma.task.update({
+      where: { id: taskId },
+      data: { status }
+    });
+    await redisService.delByPattern('tasks:*');
+    return task;
+  }
+
   async markCompleted(taskId: string, actualTime: number) {
     const task = await prisma.task.update({
       where: { id: taskId },

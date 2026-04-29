@@ -8,76 +8,85 @@ import {
   IconTrash, 
   IconSearch,
   IconDotsVertical,
-  IconRefresh,
-  IconChevronRight,
-  IconChevronLeft,
-  IconBell,
-  IconAlertCircle
+  IconPlus,
+  IconPaperclip,
+  IconArchive
 } from '@tabler/icons-react';
 import { clsx } from 'clsx';
+import { useToast } from '../contexts/ToastContext';
 
 export default function Email() {
-  const { notifications, fetchNotifications, notificationsLoading } = useStore();
+  const { mails, fetchMails, sendMail } = useStore();
   const [activeFolder, setActiveFolder] = useState('inbox');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMailId, setSelectedMailId] = useState<string | null>(null);
+  const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [composeData, setComposeData] = useState({ recipients: '', subject: '', content: '' });
+  const toast = useToast();
 
   useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
+    fetchMails(activeFolder);
+  }, [activeFolder, fetchMails]);
 
-  const filteredNotifications = useMemo(() => {
-    return notifications.filter(n => 
-      n.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      n.message.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredMails = useMemo(() => {
+    return mails.filter(m => 
+      m.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.sender?.name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [notifications, searchTerm]);
+  }, [mails, searchTerm]);
+
+  const selectedMail = mails.find(m => m.id === selectedMailId);
+
+  const handleSend = async () => {
+    try {
+      await sendMail({
+        recipients: composeData.recipients.split(',').map(s => s.trim()),
+        subject: composeData.subject,
+        content: composeData.content
+      });
+      setIsComposeOpen(false);
+      setComposeData({ recipients: '', subject: '', content: '' });
+      toast.success('Email Sent', 'Your message is on its way.');
+      fetchMails('sent');
+    } catch (error) {
+      toast.error('Error', 'Failed to send email.');
+    }
+  };
 
   const FOLDERS = [
-    { id: 'inbox', name: 'Inbox', icon: IconMail, count: filteredNotifications.filter(n => !n.read).length, color: 'text-primary-600' },
+    { id: 'inbox', name: 'Inbox', icon: IconMail, count: filteredMails.filter(m => !m.isRead).length, color: 'text-primary-600' },
     { id: 'sent', name: 'Sent', icon: IconSend, count: 0, color: 'text-gray-500' },
     { id: 'drafts', name: 'Drafts', icon: IconPencil, count: 0, color: 'text-amber-500' },
     { id: 'starred', name: 'Starred', icon: IconStar, count: 0, color: 'text-yellow-500' },
     { id: 'trash', name: 'Trash', icon: IconTrash, count: 0, color: 'text-gray-500' },
   ];
 
-  const LABELS = [
-    { id: 'TASK', name: 'Tasks', color: 'bg-primary-500' },
-    { id: 'SYSTEM', name: 'System', color: 'bg-amber-500' },
-    { id: 'ALERT', name: 'Alerts', color: 'bg-rose-500' },
-  ];
-
-  if (notificationsLoading && notifications.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="h-[calc(100vh-140px)] animate-fade-in flex bg-white dark:bg-[#1a2234] rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+    <div className="h-[calc(100vh-12rem)] animate-fade-in flex bg-white dark:bg-[#1a2234] rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl overflow-hidden">
       
       {/* ── SIDEBAR ── */}
-      <aside className="w-64 border-r border-gray-200 dark:border-gray-800 flex flex-col shrink-0">
-        <div className="p-5">
-           <button className="w-full btn btn-shiny group rounded-xl shadow-lg shadow-primary-500/20">
-              <div className="btn-inner flex items-center justify-center gap-2">
-                 <IconBell className="w-5 h-5" /> 
-                 <span>Mark Read</span>
-              </div>
+      <aside className="w-72 border-r border-gray-100 dark:border-gray-800 flex flex-col shrink-0">
+        <div className="p-6">
+           <button 
+             onClick={() => setIsComposeOpen(true)}
+             className="w-full bg-primary-600 text-white py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary-500/20 hover:scale-[1.02] active:scale-95 transition-all"
+           >
+              <IconPlus className="w-5 h-5" /> 
+              <span>Compose</span>
            </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto px-3 space-y-1">
+        <div className="flex-1 overflow-y-auto px-4 space-y-1 custom-scrollbar">
            {FOLDERS.map(folder => (
               <button 
                 key={folder.id}
-                onClick={() => setActiveFolder(folder.id)}
+                onClick={() => { setActiveFolder(folder.id); setSelectedMailId(null); }}
                 className={clsx(
-                  "w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-bold transition-all",
+                  "w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-bold transition-all",
                   activeFolder === folder.id 
-                    ? "bg-primary-50 dark:bg-primary-900/20 text-primary-600" 
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    ? "bg-primary-50 dark:bg-primary-500/10 text-primary-600" 
+                    : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50"
                 )}
               >
                  <div className="flex items-center gap-3">
@@ -85,108 +94,159 @@ export default function Email() {
                     {folder.name}
                  </div>
                  {folder.count > 0 && (
-                    <span className={clsx(
-                      "px-2 py-0.5 rounded text-[10px] font-black",
-                      activeFolder === folder.id ? "bg-primary-600 text-white" : "bg-primary-50 dark:bg-primary-900/20 text-primary-600"
-                    )}>
+                    <span className="px-2 py-0.5 bg-primary-600 text-white rounded-lg text-[10px] font-black">
                        {folder.count}
                     </span>
                  )}
-              </button>
-           ))}
-
-           <div className="pt-6 pb-2 px-4 text-[10px] font-black uppercase text-gray-400 tracking-widest">Type</div>
-           {LABELS.map(label => (
-              <button key={label.id} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
-                 <div className={clsx("w-2.5 h-2.5 rounded-full", label.color)} />
-                 {label.name}
               </button>
            ))}
         </div>
       </aside>
 
       {/* ── EMAIL LIST ── */}
-      <div className="flex-1 flex flex-col min-w-0">
-         {/* List Header */}
-         <header className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-4">
-            <div className="relative flex-1 max-w-md">
+      <div className={clsx("border-r border-gray-100 dark:border-gray-800 flex flex-col min-w-0 transition-all duration-300", selectedMailId ? "w-96" : "flex-1")}>
+         <header className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-4">
+            <div className="relative flex-1">
                <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                <input 
                   type="text" 
-                  placeholder="Search notifications..." 
+                  placeholder="Search mail..." 
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-sm outline-none" 
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary-500/20" 
                />
-            </div>
-            <div className="flex items-center gap-2">
-               <button 
-                  onClick={() => fetchNotifications()}
-                  className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                >
-                  <IconRefresh className="w-5 h-5" />
-                </button>
-               <div className="h-6 w-px bg-gray-100 dark:bg-gray-800 mx-1" />
-               <button className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><IconDotsVertical className="w-5 h-5" /></button>
             </div>
          </header>
 
-         {/* List Content */}
-         <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
-            {filteredNotifications.map(notif => (
-               <div key={notif.id} className={clsx(
-                  "p-4 flex items-start gap-4 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all cursor-pointer group",
-                  !notif.read && "bg-primary-50/30 dark:bg-primary-900/5 shadow-inner"
-               )}>
-                  <div className="flex flex-col items-center gap-3 mt-1 text-gray-400">
-                    {notif.type === 'ALERT' ? <IconAlertCircle className="w-5 h-5 text-rose-500" /> : <IconBell className="w-5 h-5" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                     <div className="flex justify-between items-start mb-1">
-                        <h4 className={clsx(
-                          "text-sm truncate",
-                          notif.read ? "text-gray-600 dark:text-gray-400 font-medium" : "text-gray-900 dark:text-white font-bold"
-                        )}>
-                          {notif.title}
-                        </h4>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                          {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                     </div>
-                     <p className={clsx(
-                       "text-sm mb-1 truncate",
-                       notif.read ? "text-gray-500" : "text-gray-800 dark:text-gray-200 font-semibold"
-                     )}>
-                       {notif.message}
-                     </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-3 self-center">
-                     <span className={clsx(
-                       "px-2 py-0.5 rounded text-[10px] font-black uppercase",
-                       LABELS.find(l => l.id === notif.type)?.color.replace('bg-', 'bg-opacity-10 text-')
-                     )}>
-                        {notif.type}
+         <div className="flex-1 overflow-y-auto custom-scrollbar">
+            {filteredMails.map(mail => (
+               <div 
+                 key={mail.id} 
+                 onClick={() => setSelectedMailId(mail.id)}
+                 className={clsx(
+                  "p-5 border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all cursor-pointer group relative",
+                  selectedMailId === mail.id && "bg-primary-50/50 dark:bg-primary-500/5",
+                  !mail.isRead && "font-bold"
+                 )}
+               >
+                  {!mail.isRead && <div className="absolute left-1.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-primary-600 rounded-full" />}
+                  <div className="flex justify-between items-start mb-1">
+                     <span className="text-sm text-gray-900 dark:text-white truncate pr-4">{mail.sender?.name}</span>
+                     <span className="text-[10px] text-gray-400 shrink-0">
+                       {new Date(mail.createdAt).toLocaleDateString()}
                      </span>
                   </div>
+                  <h4 className="text-sm text-gray-700 dark:text-gray-300 truncate mb-1">{mail.subject}</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-500 line-clamp-1">{mail.content}</p>
                </div>
             ))}
-            {filteredNotifications.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8">
-                <IconMail className="w-12 h-12 mb-4 opacity-20" />
-                <p className="font-bold">No notifications found</p>
+            {filteredMails.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                <IconMail className="w-12 h-12 mb-4 opacity-10" />
+                <p className="text-sm font-medium">No messages found</p>
               </div>
             )}
          </div>
-
-         {/* List Footer */}
-         <footer className="p-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
-            <p className="text-xs text-gray-500">Showing {filteredNotifications.length} notifications</p>
-            <div className="flex items-center gap-2">
-               <button className="p-1.5 text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-30" disabled><IconChevronLeft className="w-5 h-5" /></button>
-               <button className="p-1.5 text-gray-400 hover:text-gray-900 dark:hover:text-white"><IconChevronRight className="w-5 h-5" /></button>
-            </div>
+         <footer className="p-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between bg-white dark:bg-[#1a2234]">
+            <p className="text-xs text-gray-500">Showing {filteredMails.length} messages</p>
          </footer>
       </div>
+
+      {/* ── EMAIL VIEW ── */}
+      <div className="flex-1 flex flex-col min-w-0 bg-gray-50/30 dark:bg-[#0f172a]/20">
+        {selectedMail ? (
+          <>
+            <header className="h-20 px-8 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-white dark:bg-[#1a2234]">
+              <div className="flex items-center gap-4">
+                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500"><IconArchive className="w-5 h-5" /></button>
+                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500"><IconTrash className="w-5 h-5" /></button>
+                <div className="w-px h-6 bg-gray-100 dark:bg-gray-800 mx-1" />
+                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500"><IconStar className="w-5 h-5" /></button>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500"><IconDotsVertical className="w-5 h-5" /></button>
+              </div>
+            </header>
+            <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
+              <div className="max-w-4xl mx-auto space-y-8">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{selectedMail.subject}</h1>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-primary-600 flex items-center justify-center text-white font-bold text-lg">
+                        {selectedMail.sender?.name?.charAt(0)}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 dark:text-white">{selectedMail.sender?.name}</h4>
+                        <p className="text-xs text-gray-500">From: {selectedMail.sender?.email}</p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-gray-400">{new Date(selectedMail.createdAt).toLocaleString()}</span>
+                  </div>
+                </div>
+                <div className="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap border-t border-gray-100 dark:border-gray-800 pt-8">
+                  {selectedMail.content}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+             <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-3xl flex items-center justify-center mb-6">
+                <IconMail className="w-10 h-10 opacity-20" />
+             </div>
+             <p className="text-sm font-bold">Select a message to read</p>
+          </div>
+        )}
+      </div>
+
+      {/* ── COMPOSE MODAL ── */}
+      {isComposeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-[#1a2234] w-full max-w-2xl rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden scale-in">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/30">
+              <h3 className="font-bold text-gray-900 dark:text-white">New Message</h3>
+              <button onClick={() => setIsComposeOpen(false)} className="text-gray-400 hover:text-gray-900 dark:hover:text-white">✕</button>
+            </div>
+            <div className="p-8 space-y-6">
+              <input 
+                type="text" 
+                placeholder="To (comma separated user IDs)" 
+                value={composeData.recipients}
+                onChange={e => setComposeData({...composeData, recipients: e.target.value})}
+                className="w-full bg-transparent border-b border-gray-100 dark:border-gray-800 py-3 outline-none text-sm dark:text-white focus:border-primary-500 transition-colors" 
+              />
+              <input 
+                type="text" 
+                placeholder="Subject" 
+                value={composeData.subject}
+                onChange={e => setComposeData({...composeData, subject: e.target.value})}
+                className="w-full bg-transparent border-b border-gray-100 dark:border-gray-800 py-3 outline-none text-sm dark:text-white focus:border-primary-500 transition-colors" 
+              />
+              <textarea 
+                placeholder="Write your message..." 
+                rows={10}
+                value={composeData.content}
+                onChange={e => setComposeData({...composeData, content: e.target.value})}
+                className="w-full bg-gray-50/50 dark:bg-gray-800/30 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 outline-none text-sm dark:text-white focus:ring-2 focus:ring-primary-500/20 transition-all resize-none"
+              />
+            </div>
+            <div className="p-6 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/30">
+              <button className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-500"><IconPaperclip className="w-5 h-5" /></button>
+              <div className="flex gap-3">
+                <button onClick={() => setIsComposeOpen(false)} className="px-6 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">Cancel</button>
+                <button 
+                  onClick={handleSend}
+                  disabled={!composeData.recipients || !composeData.subject}
+                  className="bg-primary-600 text-white px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-primary-500/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

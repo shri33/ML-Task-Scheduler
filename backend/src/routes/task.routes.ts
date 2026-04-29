@@ -8,6 +8,7 @@ import { JOB_NAMES, TaskEventJobData } from '../queues/types';
 import logger from '../lib/logger';
 import { z } from 'zod';
 import { validateUUID, sanitizeBody } from '../middleware/validate.middleware';
+import prisma from '../lib/prisma';
 
 /** Emit a task event to the scheduling queue (non-blocking, best-effort). */
 async function emitTaskEvent(
@@ -373,6 +374,63 @@ router.post('/:id/complete', validateUUID('id'), async (req: Request, res: Respo
     emitTaskEvent('task_completed', req.params.id, (req as AuthRequest).user?.userId);
     
     res.json({ success: true, data: task });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PATCH /api/v1/tasks/:id/status
+ */
+router.patch('/:id/status', validateUUID('id'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { status } = req.body;
+    const task = await taskService.updateStatus(req.params.id, status);
+    
+    const io = req.app.get('io');
+    io?.emit('task:updated', task);
+    
+    res.json({ success: true, data: task });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/v1/tasks/:id/comments
+ */
+router.get('/:id/comments', validateUUID('id'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const comments = await prisma.taskComment.findMany({
+      where: { taskId: req.params.id },
+      include: { user: { select: { name: true } } },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json({ success: true, data: comments });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/tasks/:id/comments
+ */
+router.post('/:id/comments', validateUUID('id'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { content } = req.body;
+    const userId = (req as AuthRequest).user?.userId;
+    if (!userId) throw new AppError('Unauthorized', 401);
+
+    const comment = await prisma.taskComment.create({
+      data: {
+        taskId: req.params.id,
+        userId,
+        content
+      },
+      include: { user: { select: { name: true } } }
+    });
+
+    res.status(201).json({ success: true, data: comment });
   } catch (error) {
     next(error);
   }

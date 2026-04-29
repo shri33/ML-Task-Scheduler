@@ -16,7 +16,26 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const socket = socketService.connect();
 
       if (socket) {
-        const { fetchTasks, fetchResources, fetchMetrics, fetchNotifications, fetchMlData } = useStore.getState();
+        const { 
+          fetchTasks, 
+          fetchResources, 
+          fetchMetrics, 
+          fetchNotifications, 
+          fetchMlData,
+          fetchChatRooms,
+          receiveChatMessage
+        } = useStore.getState();
+
+        // Chat events
+        socket.on('chat:message_received', (message) => {
+          receiveChatMessage(message);
+          // If not on chat page or in active room, show toast
+          const state = useStore.getState();
+          if (state.activeRoomId !== message.roomId) {
+            toast.info('New Message', `${message.sender.name}: ${message.content.substring(0, 30)}...`);
+            fetchChatRooms();
+          }
+        });
 
         // Task events
         socket.on('task:created', (task) => {

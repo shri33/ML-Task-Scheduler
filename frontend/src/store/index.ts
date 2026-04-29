@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Task, Resource, Metrics, User, Notification } from '../types';
+import { Task, Resource, Metrics, User, Notification, ChatRoom, ChatMessage, MailMessage } from '../types';
 import { taskApi, resourceApi, metricsApi, scheduleApi, userApi, notificationApi, mlApi, chaosApi } from '../lib/api';
 
 interface AppState {
@@ -51,6 +51,23 @@ interface AppState {
   fetchChaosData: () => Promise<void>;
   startChaosExperiment: (params: { service: string; type: string; value: number }) => Promise<void>;
   stopChaosExperiment: (params: { service: string; type: string }) => Promise<void>;
+
+  // Chat Module
+  chatRooms: ChatRoom[];
+  activeRoomId: string | null;
+  chatMessages: ChatMessage[];
+  chatLoading: boolean;
+  fetchChatRooms: () => Promise<void>;
+  fetchChatMessages: (roomId: string) => Promise<void>;
+  setActiveRoom: (roomId: string | null) => void;
+  sendChatMessage: (roomId: string, content: string) => Promise<void>;
+  receiveChatMessage: (message: ChatMessage) => void;
+
+  // Mail Module
+  mails: MailMessage[];
+  mailLoading: boolean;
+  fetchMails: (folder?: string) => Promise<void>;
+  sendMail: (data: any) => Promise<void>;
 
   // Scheduling
   scheduling: boolean;
@@ -231,6 +248,76 @@ export const useStore = create<AppState>()((set, get) => ({
       const message = error instanceof Error ? error.message : 'Failed to stop experiment';
       set({ error: message });
       throw error;
+    }
+  },
+
+  // Chat Module
+  chatRooms: [],
+  activeRoomId: null,
+  chatMessages: [],
+  chatLoading: false,
+  fetchChatRooms: async () => {
+    const { chatApi } = await import('../lib/api');
+    set({ chatLoading: true });
+    try {
+      const rooms = await chatApi.getRooms();
+      set({ chatRooms: rooms, chatLoading: false });
+    } catch (error) {
+      set({ chatLoading: false });
+    }
+  },
+  fetchChatMessages: async (roomId: string) => {
+    const { chatApi } = await import('../lib/api');
+    set({ chatLoading: true });
+    try {
+      const messages = await chatApi.getMessages(roomId);
+      set({ chatMessages: messages, chatLoading: false });
+    } catch (error) {
+      set({ chatLoading: false });
+    }
+  },
+  setActiveRoom: (roomId: string | null) => set({ activeRoomId: roomId }),
+  sendChatMessage: async (roomId: string, content: string) => {
+    const { chatApi } = await import('../lib/api');
+    try {
+      await chatApi.sendMessage(roomId, content);
+      // Room will be updated via socket
+    } catch (error) {
+      set({ error: 'Failed to send message' });
+    }
+  },
+  receiveChatMessage: (message: ChatMessage) => {
+    set((state) => {
+      // If message is for active room, append it
+      if (state.activeRoomId === message.roomId) {
+        return { chatMessages: [message, ...state.chatMessages] };
+      }
+      return state;
+    });
+  },
+
+  // Mail Module
+  mails: [],
+  mailLoading: false,
+  fetchMails: async (folder = 'inbox') => {
+    const { mailApi } = await import('../lib/api');
+    set({ mailLoading: true });
+    try {
+      let mails = [];
+      if (folder === 'sent') mails = await mailApi.getSent();
+      else if (folder === 'drafts') mails = await mailApi.getDrafts();
+      else mails = await mailApi.getInbox();
+      set({ mails, mailLoading: false });
+    } catch (error) {
+      set({ mailLoading: false });
+    }
+  },
+  sendMail: async (data: any) => {
+    const { mailApi } = await import('../lib/api');
+    try {
+      await mailApi.send(data);
+    } catch (error) {
+      set({ error: 'Failed to send mail' });
     }
   },
 

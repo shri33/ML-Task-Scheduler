@@ -22,6 +22,9 @@ import deviceRoutes from './routes/device.routes';
 import experimentsRoutes from './routes/experiments.routes';
 import aiRoutes from './routes/ai.routes';
 import userRoutes from './routes/user.routes';
+import chatRoutes from './routes/chat.routes';
+import mailRoutes from './routes/mail.routes';
+import { handleSocketEvents } from './lib/socketHandlers';
 import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter, scheduleLimiter } from './middleware/rateLimit.middleware';
 import { csrfProtection } from './middleware/csrf.middleware';
@@ -154,6 +157,8 @@ app.use('/api/v1/ai', aiRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/ml', mlRoutes);
 app.use('/api/v1/chaos', chaosRoutes);
+app.use('/api/v1/chat', chatRoutes);
+app.use('/api/v1/mail', mailRoutes);
 
 // Alias: /api/v1/scheduling/compare → fog compare endpoint
 app.use('/api/v1/scheduling', fogRoutes);
@@ -238,14 +243,11 @@ io.on('connection', (socket) => {
   // Join user-specific room for targeted events
   if (userId) {
     socket.join(`user:${userId}`);
-    logger.info('Client connected', { socketId: socket.id, userId });
+    // Register all application-level socket events
+    handleSocketEvents(socket as any);
   } else {
     logger.info('Client connected (unauthenticated)', { socketId: socket.id });
   }
-  
-  socket.on('disconnect', () => {
-    logger.info('Client disconnected', { socketId: socket.id });
-  });
 });
 
 const PORT = env.PORT;

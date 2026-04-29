@@ -139,3 +139,46 @@ export interface Notification {
   timestamp: string;
   read: boolean;
 }
+
+// Chat Types
+export interface ChatRoom {
+  id: string;
+  name: string | null;
+  type: 'DIRECT' | 'GROUP';
+  lastMessageAt: string | null;
+  createdAt: string;
+  members: ChatMember[];
+  messages?: ChatMessage[];
+}
+
+export interface ChatMember {
+  id: string;
+  roomId: string;
+  userId: string;
+  isAdmin: boolean;
+  user: User;
+}
+
+export interface ChatMessage {
+  id: string;
+  roomId: string;
+  senderId: string;
+  content: string;
+  type: 'TEXT' | 'IMAGE' | 'FILE' | 'SYSTEM';
+  createdAt: string;
+  sender: Pick<User, 'id' | 'name'>;
+}
+
+// Mail Types
+export interface MailMessage {
+  id: string;
+  threadId: string;
+  senderId: string;
+  subject: string;
+  content: string;
+  isRead: boolean;
+  isStarred: boolean;
+  createdAt: string;
+  sender: Pick<User, 'id' | 'name' | 'email'>;
+  attachments?: any[];
+}

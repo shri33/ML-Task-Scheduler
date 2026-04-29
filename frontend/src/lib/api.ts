@@ -190,6 +190,8 @@ export interface TaskApi {
   getStats: () => Promise<any>;
   getById: (id: string) => Promise<Task>;
   update: (id: string, data: Partial<CreateTaskInput>) => Promise<Task>;
+  getComments: (id: string) => Promise<any[]>;
+  addComment: (id: string, content: string) => Promise<any>;
 }
 
 export const taskApi: TaskApi = {
@@ -219,6 +221,14 @@ export const taskApi: TaskApi = {
   },
   update: async (id: string, data: Partial<CreateTaskInput>): Promise<Task> => {
     const response = await api.patch<ApiResponse<Task>>(`/v1/tasks/${id}`, data);
+    return response.data.data;
+  },
+  getComments: async (id: string): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>(`/v1/tasks/${id}/comments`);
+    return response.data.data;
+  },
+  addComment: async (id: string, content: string): Promise<any> => {
+    const response = await api.post<ApiResponse<any>>(`/v1/tasks/${id}/comments`, { content });
     return response.data.data;
   }
 };
@@ -468,6 +478,48 @@ export const mlApi = {
   },
   getInfo: async (): Promise<any> => {
     const response = await api.get<ApiResponse<any>>('/v1/ml/info');
+    return response.data.data;
+  }
+};
+
+export const chatApi = {
+  getRooms: async (): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>('/v1/chat/rooms');
+    return response.data.data;
+  },
+  getMessages: async (roomId: string, limit?: number, cursor?: string): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>(`/v1/chat/rooms/${roomId}/messages`, { params: { limit, cursor } });
+    return response.data.data;
+  },
+  sendMessage: async (roomId: string, content: string, type?: string): Promise<any> => {
+    const response = await api.post<ApiResponse<any>>(`/v1/chat/rooms/${roomId}/messages`, { content, type });
+    return response.data.data;
+  },
+  createRoom: async (memberIds: string[], name?: string, type?: string): Promise<any> => {
+    const response = await api.post<ApiResponse<any>>('/v1/chat/rooms', { memberIds, name, type });
+    return response.data.data;
+  }
+};
+
+export const mailApi = {
+  getInbox: async (): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>('/v1/mail/inbox');
+    return response.data.data;
+  },
+  getSent: async (): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>('/v1/mail/sent');
+    return response.data.data;
+  },
+  getDrafts: async (): Promise<any[]> => {
+    const response = await api.get<ApiResponse<any[]>>('/v1/mail/drafts');
+    return response.data.data;
+  },
+  send: async (data: { recipients: string[]; subject: string; content: string }): Promise<any> => {
+    const response = await api.post<ApiResponse<any>>('/v1/mail/send', data);
+    return response.data.data;
+  },
+  markRead: async (id: string, isRead: boolean): Promise<any> => {
+    const response = await api.patch<ApiResponse<any>>(`/v1/mail/${id}/read`, { isRead });
     return response.data.data;
   }
 };

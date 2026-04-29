@@ -66,6 +66,8 @@ model Task {
 
   scheduleHistory ScheduleHistory[]
   predictions     Prediction[]
+  comments        TaskComment[]
+  attachments     TaskAttachment[]
 
   @@index([status])
   @@index([resourceId])
@@ -168,6 +170,14 @@ model User {
   notifications     NotificationPreference?
   behaviorProfile   UserBehaviorProfile?
   taskEvents        TaskEvent[]
+  
+  // App Module Relations
+  sentMails         MailMessage[]   @relation("SentMails")
+  receivedMails     MailRecipient[] @relation("ReceivedMails")
+  mailMemberships   MailThreadParticipant[]
+  chatMemberships   ChatMember[]
+  chatMessages      ChatMessage[]
+  taskComments      TaskComment[]
 
   @@index([email])
   @@index([role, isActive]) // Composite: user management queries
@@ -417,4 +427,174 @@ model AuditLog {
   @@index([userId])
   @@index([action])
   @@index([timestamp])
+}
+
+// ---------------------------------------------------------------------------
+// Mail System Models
+// ---------------------------------------------------------------------------
+
+model MailMessage {
+  id          String           @id @default(uuid())
+  subject     String?
+  content     String?          @db.Text
+  senderId    String
+  sender      User             @relation("SentMails", fields: [senderId], references: [id])
+  threadId    String
+  thread      MailThread       @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  isRead      Boolean          @default(false)
+  isStarred   Boolean          @default(false)
+  label       String           @default("INBOX") // INBOX, SENT, DRAFTS, TRASH
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  attachments MailAttachment[]
+  recipients  MailRecipient[]
+
+  @@index([senderId])
+  @@index([threadId])
+  @@index([label])
+}
+
+model MailThread {
+  id        String        @id @default(uuid())
+  subject   String?
+  lastMessageAt DateTime  @default(now())
+  messages  MailMessage[]
+  participants MailThreadParticipant[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model MailThreadParticipant {
+  id        String     @id @default(uuid())
+  threadId  String
+  thread    MailThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([threadId, userId])
+  @@index([userId])
+}
+
+model MailRecipient {
+  id        String      @id @default(uuid())
+  mailId    String
+  mail      MailMessage @relation(fields: [mailId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation("ReceivedMails", fields: [userId], references: [id])
+  isRead    Boolean     @default(false)
+  readAt    DateTime?
+
+  @@index([userId])
+  @@index([mailId])
+}
+
+model MailAttachment {
+  id        String      @id @default(uuid())
+  mailId    String
+  mail      MailMessage @relation(fields: [mailId], references: [id], onDelete: Cascade)
+  fileName  String
+  fileType  String
+  fileSize  Int
+  url       String
+  createdAt DateTime    @default(now())
+
+  @@index([mailId])
+}
+
+// ---------------------------------------------------------------------------
+// Chat System Models
+// ---------------------------------------------------------------------------
+
+enum ChatRoomType {
+  DIRECT
+  GROUP
+}
+
+model ChatRoom {
+  id          String       @id @default(uuid())
+  name        String?
+  type        ChatRoomType @default(DIRECT)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  lastMessageAt DateTime   @default(now())
+  
+  members     ChatMember[]
+  messages    ChatMessage[]
+
+  @@index([lastMessageAt])
+}
+
+model ChatMember {
+  id        String   @id @default(uuid())
+  roomId    String
+  room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isAdmin   Boolean  @default(false)
+  joinedAt  DateTime @default(now())
+  lastReadAt DateTime @default(now())
+
+  @@unique([roomId, userId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id          String              @id @default(uuid())
+  roomId      String
+  room        ChatRoom            @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  senderId    String
+  sender      User                @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content     String?             @db.Text
+  type        String              @default("TEXT") // TEXT, IMAGE, FILE, SYSTEM
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  attachments MessageAttachment[]
+
+  @@index([roomId, createdAt])
+  @@index([senderId])
+}
+
+model MessageAttachment {
+  id        String      @id @default(uuid())
+  messageId String
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  fileName  String
+  fileType  String
+  fileSize  Int
+  url       String
+  createdAt DateTime    @default(now())
+
+  @@index([messageId])
+}
+
+// ---------------------------------------------------------------------------
+// Task Enhancement Models
+// ---------------------------------------------------------------------------
+
+model TaskComment {
+  id        String   @id @default(uuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([taskId])
+  @@index([userId])
+}
+
+model TaskAttachment {
+  id        String   @id @default(uuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  fileName  String
+  fileType  String
+  fileSize  Int
+  url       String
+  uploadedBy String
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
 }
