@@ -21,6 +21,7 @@ import authRoutes from './routes/auth.routes';
 import deviceRoutes from './routes/device.routes';
 import experimentsRoutes from './routes/experiments.routes';
 import aiRoutes from './routes/ai.routes';
+import userRoutes from './routes/user.routes';
 import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter, scheduleLimiter } from './middleware/rateLimit.middleware';
 import { csrfProtection } from './middleware/csrf.middleware';
@@ -142,6 +143,7 @@ app.use('/api/v1/fog', fogRoutes);
 app.use('/api/v1/devices', deviceRoutes);
 app.use('/api/v1/experiments', experimentsRoutes);
 app.use('/api/v1/ai', aiRoutes);
+app.use('/api/v1/users', userRoutes);
 
 // Alias: /api/v1/scheduling/compare → fog compare endpoint
 app.use('/api/v1/scheduling', fogRoutes);

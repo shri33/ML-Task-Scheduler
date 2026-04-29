@@ -1,6 +1,8 @@
 import prisma from '../lib/prisma';
 import { CreateResourceInput, UpdateResourceInput } from '../validators/resource.validator';
 import { mlService } from './ml.service';
+import redisService from '../lib/redis';
+import logger from '../lib/logger';
 
 type ResourceStatus = 'AVAILABLE' | 'BUSY' | 'OFFLINE';
 
@@ -25,6 +27,7 @@ export class ResourceService {
       }
     });
     await mlService.clearAllPredictions();
+    await redisService.delByPattern('resources:*');
     return resource;
   }
 
@@ -32,6 +35,10 @@ export class ResourceService {
     const page = Math.max(options?.page || 1, 1);
     const limit = Math.min(Math.max(options?.limit || 20, 1), 100);
     const skip = (page - 1) * limit;
+
+    const cacheKey = `resources:all:${status || 'any'}:${page}:${limit}`;
+    const cached = await redisService.getJSON<any>(cacheKey);
+    if (cached) return cached;
 
     const where = status ? { status } : undefined;
 
@@ -56,11 +63,17 @@ export class ResourceService {
       prisma.resource.count({ where })
     ]);
 
-    return { items, total, page, limit };
+    const result = { items, total, page, limit };
+    await redisService.setJSON(cacheKey, result, 300);
+    return result;
   }
 
   async findById(id: string) {
-    return prisma.resource.findUnique({
+    const cacheKey = `resources:id:${id}`;
+    const cached = await redisService.getJSON<any>(cacheKey);
+    if (cached) return cached;
+
+    const resource = await prisma.resource.findUnique({
       where: { id },
       include: {
         tasks: {
@@ -71,6 +84,11 @@ export class ResourceService {
         }
       }
     });
+
+    if (resource) {
+      await redisService.setJSON(cacheKey, resource, 300);
+    }
+    return resource;
   }
 
   async findAvailable() {
@@ -89,6 +107,7 @@ export class ResourceService {
       data
     });
     await mlService.clearAllPredictions();
+    await redisService.delByPattern('resources:*');
     return resource;
   }
 
@@ -102,9 +121,12 @@ export class ResourceService {
     // Delete schedule history
     await prisma.scheduleHistory.deleteMany({ where: { resourceId: id } });
 
-    return prisma.resource.delete({
+    const resource = await prisma.resource.delete({
       where: { id }
     });
+    await redisService.delByPattern('resources:*');
+    await redisService.delByPattern('tasks:*'); // tasks were updated
+    return resource;
   }
 
   async updateLoad(id: string, load: number) {
@@ -118,6 +140,7 @@ export class ResourceService {
       }
     });
     await mlService.clearAllPredictions();
+    await redisService.delByPattern('resources:*');
     return resource;
   }
 
@@ -141,10 +164,15 @@ export class ResourceService {
     `;
     // Invalidate ML prediction cache since load changed
     await mlService.clearAllPredictions();
+    await redisService.delByPattern('resources:*');
   }
 
 
   async getStats() {
+    const cacheKey = 'resources:stats';
+    const cached = await redisService.getJSON<any>(cacheKey);
+    if (cached) return cached;
+
     const resources = await prisma.resource.findMany() as ResourceWithLoad[];
     
     const total = resources.length;
@@ -163,7 +191,9 @@ export class ResourceService {
       ? resources.reduce((sum: number, r: ResourceWithLoad) => sum + r.currentLoad, 0) / resources.length 
       : 0;
 
-    return { total, available, busy, offline, avgLoad: Math.round(avgLoad * 100) / 100, distribution };
+    const result = { total, available, busy, offline, avgLoad: Math.round(avgLoad * 100) / 100, distribution };
+    await redisService.setJSON(cacheKey, result, 60);
+    return result;
   }
 }
 

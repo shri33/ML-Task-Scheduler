@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { Task, Resource, Metrics } from '../types';
-import { taskApi, resourceApi, metricsApi, scheduleApi } from '../lib/api';
+import { Task, Resource, Metrics, User, Notification } from '../types';
+import { taskApi, resourceApi, metricsApi, scheduleApi, userApi, notificationApi } from '../lib/api';
 
 interface AppState {
   // Tasks
@@ -18,6 +18,16 @@ interface AppState {
   addResource: (resource: Resource) => void;
   updateResource: (resource: Resource) => void;
   removeResource: (id: string) => void;
+
+  // Users
+  users: User[];
+  usersLoading: boolean;
+  fetchUsers: () => Promise<void>;
+
+  // Notifications
+  notifications: Notification[];
+  notificationsLoading: boolean;
+  fetchNotifications: () => Promise<void>;
 
   // Metrics
   metrics: Metrics | null;
@@ -86,6 +96,34 @@ export const useStore = create<AppState>()((set, get) => ({
     set((state: AppState) => ({
       resources: state.resources.filter((r: Resource) => r.id !== id),
     })),
+
+  // Users
+  users: [],
+  usersLoading: false,
+  fetchUsers: async () => {
+    set({ usersLoading: true, error: null });
+    try {
+      const users = await userApi.getAll();
+      set({ users, usersLoading: false });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch users';
+      set({ usersLoading: false, error: message });
+    }
+  },
+
+  // Notifications
+  notifications: [],
+  notificationsLoading: false,
+  fetchNotifications: async () => {
+    set({ notificationsLoading: true, error: null });
+    try {
+      const notifications = await notificationApi.getAll();
+      set({ notifications, notificationsLoading: false });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch notifications';
+      set({ notificationsLoading: false, error: message });
+    }
+  },
 
   // Metrics
   metrics: null,

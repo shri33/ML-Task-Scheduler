@@ -118,3 +118,24 @@ export interface ApiResponse<T> {
   data: T;
   error?: string;
 }
+
+// User Types
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: 'ADMIN' | 'USER' | 'VIEWER';
+  isActive: boolean;
+  lastLogin: string | null;
+  createdAt: string;
+}
+
+// Notification Types
+export interface Notification {
+  id: string;
+  type: 'TASK' | 'SYSTEM' | 'ALERT';
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+}

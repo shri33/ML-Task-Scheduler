@@ -97,6 +97,20 @@ class RedisService {
     }
   }
 
+  async delByPattern(pattern: string): Promise<boolean> {
+    if (!this.isAvailable()) return false;
+    try {
+      const keys = await this.client!.keys(pattern);
+      if (keys.length > 0) {
+        await this.client!.del(...keys);
+      }
+      return true;
+    } catch (error) {
+      logger.error('Redis DELBYPATTERN error', error instanceof Error ? error : new Error(String(error)));
+      return false;
+    }
+  }
+
   async setJSON(key: string, value: object, expirySeconds?: number): Promise<boolean> {
     return this.set(key, JSON.stringify(value), expirySeconds);
   }

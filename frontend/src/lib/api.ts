@@ -6,6 +6,8 @@ import type {
   ScheduleResult,
   Metrics,
   ApiResponse,
+  User,
+  Notification
 } from '../types';
 
 // Types for Auth
@@ -423,6 +425,24 @@ export const aiApi = {
     const response = await api.post<ApiResponse<any[]>>('/v1/ai/generate-scenario', { description });
     return response.data.data;
   },
+};
+
+export const userApi = {
+  getAll: async (): Promise<User[]> => {
+    const response = await api.get<ApiResponse<User[]>>('/v1/users');
+    return response.data.data;
+  },
+  update: async (id: string, data: Partial<User>): Promise<User> => {
+    const response = await api.patch<ApiResponse<User>>(`/v1/users/${id}`, data);
+    return response.data.data;
+  }
+};
+
+export const notificationApi = {
+  getAll: async (): Promise<Notification[]> => {
+    const response = await api.get<ApiResponse<Notification[]>>('/v1/users/notifications');
+    return response.data.data;
+  }
 };
 
 export default api;

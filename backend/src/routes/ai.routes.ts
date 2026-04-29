@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { aiService } from '../services/ai.service';
 import { authenticate } from '../middleware/auth.middleware';
+import { aiLimiter } from '../middleware/rateLimit.middleware';
 
 const router = Router();
 
@@ -11,7 +12,7 @@ router.use(authenticate);
  * POST /api/ai/chat
  * Send a message to the AI assistant
  */
-router.post('/chat', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/chat', aiLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { message, history } = req.body;
     
@@ -37,7 +38,7 @@ router.post('/chat', async (req: Request, res: Response, next: NextFunction) => 
  * POST /api/ai/generate-scenario
  * Generate synthetic tasks for a specific scenario
  */
-router.post('/generate-scenario', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/generate-scenario', aiLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { description } = req.body;
     

@@ -3,6 +3,7 @@ import { CreateTaskInput, UpdateTaskInput } from '../validators/task.validator';
 import { mlService } from './ml.service';
 import { emailService } from './email.service';
 import logger from '../lib/logger';
+import redisService from '../lib/redis';
 
 type TaskStatus = 'PENDING' | 'SCHEDULED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 
@@ -19,6 +20,7 @@ export class TaskService {
       }
     });
     await mlService.clearAllPredictions();
+    await redisService.delByPattern('tasks:*');
     return task;
   }
 
@@ -26,6 +28,13 @@ export class TaskService {
     const page = Math.max(options?.page || 1, 1);
     const limit = Math.min(Math.max(options?.limit || 20, 1), 100);
     const skip = (page - 1) * limit;
+
+    const cacheKey = `tasks:all:${status || 'any'}:${userId || 'anon'}:${page}:${limit}`;
+    const cached = await redisService.getJSON<any>(cacheKey);
+    if (cached) {
+      logger.info(`Task Cache Hit: ${cacheKey}`);
+      return cached;
+    }
 
     const where = {
       deletedAt: null,
@@ -55,11 +64,17 @@ export class TaskService {
       prisma.task.count({ where })
     ]);
 
-    return { items, total, page, limit };
+    const result = { items, total, page, limit };
+    await redisService.setJSON(cacheKey, result, 300); // 5 min cache
+    return result;
   }
 
   async findById(id: string) {
-    return prisma.task.findUnique({
+    const cacheKey = `tasks:id:${id}`;
+    const cached = await redisService.getJSON<any>(cacheKey);
+    if (cached) return cached;
+
+    const task = await prisma.task.findUnique({
       where: { id },
       include: {
         resource: true,
@@ -73,6 +88,11 @@ export class TaskService {
         }
       }
     });
+
+    if (task) {
+      await redisService.setJSON(cacheKey, task, 300);
+    }
+    return task;
   }
 
   async findPending(userId?: string) {
@@ -95,15 +115,18 @@ export class TaskService {
       data
     });
     await mlService.clearAllPredictions();
+    await redisService.delByPattern('tasks:*');
     return task;
   }
 
   async delete(id: string) {
     // Soft delete — set deletedAt timestamp instead of removing the record
-    return prisma.task.update({
+    const task = await prisma.task.update({
       where: { id },
       data: { deletedAt: new Date() }
     });
+    await redisService.delByPattern('tasks:*');
+    return task;
   }
 
   async bulkCreate(tasks: CreateTaskInput[], userId?: string) {
@@ -121,11 +144,12 @@ export class TaskService {
         })
       )
     );
+    await redisService.delByPattern('tasks:*');
     return created;
   }
 
   async assignToResource(taskId: string, resourceId: string, predictedTime?: number) {
-    return prisma.task.update({
+    const task = await prisma.task.update({
       where: { id: taskId },
       data: {
         resourceId,
@@ -134,6 +158,8 @@ export class TaskService {
         scheduledAt: new Date()
       }
     });
+    await redisService.delByPattern('tasks:*');
+    return task;
   }
 
   async markCompleted(taskId: string, actualTime: number) {
@@ -146,6 +172,8 @@ export class TaskService {
       },
       include: { resource: true }
     });
+
+    await redisService.delByPattern('tasks:*');
 
     // Check for performance anomaly (if we have a prediction)
     if (task.predictedTime) {
@@ -165,6 +193,10 @@ export class TaskService {
   }
 
   async getStats() {
+    const cacheKey = 'tasks:stats';
+    const cached = await redisService.getJSON<any>(cacheKey);
+    if (cached) return cached;
+
     const notDeleted = { deletedAt: null };
     const groups = await prisma.task.groupBy({
       by: ['status'],
@@ -179,6 +211,7 @@ export class TaskService {
       const key = g.status.toLowerCase() as keyof typeof result;
       if (key in result) (result as any)[key] = count;
     }
+    await redisService.setJSON(cacheKey, result, 60); // 1 min cache for stats
     return result;
   }
 }

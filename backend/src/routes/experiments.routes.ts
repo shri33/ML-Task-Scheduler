@@ -27,6 +27,7 @@ import {
   TerminalDevice,
 } from '../services/fogComputing.service';
 import { authenticate, adminOnly, AuthRequest } from '../middleware/auth.middleware';
+import { experimentLimiter } from '../middleware/rateLimit.middleware';
 import logger from '../lib/logger';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -265,7 +266,7 @@ function buildSummaryReport(
  * POST /api/v1/experiments/run
  * Body: { experiment_type: "energy"|"reliability_taskcount"|"reliability_tolerance"|"completion_time"|"all" }
  */
-router.post('/run', async (req: Request, res: Response) => {
+router.post('/run', experimentLimiter, async (req: Request, res: Response) => {
   try {
     const { experiment_type, iterations } = experimentRequestSchema.parse(req.body);
 

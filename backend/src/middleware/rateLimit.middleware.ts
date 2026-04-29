@@ -67,3 +67,29 @@ export const mlLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false
 });
+
+// Rate limiter for AI Assistant (costly NIM calls)
+export const aiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: process.env.NODE_ENV === 'development' ? 50 : 5,
+  message: {
+    success: false,
+    error: 'AI limit reached. Please wait a minute before chatting again.',
+    retryAfter: '1 minute'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Rate limiter for Experiment benchmarks
+export const experimentLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: process.env.NODE_ENV === 'development' ? 20 : 3,
+  message: {
+    success: false,
+    error: 'Experiment threshold reached. Please wait 5 minutes between benchmark runs.',
+    retryAfter: '5 minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
