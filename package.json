@@ -1,0 +1,10 @@
+{
+  "name": "ml-task-scheduler",
+  "version": "1.0.0",
+  "description": "ML Task Scheduler - Full Stack Application",
+  "private": true,
+  "scripts": {
+    "build": "cd frontend && npm ci && npm run build"
+  }
+}
+
