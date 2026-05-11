@@ -85,5 +85,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start server
-CMD ["node", "dist/index.js"]
+# Sync Prisma schema before starting the API. This keeps fresh databases usable even when no migration history is present in the image.
+CMD ["sh", "-lc", "npx prisma db push --skip-generate && exec node dist/index.js"]

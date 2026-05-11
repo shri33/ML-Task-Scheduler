@@ -220,7 +220,7 @@ export const taskApi: TaskApi = {
     return response.data.data;
   },
   update: async (id: string, data: Partial<CreateTaskInput>): Promise<Task> => {
-    const response = await api.patch<ApiResponse<Task>>(`/v1/tasks/${id}`, data);
+    const response = await api.put<ApiResponse<Task>>(`/v1/tasks/${id}`, data);
     return response.data.data;
   },
   getComments: async (id: string): Promise<any[]> => {

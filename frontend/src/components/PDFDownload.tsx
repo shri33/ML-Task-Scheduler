@@ -2,6 +2,8 @@ import { IconFileText, IconDownload, IconLoader2 } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { clsx } from 'clsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // Helper to read a cookie value
 function getCookie(name: string): string | undefined {
@@ -37,42 +39,118 @@ interface ReportButton {
   description: string;
 }
 
+interface AnalyticsProps {
+  timeline?: any[];
+  comparison?: any;
+  anomalies?: any[];
+  tasks?: any[];
+  resources?: any[];
+  dateRange?: string | number;
+}
+
 const reports: ReportButton[] = [
   {
     name: 'Task Summary',
-    endpoint: '/api/reports/pdf/tasks',
+    endpoint: '/api/v1/reports/pdf/tasks',
     filename: 'task-summary-report.pdf',
     description: 'All tasks with status breakdown',
   },
   {
     name: 'ML Performance',
-    endpoint: '/api/reports/pdf/performance',
+    endpoint: '/api/v1/reports/pdf/performance',
     filename: 'ml-performance-report.pdf',
     description: 'ML prediction accuracy analysis',
   },
   {
     name: 'Resource Utilization',
-    endpoint: '/api/reports/pdf/resources',
+    endpoint: '/api/v1/reports/pdf/resources',
     filename: 'resource-utilization-report.pdf',
     description: 'Resource load and efficiency',
   },
 ];
 
-export function PDFDownloadButtons() {
+async function generateAnalyticsPdf(reportName: string, data: AnalyticsProps) {
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const title = `${reportName} - ${new Date().toLocaleDateString()}`;
+  doc.setFontSize(14);
+  doc.text(title, 40, 50);
+  doc.setFontSize(10);
+  doc.text(`Date Range: ${data.dateRange || 'N/A'}`, 40, 70);
+
+  if (reportName === 'Task Summary') {
+    const rows = (data.tasks || []).map((t: any) => [t.id || '', t.name || t.type || '', t.status || '', t.scheduledAt || '']);
+    autoTable(doc, {
+      startY: 90,
+      head: [['ID', 'Name/Type', 'Status', 'Scheduled At']],
+      body: rows,
+      styles: { fontSize: 9 }
+    });
+  }
+
+  if (reportName === 'ML Performance') {
+    const timeline = data.timeline || [];
+    const rows = timeline.map((r: any) => [r.date || '', String(r.tasksScheduled || ''), String(r.avgExecutionTime || ''), String(r.mlAccuracy || '')]);
+    autoTable(doc, {
+      startY: 90,
+      head: [['Date', 'Tasks Scheduled', 'Avg Exec Time', 'ML Accuracy']],
+      body: rows,
+      styles: { fontSize: 9 }
+    });
+    if (data.comparison) {
+      const y = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 20 : 200;
+      doc.text('Comparison Summary', 40, y + 12);
+      autoTable(doc, {
+        startY: y + 20,
+        head: [['Metric', 'With ML', 'Without ML']],
+        body: [
+          ['Count', String(data.comparison.withML.count || ''), String(data.comparison.withoutML.count || '')],
+          ['Avg Time', String(data.comparison.withML.avgTime || ''), String(data.comparison.withoutML.avgTime || '')],
+          ['Avg Error', String(data.comparison.withML.avgError || ''), String(data.comparison.withoutML.avgError || '')],
+        ],
+        styles: { fontSize: 9 }
+      });
+    }
+  }
+
+  if (reportName === 'Resource Utilization') {
+    const rows = (data.resources || []).map((r: any) => [r.name || '', String(r.currentLoad || ''), String(r.capacity || '')]);
+    autoTable(doc, {
+      startY: 90,
+      head: [['Resource', 'Load', 'Capacity']],
+      body: rows,
+      styles: { fontSize: 9 }
+    });
+  }
+
+  const filename = `${reportName.replace(/\s+/g, '_').toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`;
+  doc.save(filename);
+}
+
+export function PDFDownloadButtons(props?: AnalyticsProps) {
   const [downloading, setDownloading] = useState<string | null>(null);
   const toast = useToast();
 
   const handleDownload = async (report: ReportButton) => {
     setDownloading(report.endpoint);
     try {
-      await downloadFile(report.endpoint, report.filename);
-      toast.success('Download complete', `${report.name} report has been downloaded.`);
+      // If analytics props are provided, generate client-side PDFs using current data
+      if (props && (props.timeline || props.tasks || props.resources || props.comparison)) {
+        await generateAnalyticsPdf(report.name, props);
+        toast.success(`${report.name} report has been generated.`);
+      } else {
+        await downloadFile(report.endpoint, report.filename);
+        toast.success('Download complete', `${report.name} report has been downloaded.`);
+      }
     } catch (error) {
-      toast.error('Download failed', 'Could not download the report. Please try again.');
+      console.error('PDF download/generation error:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error('Download failed', message || 'Could not download the report.');
     } finally {
       setDownloading(null);
     }
   };
+
+  
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -134,7 +212,7 @@ export function PDFDownloadCard() {
 }
 
 // Default export - simple button that shows PDF download options
-export default function PDFDownload() {
+export default function PDFDownload(props?: AnalyticsProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
   const toast = useToast();
@@ -143,8 +221,13 @@ export default function PDFDownload() {
     setDownloading(report.endpoint);
     setShowDropdown(false);
     try {
-      await downloadFile(report.endpoint, report.filename);
-      toast.success('Download complete', `${report.name} report has been downloaded.`);
+      if (props && (props.timeline || props.tasks || props.resources || props.comparison)) {
+        await generateAnalyticsPdf(report.name, props);
+        toast.success('Download complete', `${report.name} report has been generated.`);
+      } else {
+        await downloadFile(report.endpoint, report.filename);
+        toast.success('Download complete', `${report.name} report has been downloaded.`);
+      }
     } catch (error) {
       toast.error('Download failed', 'Could not download the report.');
     } finally {
