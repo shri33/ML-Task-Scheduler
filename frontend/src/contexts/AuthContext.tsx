@@ -33,7 +33,8 @@ const DEMO_USER: AuthUser = {
   role: 'ADMIN',
 };
 const DEMO_PASSWORD = 'password123';
-const DEMO_MODE_KEY = 'ml-scheduler-demo-mode';
+// Version the localStorage key to auto-invalidate old cache when auth changes
+const DEMO_MODE_KEY = 'ml-scheduler-demo-mode-v2';
 
 /**
  * Demo mode is only enabled when VITE_ENABLE_DEMO=true is explicitly set.
@@ -70,63 +71,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isDemoMode, setIsDemoMode] = useState(false);
 
-  // useEffect(() => {
-  //   // Check if user was in demo mode (persisted across refresh)
-  //   const savedDemo = localStorage.getItem(DEMO_MODE_KEY);
-  //   if (savedDemo) {
-  //     try {
-  //       const demoUser = JSON.parse(savedDemo);
-  //       setUser(demoUser);
-  //       setIsDemoMode(true);
-  //       setIsLoading(false);
-  //       return;
-  //     } catch {
-  //       localStorage.removeItem(DEMO_MODE_KEY);
-  //     }
-  //   }
-  //   // Check for existing session via httpOnly cookie
-  //   fetchUser();
-  // }, []);
+  useEffect(() => {
+    let cancelled = false;
 
-// AFTER
-useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const isOAuthReturn = params.has('session') || document.referrer.includes('google.com');
-
-  if (!isOAuthReturn) {
-    const savedDemo = localStorage.getItem(DEMO_MODE_KEY);
-    if (savedDemo) {
+    const initializeAuth = async () => {
       try {
-        setUser(JSON.parse(savedDemo));
-        setIsDemoMode(true);
-        setIsLoading(false);
-        return;
-      } catch {
-        localStorage.removeItem(DEMO_MODE_KEY);
-      }
-    }
-  } else {
-    localStorage.removeItem(DEMO_MODE_KEY);
-    setIsDemoMode(false);
-  }
-  fetchUser();
-}, []);
+        const me = await authApi.getMe();
+        if (cancelled) return;
 
-  const fetchUser = async () => {
-    try {
-      const me = await authApi.getMe();
-      setUser(me);
-      // If the backend returned the fallback Demo User (e.g. from Google Auth offline fallback)
-      if (me.id === 'demo-user-001') {
-        setIsDemoMode(true);
-        localStorage.setItem(DEMO_MODE_KEY, JSON.stringify(me));
+        setUser(me);
+        setIsDemoMode(false);
+        localStorage.removeItem(DEMO_MODE_KEY);
+      } catch {
+        if (cancelled) return;
+
+        const savedDemo = localStorage.getItem(DEMO_MODE_KEY);
+        if (savedDemo) {
+          try {
+            const demoUser = JSON.parse(savedDemo);
+            setUser(demoUser);
+            setIsDemoMode(true);
+            return;
+          } catch {
+            localStorage.removeItem(DEMO_MODE_KEY);
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
-    } catch {
-      // Not authenticated or token expired or backend unavailable
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+
+    initializeAuth();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /** Try server login first; if backend unavailable, fall back to client-side demo */
   const login = async (email: string, password: string) => {

@@ -318,7 +318,13 @@ export default function Layout({ children }: LayoutProps) {
                   className="relative group flex items-center"
                 >
                   <div className="w-9 h-9 bg-gradient-to-br from-emerald-100 to-primary-100 dark:from-emerald-900/40 dark:to-primary-900/40 border border-emerald-200 dark:border-emerald-800/50 rounded-full flex items-center justify-center shadow-sm overflow-hidden group-hover:ring-2 ring-primary-500/50 transition-all">
-                    <IconUser className="w-5 h-5 text-primary-600 dark:text-primary-400" stroke={1.5} />
+                    {user?.picture ? (
+                      <img src={user.picture} alt={user.name || 'User'} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xs font-semibold text-primary-600 dark:text-primary-400">
+                        {(user?.name || 'U').charAt(0).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-[#1a2234] rounded-full" />
                 </button>

@@ -174,7 +174,7 @@ export const authApi = {
   },
   getMe: async (): Promise<AuthUser> => {
     const response = await api.get<ApiResponse<AuthUser>>('/v1/auth/me');
-    return response.data.data;
+    return (response.data.data as any)?.user ?? response.data.data;
   },
   updateProfile: async (data: Partial<AuthUser>): Promise<AuthUser> => {
     const response = await api.patch<ApiResponse<AuthUser>>('/v1/auth/profile', data);
