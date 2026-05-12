@@ -17,7 +17,7 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # Install ALL dependencies (including devDependencies for build)
-RUN npm ci --include=dev
+RUN npm ci --include=dev --legacy-peer-deps
 
 # Generate Prisma Client
 RUN npx prisma generate
@@ -40,7 +40,7 @@ COPY . .
 RUN npm run build
 
 # Prune dev dependencies after build
-RUN npm prune --production
+RUN npm prune --production --legacy-peer-deps
 
 # -----------------------------------------------------------------------------
 # Stage 3: Production Runtime
