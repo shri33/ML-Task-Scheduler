@@ -78,7 +78,7 @@
 
 | # | Check | Status | Notes |
 |---|-------|--------|-------|
-| 40 | Energy experiment (Figure 6): HH lowest energy | ✅ PASS | Across task counts 50–300 |
+| 40 | Energy experiment (Figure 6): HH lowest energy | ✅PASS | Across task counts 50–300 |
 | 41 | Energy experiment: RR highest energy | ✅ PASS | Consistent across all scenarios |
 | 42 | Reliability vs task count (Figure 7): decreases as tasks increase | ✅ PASS | Monotonic trend |
 | 43 | Reliability vs task count: HH highest reliability | ✅ PASS | Outperforms IPSO, IACO, RR |
