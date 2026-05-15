@@ -49,8 +49,8 @@ const metricReader = new PeriodicExportingMetricReader({
 
 // Initialize SDK
 const sdk = new NodeSDK({
-  resource,
-  traceExporter,
+  resource: resource as any,
+  traceExporter: traceExporter as any,
   metricReader: metricReader as any,
   instrumentations: [
     getNodeAutoInstrumentations({
