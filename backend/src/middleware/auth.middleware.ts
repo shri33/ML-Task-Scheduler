@@ -152,9 +152,9 @@ export const authorize = (...roles: string[]) => {
 export const adminOnly = authorize('ADMIN');
 
 // Generate tokens
-export const generateTokens = (user: { id: string; email: string; role: string }) => {
+export const generateTokens = (user: { id: string; email: string; role: string; picture?: string }) => {
   const accessToken = jwt.sign(
-    { userId: user.id, email: user.email, role: user.role },
+    { userId: user.id, email: user.email, role: user.role, picture: user.picture },
     JWT_SECRET,
     { expiresIn: '15m' }
   );

@@ -174,7 +174,7 @@ export const authApi = {
   },
   getMe: async (): Promise<AuthUser> => {
     const response = await api.get<ApiResponse<AuthUser>>('/v1/auth/me');
-    return response.data.data;
+    return (response.data.data as any)?.user ?? response.data.data;
   },
   updateProfile: async (data: Partial<AuthUser>): Promise<AuthUser> => {
     const response = await api.patch<ApiResponse<AuthUser>>('/v1/auth/profile', data);
@@ -220,7 +220,7 @@ export const taskApi: TaskApi = {
     return response.data.data;
   },
   update: async (id: string, data: Partial<CreateTaskInput>): Promise<Task> => {
-    const response = await api.patch<ApiResponse<Task>>(`/v1/tasks/${id}`, data);
+    const response = await api.put<ApiResponse<Task>>(`/v1/tasks/${id}`, data);
     return response.data.data;
   },
   getComments: async (id: string): Promise<any[]> => {

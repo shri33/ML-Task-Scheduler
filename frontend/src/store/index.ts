@@ -2,6 +2,31 @@ import { create } from 'zustand';
 import { Task, Resource, Metrics, User, Notification, ChatRoom, ChatMessage, MailMessage } from '../types';
 import { taskApi, resourceApi, metricsApi, scheduleApi, userApi, notificationApi, mlApi, chaosApi } from '../lib/api';
 
+const LOCAL_TASKS_KEY = 'ml-scheduler-local-tasks';
+
+const loadLocalTasks = (): Task[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_TASKS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed as Task[];
+  } catch {
+    return [];
+  }
+};
+
+const saveLocalTasks = (tasks: Task[]) => {
+  if (typeof window === 'undefined') return;
+  try {
+    const localOnly = tasks.filter((t) => t.id.startsWith('local-'));
+    localStorage.setItem(LOCAL_TASKS_KEY, JSON.stringify(localOnly));
+  } catch {
+    // ignore storage errors
+  }
+};
+
 interface AppState {
   // Tasks
   tasks: Task[];
@@ -80,28 +105,41 @@ interface AppState {
 
 export const useStore = create<AppState>()((set, get) => ({
   // Tasks
-  tasks: [],
+  tasks: loadLocalTasks(),
   tasksLoading: false,
   fetchTasks: async (status?: string) => {
     set({ tasksLoading: true, error: null });
     try {
-      const tasks = await taskApi.getAll(status);
-      set({ tasks, tasksLoading: false });
+      const serverTasks = await taskApi.getAll(status);
+      const localTasks = loadLocalTasks();
+      set({ tasks: [...localTasks, ...serverTasks], tasksLoading: false });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch tasks';
       console.error('Failed to fetch tasks:', error);
-      set({ tasksLoading: false, error: message });
+      // Keep local tasks visible when backend fetch fails
+      const localTasks = loadLocalTasks();
+      set({ tasks: localTasks, tasksLoading: false, error: message });
+      return;
     }
   },
-  addTask: (task: Task) => set((state: AppState) => ({ tasks: [task, ...state.tasks] })),
+  addTask: (task: Task) =>
+    set((state: AppState) => {
+      const nextTasks = [task, ...state.tasks];
+      saveLocalTasks(nextTasks);
+      return { tasks: nextTasks };
+    }),
   updateTask: (task: Task) =>
-    set((state: AppState) => ({
-      tasks: state.tasks.map((t: Task) => (t.id === task.id ? task : t)),
-    })),
+    set((state: AppState) => {
+      const nextTasks = state.tasks.map((t: Task) => (t.id === task.id ? task : t));
+      saveLocalTasks(nextTasks);
+      return { tasks: nextTasks };
+    }),
   removeTask: (id: string) =>
-    set((state: AppState) => ({
-      tasks: state.tasks.filter((t: Task) => t.id !== id),
-    })),
+    set((state: AppState) => {
+      const nextTasks = state.tasks.filter((t: Task) => t.id !== id);
+      saveLocalTasks(nextTasks);
+      return { tasks: nextTasks };
+    }),
 
   // Resources
   resources: [],

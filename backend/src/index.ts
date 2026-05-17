@@ -45,18 +45,29 @@ const env = validateEnv();
 const app = express();
 const httpServer = createServer(app);
 
-// Get CORS origin from validated env (required in production)
-const corsOrigin = env.CORS_ORIGIN || (isProduction() ? undefined : 'http://localhost:3000');
-if (isProduction() && !corsOrigin) {
+// Get CORS origin(s) from validated env (required in production)
+// Supports a single origin or a comma-separated list of origins.
+const rawCors = env.CORS_ORIGIN || (isProduction() ? undefined : 'http://localhost:3000');
+const allowedOrigins: string[] | undefined = rawCors ? rawCors.split(',').map(s => s.trim()).filter(Boolean) : undefined;
+if (isProduction() && (!allowedOrigins || allowedOrigins.length === 0)) {
   logger.fatal('CORS_ORIGIN is required in production');
   process.exit(1);
 }
 
 import { setIo } from './lib/socket';
 
+// Helper for CORS origin validation. If allowedOrigins is undefined, no restriction is applied.
+const originValidator = allowedOrigins
+  ? ((origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error('CORS origin denied'));
+    })
+  : undefined;
+
 const io = new Server(httpServer, {
   cors: {
-    origin: corsOrigin,
+    origin: originValidator || ((origin: string | undefined) => origin),
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
   }
@@ -69,6 +80,7 @@ setIo(io);
 const API_VERSION = 'v1';
 
 // Middleware
+const connectSrcArray = ["'self'", ...(allowedOrigins || [])];
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -76,7 +88,7 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", 'data:', 'blob:'],
-      connectSrc: ["'self'", corsOrigin || ''].filter(Boolean),
+      connectSrc: connectSrcArray,
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
       frameSrc: ["'none'"],
@@ -91,8 +103,9 @@ app.use(helmet({
     preload: true,
   },
 }));
+
 app.use(cors({
-  origin: corsOrigin,
+  origin: originValidator || true,
   credentials: true
 }));
 

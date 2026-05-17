@@ -22,6 +22,19 @@ if (-not (Test-Path ".env")) {
     Write-Host ".env file found." -ForegroundColor Green
 }
 
+# Ensure backend service has its own env file for compose
+if (-not (Test-Path "backend/.env")) {
+    if (Test-Path "backend/.env.example") {
+        Write-Host "Creating backend/.env from backend/.env.example..." -ForegroundColor Yellow
+        Copy-Item "backend/.env.example" "backend/.env"
+    } else {
+        Write-Host "Error: backend/.env file missing and backend/.env.example not found!" -ForegroundColor Red
+        exit 1
+    }
+} else {
+    Write-Host "backend/.env file found." -ForegroundColor Green
+}
+
 # 2. Build and Run
 Write-Header "Docker Build & Run"
 Write-Host "Executing: docker compose up --build -d" -ForegroundColor Gray

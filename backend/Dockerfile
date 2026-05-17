@@ -17,7 +17,7 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # Install ALL dependencies (including devDependencies for build)
-RUN npm ci --include=dev
+RUN npm ci --include=dev --legacy-peer-deps
 
 # Generate Prisma Client
 RUN npx prisma generate
@@ -40,7 +40,7 @@ COPY . .
 RUN npm run build
 
 # Prune dev dependencies after build
-RUN npm prune --production
+RUN npm prune --production --legacy-peer-deps
 
 # -----------------------------------------------------------------------------
 # Stage 3: Production Runtime
@@ -85,5 +85,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start server
-CMD ["node", "dist/index.js"]
+# Sync Prisma schema before starting the API. This keeps fresh databases usable even when no migration history is present in the image.
+CMD ["sh", "-lc", "npx prisma db push --skip-generate && exec node dist/index.js"]

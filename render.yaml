@@ -1,0 +1,53 @@
+services:
+  # Backend API
+  - type: web
+    name: ml-task-scheduler-backend
+    runtime: node
+    region: oregon
+    plan: free
+    repo: YOUR_GITHUB_REPO_URL
+    branch: main
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: postgres
+          property: connectionString
+      - key: REDIS_URL
+        value: redis://redis:6379
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        value: https://YOUR_FRONTEND_URL.onrender.com
+    dockerfile: ./backend/Dockerfile
+    dockerContext: ./backend
+
+  # ML Service
+  - type: background_worker
+    name: ml-task-scheduler-ml
+    runtime: python
+    region: oregon
+    plan: free
+    repo: YOUR_GITHUB_REPO_URL
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: postgres
+          property: connectionString
+    dockerfile: ./ml-service/Dockerfile
+    dockerContext: ./ml-service
+
+  # PostgreSQL Database
+  - type: pserv
+    name: postgres
+    plan: free
+    region: oregon
+    ipAllowList: []
+    postgreSQL:
+      version: 15

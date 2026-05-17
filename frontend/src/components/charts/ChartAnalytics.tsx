@@ -469,6 +469,7 @@ export function GaugeChart({
   color?: 'blue' | 'green' | 'amber' | 'red' | 'purple';
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const colorMap = {
     blue: '#3b82f6',
@@ -478,10 +479,7 @@ export function GaugeChart({
     purple: '#8b5cf6',
   };
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
+  const drawGauge = (canvas: HTMLCanvasElement, width: number, height: number) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -490,17 +488,18 @@ export function GaugeChart({
     const textColor = isDark ? '#f1f5f9' : '#1f2937';
     const labelColor = isDark ? '#94a3b8' : '#6b7280';
 
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height - 30;
-    const radius = Math.min(centerX, centerY) - 20;
+    const centerX = width / 2;
+    const centerY = height - 25;
+    const radius = Math.min(centerX, centerY) - 15;
+    const lineWidth = Math.max(8, width / 30);
 
     // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, width, height);
 
     // Draw background arc
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, Math.PI, 0);
-    ctx.lineWidth = 12;
+    ctx.lineWidth = lineWidth;
     ctx.strokeStyle = bgTrack;
     ctx.stroke();
 
@@ -510,30 +509,69 @@ export function GaugeChart({
 
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, Math.PI, endAngle);
-    ctx.lineWidth = 12;
+    ctx.lineWidth = lineWidth;
     ctx.strokeStyle = colorMap[color];
     ctx.lineCap = 'round';
     ctx.stroke();
 
     // Draw value text
-    ctx.font = 'bold 24px Plus Jakarta Sans, system-ui, sans-serif';
+    const fontSize = Math.max(18, width / 12);
+    ctx.font = `bold ${fontSize}px Plus Jakarta Sans, system-ui, sans-serif`;
     ctx.fillStyle = textColor;
     ctx.textAlign = 'center';
-    ctx.fillText(`${Math.round(value)}%`, centerX, centerY - 15);
+    ctx.fillText(`${Math.round(value)}%`, centerX, centerY - fontSize / 3);
 
     // Draw label
-    ctx.font = '500 12px Plus Jakarta Sans, system-ui, sans-serif';
+    const labelSize = Math.max(10, width / 20);
+    ctx.font = `500 ${labelSize}px Plus Jakarta Sans, system-ui, sans-serif`;
     ctx.fillStyle = labelColor;
-    ctx.fillText(label.toUpperCase(), centerX, centerY + 15);
+    ctx.fillText(label.toUpperCase(), centerX, centerY + labelSize + 5);
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const updateCanvasSize = () => {
+      const rect = container.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const width = Math.max(120, Math.min(rect.width, 200));
+      const height = Math.max(100, width * 0.65);
+
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+
+      const ctx = canvas.getContext('2d');
+      if (ctx) ctx.scale(dpr, dpr);
+
+      drawGauge(canvas, width, height);
+    };
+
+    updateCanvasSize();
+
+    const resizeObserver = new ResizeObserver(updateCanvasSize);
+    resizeObserver.observe(container);
+
+    const handleWindowResize = updateCanvasSize;
+    window.addEventListener('resize', handleWindowResize);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', handleWindowResize);
+    };
   }, [value, max, color, label]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={200}
-      height={130}
-      className="mx-auto"
-    />
+    <div ref={containerRef} className="w-full h-auto flex justify-center items-center">
+      <canvas
+        ref={canvasRef}
+        className="max-w-full h-auto"
+        style={{ display: 'block' }}
+      />
+    </div>
   );
 }
 
