@@ -11,6 +11,7 @@ export interface JwtPayload {
   userId: string;
   email: string;
   role: string;
+  picture?: string;
 }
 
 export interface RefreshJwtPayload {

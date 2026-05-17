@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { taskApi, metricsApi } from "../lib/api";
+import { useSocket } from "../contexts/SocketContext";
 import { useStore } from "../store";
 import { clsx } from "clsx";
 import { useToast } from "../contexts/ToastContext";
@@ -30,8 +31,46 @@ import {
   IconCloud,
   IconActivity,
   IconTrophy,
-  IconArrowUpRight
+   IconArrowUpRight,
+   IconTrash
 } from "@tabler/icons-react";
+
+const LOCAL_TASKS_KEY = 'ml-scheduler-local-tasks';
+
+type MatrixPoint = { name: string; load: number; throughput: number };
+
+const getDefaultMatrixSlots = (): MatrixPoint[] =>
+   [0, 4, 8, 12, 16, 20].map((hour) => ({
+      name: `${hour.toString().padStart(2, '0')}:00`,
+      load: 0,
+      throughput: 0,
+   }));
+
+const applyLocalTasksOverlay = (base: MatrixPoint[]): MatrixPoint[] => {
+   if (typeof window === 'undefined') return base;
+   try {
+      const raw = localStorage.getItem(LOCAL_TASKS_KEY);
+      if (!raw) return base;
+      const localTasks = JSON.parse(raw);
+      if (!Array.isArray(localTasks) || localTasks.length === 0) return base;
+
+      const next = (base.length > 0 ? base : getDefaultMatrixSlots()).map((d) => ({ ...d }));
+      for (const t of localTasks) {
+         const createdAt = t?.createdAt ? new Date(t.createdAt) : new Date();
+         const hour = createdAt.getHours();
+         const slotHour = [0, 4, 8, 12, 16, 20].find((h) => hour >= h && hour < h + 4) ?? 0;
+         const label = `${slotHour.toString().padStart(2, '0')}:00`;
+         const idx = next.findIndex((d) => d.name === label);
+         if (idx >= 0) {
+            next[idx].throughput = (next[idx].throughput || 0) + 1;
+            next[idx].load = Math.min(100, (next[idx].load || 0) + 5);
+         }
+      }
+      return next;
+   } catch {
+      return base;
+   }
+};
 
 export default function Dashboard() {
   const {
@@ -48,6 +87,8 @@ export default function Dashboard() {
     fetchMetrics,
     checkMlStatus,
     runScheduler,
+      addTask,
+      removeTask,
   } = useStore();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -60,6 +101,7 @@ export default function Dashboard() {
   const anomalyCountRef = useRef(0);
   const toast = useToast();
   const hasFetched = useRef(false);
+   const { socket } = useSocket();
 
   useEffect(() => {
     const doFetch = async () => {
@@ -72,9 +114,9 @@ export default function Dashboard() {
           checkMlStatus()
         ]);
         const dashData = await metricsApi.getDashboard();
-        if (Array.isArray(dashData)) {
-          setChartData(dashData);
-        }
+            if (Array.isArray(dashData)) {
+               setChartData(applyLocalTasksOverlay(dashData));
+            }
         const anomalyData = await metricsApi.getAnomalies();
         if (anomalyData?.anomalies && Array.isArray(anomalyData.anomalies) && anomalyData.anomalies.length > 0 && anomalyData.anomalies.length !== anomalyCountRef.current) {
           anomalyCountRef.current = anomalyData.anomalies.length;
@@ -82,6 +124,8 @@ export default function Dashboard() {
         }
       } catch (err) {
         console.error("Dashboard poll failed:", err);
+            // Keep chart alive for unauthenticated/local-only mode
+            setChartData(applyLocalTasksOverlay(getDefaultMatrixSlots()));
       }
     };
 
@@ -127,16 +171,111 @@ export default function Dashboard() {
       toast.success("Task Ingested", `"${newTaskTitle}" added to global queue.`);
       fetchTasks();
     } catch (err) {
-      console.error("Task creation failed:", err);
-      toast.error("Ingestion Failed", `Could not add "${newTaskTitle}" to the queue. Please check your connection.`);
+         console.error("Task creation failed:", err);
+         const anyErr = err as any;
+         const status = anyErr?.response?.status;
+         const serverMsg = anyErr?.response?.data?.message || anyErr?.message || String(anyErr);
+
+         // If unauthenticated or backend unavailable, add the task locally so it appears in the UI
+         if (status === 401 || !anyErr?.response) {
+            const localTask = {
+               id: `local-${Date.now()}`,
+               name: newTaskTitle,
+               type: newTaskType,
+               size: 'MEDIUM',
+               priority: newTaskPriority,
+               status: 'PENDING',
+               dueDate: taskData.dueDate,
+               predictedTime: null,
+               actualTime: null,
+               resourceId: null,
+               resource: undefined,
+               createdAt: new Date().toISOString(),
+               scheduledAt: null,
+               completedAt: null,
+               updatedAt: new Date().toISOString(),
+            } as any;
+                  addTask(localTask);
+                  setNewTaskTitle("");
+                  toast.info("Task Added Locally", "You are not authenticated — task saved locally in the table.");
+
+                  // Update local chartData to reflect the new pending task immediately
+                  setChartData((prev) => {
+                     try {
+                        const source = prev.length > 0 ? prev : getDefaultMatrixSlots();
+                        const now = new Date();
+                        const hour = now.getHours();
+                        // Determine slot label matching backend slots (00:00, 04:00, ...)
+                        const slotHour = [0,4,8,12,16,20].reduce((acc, h) => {
+                           const end = h + 4;
+                           if (hour >= h && hour < end) return h;
+                           return acc;
+                        }, 0);
+                        const label = `${slotHour.toString().padStart(2,'0')}:00`;
+                        const next = source.map(d => ({ ...d }));
+                        const idx = next.findIndex(d => d.name === label);
+                        if (idx >= 0) {
+                           next[idx].throughput = (next[idx].throughput || 0) + 1;
+                           // gently nudge load upward when new pending tasks appear
+                           next[idx].load = Math.min(100, (next[idx].load || 0) + 5);
+                        }
+                        return next;
+                     } catch (x) {
+                        console.error('Failed to mutate chartData for local task:', x);
+                        return prev;
+                     }
+                  });
+         } else if (serverMsg) {
+            toast.error("Ingestion Failed", serverMsg);
+         } else {
+            toast.error("Ingestion Failed", `Could not add "${newTaskTitle}" to the queue. Please check your connection.`);
+         }
     } finally {
       setIsCreating(false);
     }
   };
 
+   const handleDeleteTask = async (taskId: string) => {
+      try {
+         if (taskId.startsWith('local-')) {
+            removeTask(taskId);
+            toast.info('Pulse Removed', 'Local pulse removed from queue.');
+            return;
+         }
+
+         await taskApi.delete(taskId);
+         removeTask(taskId);
+         toast.success('Pulse Deleted', 'Pulse removed successfully.');
+         fetchTasks();
+      } catch (err) {
+         console.error('Failed to delete pulse:', err);
+         toast.error('Delete Failed', 'Could not delete the selected pulse.');
+      }
+   };
+
+   // Update dashboard charts when scheduling completes via WebSocket
+   useEffect(() => {
+      if (!socket) return;
+      const handler = async () => {
+         try {
+            await Promise.all([fetchTasks(), fetchResources(), fetchMetrics()]);
+            const dashData = await metricsApi.getDashboard();
+            if (Array.isArray(dashData)) setChartData(applyLocalTasksOverlay(dashData));
+         } catch (e) {
+            console.error('Failed to refresh dashboard after schedule:', e);
+         }
+      };
+
+      socket.on('schedule:completed', handler);
+      return () => {
+         socket.off('schedule:completed', handler);
+      };
+   }, [socket, fetchTasks, fetchResources, fetchMetrics]);
+
   const pendingTasks = tasks.filter((t) => t.status === "PENDING");
-  const activeTasks = tasks.filter((t) => t.status === "RUNNING" || t.status === "SCHEDULED");
+   const pulseQueue = tasks.filter((t) => t.status === "PENDING" || t.status === "RUNNING" || t.status === "SCHEDULED");
   const availableResources = resources.filter((r) => r.status === "AVAILABLE");
+   const hasLocalTasks = tasks.some((t) => t.id.startsWith('local-'));
   
   const isLoading = tasksLoading || resourcesLoading || metricsLoading;
   if (isLoading && tasks.length === 0) return <DashboardSkeleton />;
@@ -248,7 +387,18 @@ export default function Dashboard() {
            
            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12 relative z-10 gap-6">
               <div>
-                 <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Processing Matrix</h3>
+                 <div className="flex items-center gap-3">
+                    <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Processing Matrix</h3>
+                    {hasLocalTasks && (
+                                 <span
+                                    className="px-2.5 py-1.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-gray-300 border border-gray-500/30 inline-flex items-center justify-center"
+                                    title="Local Storage"
+                                    aria-label="Local Storage"
+                                 >
+                                    <IconDeviceDesktop className="w-4 h-4" stroke={2} />
+                      </span>
+                    )}
+                 </div>
                  <p className="text-sm font-medium text-gray-500">Real-time synchronization between workload and execution flow.</p>
               </div>
               <div className="flex items-center gap-6 bg-gray-50 dark:bg-gray-900/40 p-3 rounded-[1.5rem] border border-gray-100 dark:border-gray-800">
@@ -399,36 +549,49 @@ export default function Dashboard() {
            </div>
            
            <div className="space-y-6">
-              {activeTasks.slice(0, 6).map(task => (
+              {pulseQueue.slice(0, 6).map(task => (
                  <div key={task.id} className="flex items-center justify-between group cursor-pointer p-1 rounded-2xl transition-all">
                     <div className="flex items-center gap-5">
                        <div className={clsx(
                          "w-12 h-12 rounded-[1.25rem] flex items-center justify-center transition-all shadow-sm group-hover:scale-110 group-hover:shadow-md",
-                         task.status === 'RUNNING' ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600" : "bg-primary-50 dark:bg-primary-500/10 text-primary-600"
+                         task.status === 'RUNNING'
+                           ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600"
+                           : task.status === 'PENDING'
+                             ? "bg-amber-50 dark:bg-amber-500/10 text-amber-600"
+                             : "bg-primary-50 dark:bg-primary-500/10 text-primary-600"
                        )}>
                           {task.status === 'RUNNING' ? <IconActivity className="w-6 h-6" /> : <IconCircleCheck className="w-6 h-6" />}
                        </div>
                        <div>
                           <div className="text-sm font-black text-gray-900 dark:text-white truncate max-w-[140px] group-hover:text-primary-600 transition-colors">{task.name}</div>
-                          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">{task.type} • {task.size}</div>
+                          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">{task.type} • {task.size} • {task.status}</div>
                        </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex items-center gap-3">
                        <div className="text-sm font-black text-gray-900 dark:text-white">P{task.priority}</div>
-                       <div className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Rank</div>
+                       <button
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           handleDeleteTask(task.id);
+                         }}
+                         className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-red-600 hover:border-red-300 transition-all flex items-center justify-center"
+                         title="Delete pulse"
+                       >
+                         <IconTrash className="w-4 h-4" />
+                       </button>
                     </div>
                  </div>
               ))}
-              {activeTasks.length === 0 && (
+              {pulseQueue.length === 0 && (
                  <div className="flex flex-col items-center justify-center py-20 opacity-30">
                     <IconListCheck className="w-16 h-16 mb-4" />
                     <p className="text-sm font-bold">Neural queue empty</p>
                  </div>
               )}
            </div>
-           {activeTasks.length > 6 && (
+           {pulseQueue.length > 6 && (
               <button className="w-full mt-8 py-4 text-xs font-black text-gray-400 uppercase tracking-widest hover:text-primary-600 transition-colors">
-                 + {activeTasks.length - 6} more tasks
+                 + {pulseQueue.length - 6} more tasks
               </button>
            )}
         </div>
@@ -531,6 +694,7 @@ export default function Dashboard() {
                      <th className="pb-6 text-[10px] font-black uppercase text-gray-400 tracking-widest">Protocol</th>
                      <th className="pb-6 text-[10px] font-black uppercase text-gray-400 tracking-widest">Target Node</th>
                      <th className="pb-6 text-[10px] font-black uppercase text-gray-400 tracking-widest text-right px-2">Status</th>
+                     <th className="pb-6 text-[10px] font-black uppercase text-gray-400 tracking-widest text-right px-2">Action</th>
                   </tr>
                </thead>
                <tbody className="divide-y divide-gray-50 dark:divide-gray-800/30">
@@ -561,6 +725,15 @@ export default function Dashboard() {
                           )}>
                              {task.status}
                           </span>
+                       </td>
+                       <td className="py-6 text-right px-2">
+                          <button
+                            onClick={() => handleDeleteTask(task.id)}
+                            className="w-9 h-9 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-red-600 hover:border-red-300 transition-all inline-flex items-center justify-center"
+                            title="Delete pulse"
+                          >
+                            <IconTrash className="w-4 h-4" />
+                          </button>
                        </td>
                     </tr>
                   ))}

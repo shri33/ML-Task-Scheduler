@@ -141,6 +141,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     const profile = await profileResponse.json() as {
       email?: string;
       name?: string;
+      picture?: string;
       email_verified?: boolean;
       sub?: string;
     };
@@ -174,6 +175,13 @@ router.get('/google/callback', async (req: Request, res: Response) => {
             }
           }
         });
+      } else if (profile.name && user.name !== profile.name) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            name: profile.name,
+          }
+        });
       }
 
       if (!user.isActive) {
@@ -188,7 +196,8 @@ router.get('/google/callback', async (req: Request, res: Response) => {
       const { accessToken, refreshToken } = generateTokens({
         id: user.id,
         email: user.email,
-        role: user.role
+        role: user.role,
+        picture: profile.picture
       });
 
       await prisma.refreshToken.create({
@@ -576,7 +585,12 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response, next: Ne
 
     res.json({
       success: true,
-      data: { user }
+      data: {
+        user: {
+          ...user,
+          picture: req.user?.picture,
+        }
+      }
     });
   } catch (error) {
     next(error);
