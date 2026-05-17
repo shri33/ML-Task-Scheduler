@@ -55,8 +55,8 @@ ENV PORT=5001
 # Copy application code
 COPY --chown=mlservice:mlservice . .
 
-# Create models directory
-RUN mkdir -p models && chown -R mlservice:mlservice models
+# Create models directory and ensure it is writable by the mlservice user
+RUN mkdir -p models && chmod -R u+rwx models && chown -R mlservice:mlservice models
 
 # Switch to non-root user
 USER mlservice
