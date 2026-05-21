@@ -101,7 +101,8 @@ export default function Dashboard() {
   const anomalyCountRef = useRef(0);
   const toast = useToast();
   const hasFetched = useRef(false);
-   const { socket } = useSocket();
+  const socketContext = useSocket();
+  const socket = socketContext?.socket;
 
   useEffect(() => {
     const doFetch = async () => {
@@ -266,6 +267,7 @@ export default function Dashboard() {
          }
       };
 
+      if (!socket) return;
       socket.on('schedule:completed', handler);
       return () => {
          socket.off('schedule:completed', handler);

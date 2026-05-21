@@ -187,7 +187,7 @@ function TaskFormModal({ onClose, onSubmit }: TaskFormModalProps) {
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5 flex items-center gap-1">
+            <label className="flex items-center gap-1 text-xs font-bold text-gray-400 uppercase mb-1.5">
               <IconAlignLeft className="w-3.5 h-3.5" /> Description
             </label>
             <textarea
@@ -255,7 +255,7 @@ function TaskFormModal({ onClose, onSubmit }: TaskFormModalProps) {
 
           {/* Due Date */}
           <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5 flex items-center gap-1">
+            <label className="flex items-center gap-1 text-xs font-bold text-gray-400 uppercase mb-1.5">
               <IconCalendar className="w-3.5 h-3.5" /> Due Date
             </label>
             <div className="flex gap-2">

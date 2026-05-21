@@ -48,6 +48,9 @@ export const useToastStore = create<ToastState>((set) => ({
 // Backward compatibility hook so we don't need to refactor every component using useToast
 export function useToast() {
   const store = useToastStore();
+  if (!store) {
+    throw new Error('useToast must be used within a ToastProvider');
+  }
   return store;
 }
 

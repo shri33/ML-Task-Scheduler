@@ -34,6 +34,10 @@ vi.mock('../../store', () => ({
   useStore: () => mockStore,
 }));
 
+vi.mock('../../contexts/SocketContext', () => ({
+  useSocket: () => ({ socket: null }),
+}));
+
 function renderDashboard() {
   return render(
     <BrowserRouter>
