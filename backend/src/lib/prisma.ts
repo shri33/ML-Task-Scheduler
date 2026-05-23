@@ -29,45 +29,83 @@ prisma.$on('query' as never, (e: Prisma.QueryEvent) => {
 // ---------------------------------------------------------------------------
 const SOFT_DELETE_MODELS = ['Task', 'Resource', 'User'];
 
-prisma.$use(async (params, next) => {
-  const model = params.model as string | undefined;
-  if (!model || !SOFT_DELETE_MODELS.includes(model)) return next(params);
+// Prisma 6 removed middleware support ($use). Use query extensions for soft-delete behavior.
+const softDeleteExtension = Prisma.defineExtension((client) =>
+  client.$extends({
+    query: {
+      $allModels: {
+        async findMany({ model, args, query }) {
+          if (SOFT_DELETE_MODELS.includes(model)) {
+            if (!args.where) args.where = {};
+            if ((args.where as Record<string, unknown>).deletedAt === undefined) {
+              (args.where as Record<string, unknown>).deletedAt = null;
+            }
+          }
+          return query(args);
+        },
+        async findFirst({ model, args, query }) {
+          if (SOFT_DELETE_MODELS.includes(model)) {
+            if (!args.where) args.where = {};
+            if ((args.where as Record<string, unknown>).deletedAt === undefined) {
+              (args.where as Record<string, unknown>).deletedAt = null;
+            }
+          }
+          return query(args);
+        },
+        async findUnique({ args, query }) {
+          return query(args);
+        },
+        async count({ model, args, query }) {
+          if (SOFT_DELETE_MODELS.includes(model)) {
+            if (!args.where) args.where = {};
+            if ((args.where as Record<string, unknown>).deletedAt === undefined) {
+              (args.where as Record<string, unknown>).deletedAt = null;
+            }
+          }
+          return query(args);
+        },
+        async aggregate({ model, args, query }) {
+          if (SOFT_DELETE_MODELS.includes(model)) {
+            if (!args.where) args.where = {};
+            if ((args.where as Record<string, unknown>).deletedAt === undefined) {
+              (args.where as Record<string, unknown>).deletedAt = null;
+            }
+          }
+          return query(args);
+        },
+        async groupBy({ model, args, query }) {
+          if (SOFT_DELETE_MODELS.includes(model)) {
+            if (!args.where) args.where = {};
+            if ((args.where as Record<string, unknown>).deletedAt === undefined) {
+              (args.where as Record<string, unknown>).deletedAt = null;
+            }
+          }
+          return query(args);
+        },
+        async delete({ model, args, query }) {
+          if (SOFT_DELETE_MODELS.includes(model)) {
+            return (client as any)[model.toLowerCase()].update({
+              where: args.where,
+              data: { deletedAt: new Date() },
+            });
+          }
+          return query(args);
+        },
+        async deleteMany({ model, args, query }) {
+          if (SOFT_DELETE_MODELS.includes(model)) {
+            return (client as any)[model.toLowerCase()].updateMany({
+              where: args.where,
+              data: { deletedAt: new Date() },
+            });
+          }
+          return query(args);
+        },
+      },
+    },
+  })
+);
 
-  // Intercept find queries to exclude soft-deleted rows by default
-  if (params.action === 'findMany' || params.action === 'findFirst' || params.action === 'findUnique') {
-    if (!params.args) params.args = {};
-    if (!params.args.where) params.args.where = {};
-    // Only add the filter when the caller hasn't explicitly queried deletedAt
-    if (params.args.where.deletedAt === undefined) {
-      params.args.where.deletedAt = null;
-    }
-  }
-
-  // Intercept count/aggregate to also exclude soft-deleted rows
-  if (params.action === 'count' || params.action === 'aggregate' || params.action === 'groupBy') {
-    if (!params.args) params.args = {};
-    if (!params.args.where) params.args.where = {};
-    if (params.args.where.deletedAt === undefined) {
-      params.args.where.deletedAt = null;
-    }
-  }
-
-  // Intercept delete → update with deletedAt
-  if (params.action === 'delete') {
-    params.action = 'update';
-    if (!params.args) params.args = {};
-    params.args.data = { deletedAt: new Date() };
-  }
-
-  // Intercept deleteMany → updateMany with deletedAt
-  if (params.action === 'deleteMany') {
-    params.action = 'updateMany';
-    if (!params.args) params.args = {};
-    params.args.data = { deletedAt: new Date() };
-  }
-
-  return next(params);
-});
+export const db = prisma.$extends(softDeleteExtension);
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 

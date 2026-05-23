@@ -90,10 +90,15 @@ const api = axios.create({
   timeout: 10000,
 });
 
-const isDemoMode = () => !!localStorage.getItem('ml-scheduler-demo-mode');
+const DEMO_MODE_KEY_V1 = 'ml-scheduler-demo-mode';
+const DEMO_MODE_KEY_V2 = 'ml-scheduler-demo-mode-v2';
+const isDemoMode = () => !!localStorage.getItem(DEMO_MODE_KEY_V2) || !!localStorage.getItem(DEMO_MODE_KEY_V1);
 
 // Token management
 let isRefreshing = false;
+let refreshFailedAt = 0;
+let hasAuthRedirected = false;
+const REFRESH_RETRY_COOLDOWN_MS = 30_000;
 let failedQueue: Array<{
   resolve: (token: string) => void;
   reject: (error: Error) => void;
@@ -135,6 +140,11 @@ api.interceptors.response.use(
     const shouldSkipRefresh = skipRefreshPaths.some(p => requestUrl.includes(p));
 
     if (error.response?.status === 401 && !originalRequest._retry && !shouldSkipRefresh && !isDemoMode()) {
+      const now = Date.now();
+      if (refreshFailedAt && now - refreshFailedAt < REFRESH_RETRY_COOLDOWN_MS) {
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -144,11 +154,16 @@ api.interceptors.response.use(
       isRefreshing = true;
       try {
         await axios.post('/v1/auth/refresh', {}, { baseURL: api.defaults.baseURL, withCredentials: true, timeout: 5000 });
+        refreshFailedAt = 0;
+        hasAuthRedirected = false;
         processQueue(null, '');
         return api(originalRequest);
       } catch (refreshError) {
+        refreshFailedAt = Date.now();
         processQueue(refreshError as Error, null);
-        if (!window.location.pathname.startsWith('/login') && window.location.pathname !== '/') {
+        const isAuthPage = window.location.pathname.startsWith('/login') || window.location.pathname.startsWith('/not-logged-in') || window.location.pathname.startsWith('/register');
+        if (!hasAuthRedirected && !isAuthPage && window.location.pathname !== '/') {
+          hasAuthRedirected = true;
           window.location.href = '/login';
         }
         return Promise.reject(refreshError);

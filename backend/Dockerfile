@@ -86,4 +86,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 ENTRYPOINT ["dumb-init", "--"]
 
 # Sync Prisma schema before starting the API. This keeps fresh databases usable even when no migration history is present in the image.
-CMD ["sh", "-lc", "npx prisma db push --skip-generate && exec node dist/index.js"]
+CMD ["sh", "-lc", "npx --no-install prisma db push --skip-generate && exec node dist/index.js"]
