@@ -1,8 +1,9 @@
 import rateLimit from 'express-rate-limit';
 import { Request, Response } from 'express';
 
-// Paths to skip rate limiting (health checks, monitoring)
+// Paths to skip rate limiting (health checks, monitoring, auth flows)
 const EXEMPT_PATHS = ['/api/health', '/api/version', '/api/docs', '/api-docs', '/health'];
+const EXEMPT_PREFIXES = ['/api/v1/auth', '/api/auth'];
 
 // General API rate limiter
 export const apiLimiter = rateLimit({
@@ -16,8 +17,9 @@ export const apiLimiter = rateLimit({
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   skip: (req: Request) => {
-    // Skip rate limiting for health checks and documentation
-    return EXEMPT_PATHS.some(path => req.path === path || req.originalUrl === path);
+    // Skip rate limiting for health checks, documentation, and auth endpoints.
+    const path = req.originalUrl || req.path;
+    return EXEMPT_PATHS.some(exemptPath => path === exemptPath) || EXEMPT_PREFIXES.some(prefix => path.startsWith(prefix));
   },
   handler: (req: Request, res: Response) => {
     res.status(429).json({
