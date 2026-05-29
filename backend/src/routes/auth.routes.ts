@@ -545,6 +545,7 @@ router.post('/logout', authenticate, async (req: AuthRequest, res: Response, nex
 // Get current user
 router.get('/me', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     // Check if demo user
     if (req.user!.userId === DEMO_USER.id) {
       return res.json({

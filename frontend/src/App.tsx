@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -10,6 +10,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
 import NovaFloatingAssistant from './components/NovaFloatingAssistant';
+import { registerRedirectCallback } from './lib/api';
 
 // Lazy load pages for code splitting
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -114,6 +115,16 @@ function ProtectedLayout() {
 function AppRoutes() {
   const { isAuthenticated } = useAuth();
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    registerRedirectCallback((path) => {
+      navigate(path);
+    });
+    return () => {
+      registerRedirectCallback(() => {});
+    };
+  }, [navigate]);
 
   // Set document title based on current route
   useDocumentTitle();
