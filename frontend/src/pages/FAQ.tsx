@@ -1,28 +1,15 @@
 import { useState } from 'react';
-import { 
-  IconSearch, 
-  IconHelpCircle,
-  IconChevronDown,
-  IconChevronRight,
-  IconBrandGoogle,
-  IconBrandTwitter,
-  IconShieldCheck, 
-  IconMessages, 
-  IconCpu, 
-  IconLock,
-  IconRotate,
-  IconServer,
-  IconChartBar
-} from '@tabler/icons-react';
+import { Search, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, MessageSquare, Cpu, Lock, RotateCw, Server, BarChart2 } from 'lucide-react';
+import { IconBrandGoogle, IconBrandTwitter } from '../components/shared/BrandIcons';
 import { clsx } from 'clsx';
 
 const FAQ_CATEGORIES = [
-  { id: 'access', icon: IconShieldCheck, label: 'Access Control' },
-  { id: 'collab', icon: IconMessages, label: 'Collaboration' },
-  { id: 'scheduling', icon: IconCpu, label: 'Scheduling' },
-  { id: 'infra', icon: IconServer, label: 'Infrastructure' },
-  { id: 'analytics', icon: IconChartBar, label: 'Analytics' },
-  { id: 'security', icon: IconLock, label: 'Security' },
+  { id: 'access', icon: ShieldCheck, label: 'Access Control' },
+  { id: 'collab', icon: MessageSquare, label: 'Collaboration' },
+  { id: 'scheduling', icon: Cpu, label: 'Scheduling' },
+  { id: 'infra', icon: Server, label: 'Infrastructure' },
+  { id: 'analytics', icon: BarChart2, label: 'Analytics' },
+  { id: 'security', icon: Lock, label: 'Security' },
 ];
 
 const FAQS = [
@@ -94,7 +81,7 @@ export default function FAQ() {
          <p className="text-primary-100 mb-8 text-center max-w-lg">or choose a category to quickly find the help you need</p>
          
          <div className="relative w-full max-w-2xl">
-            <IconSearch className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input 
                type="text" 
                placeholder="Ask a question..." 
@@ -132,7 +119,7 @@ export default function FAQ() {
                <div className="space-y-6">
                   <div className="flex items-center gap-4">
                      <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/20 text-primary-600 flex items-center justify-center">
-                        <IconHelpCircle className="w-6 h-6" />
+                        <HelpCircle className="w-6 h-6" />
                      </div>
                      <div>
                         <p className="text-sm font-bold text-gray-900 dark:text-white">Email Us</p>
@@ -141,7 +128,7 @@ export default function FAQ() {
                   </div>
                   <div className="flex items-center gap-4">
                      <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center">
-                        <IconRotate className="w-6 h-6" />
+                        <RotateCw className="w-6 h-6" />
                      </div>
                      <div>
                         <p className="text-sm font-bold text-gray-900 dark:text-white">Live Chat</p>
@@ -156,7 +143,7 @@ export default function FAQ() {
          <div className="col-span-12 lg:col-span-9">
             <div className="flex items-center gap-3 mb-8">
                <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-xl">
-                  <IconHelpCircle className="w-6 h-6 text-primary-600" />
+                  <HelpCircle className="w-6 h-6 text-primary-600" />
                </div>
                <div>
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white capitalize">{activeCategory}</h3>
@@ -172,7 +159,7 @@ export default function FAQ() {
                         className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                      >
                         <span className="text-base font-bold text-gray-900 dark:text-white">{faq.q}</span>
-                        {expandedIndex === idx ? <IconChevronDown className="w-5 h-5 text-gray-400" /> : <IconChevronRight className="w-5 h-5 text-gray-400" />}
+                        {expandedIndex === idx ? <ChevronDown className="w-5 h-5 text-gray-400" /> : <ChevronRight className="w-5 h-5 text-gray-400" />}
                      </button>
                      {expandedIndex === idx && (
                         <div className="px-6 pb-6 animate-fade-in">

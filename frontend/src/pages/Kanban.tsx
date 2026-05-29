@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../store';
-import { 
-  IconPlus, 
-  IconSearch,
-  IconFilter
-} from '@tabler/icons-react';
+import { Plus, Search, Filter } from 'lucide-react';
 import { 
   DndContext, 
   DragOverlay, 
@@ -113,12 +109,12 @@ export default function Kanban() {
          </div>
          <div className="flex items-center gap-3">
             <div className="relative">
-               <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                <input type="text" placeholder="Search tasks..." className="pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-sm outline-none w-48" />
             </div>
-            <button className="p-2 bg-gray-50 dark:bg-gray-800 rounded-xl text-gray-500 hover:text-primary-600 transition-colors"><IconFilter className="w-5 h-5" /></button>
+            <button className="p-2 bg-gray-50 dark:bg-gray-800 rounded-xl text-gray-500 hover:text-primary-600 transition-colors"><Filter className="w-5 h-5" /></button>
             <button className="bg-primary-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary-500/20">
-               <IconPlus className="w-4 h-4" /> New Task
+               <Plus className="w-4 h-4" /> New Task
             </button>
          </div>
       </div>
@@ -152,7 +148,7 @@ export default function Kanban() {
                         <KanbanTask key={task.id} task={task} />
                       ))}
                       <button className="w-full py-3 text-xs font-bold text-gray-400 hover:text-primary-600 transition-colors flex items-center justify-center gap-2 border-2 border-dashed border-transparent hover:border-primary-500/20 rounded-2xl">
-                         <IconPlus className="w-4 h-4" /> Add Task to {column.title}
+                         <Plus className="w-4 h-4" /> Add Task to {column.title}
                       </button>
                    </div>
                  </SortableContext>

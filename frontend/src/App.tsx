@@ -1,5 +1,5 @@
 import { useState, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import PageErrorBoundary from './components/PageErrorBoundary';
@@ -101,6 +101,16 @@ function KeyboardShortcutsHandler({
   return null;
 }
 
+function ProtectedLayout() {
+  return (
+    <ProtectedRoute>
+      <Layout>
+        <Outlet />
+      </Layout>
+    </ProtectedRoute>
+  );
+}
+
 function AppRoutes() {
   const { isAuthenticated } = useAuth();
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
@@ -117,235 +127,39 @@ function AppRoutes() {
       />
       <Suspense fallback={<PageLoader />}>
         <Routes>
-        {/* Public landing page — always visible at root */}
-        <Route
-          path="/"
-          element={<LandingPage />}
-        />
-        <Route
-          path="/login"
-          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />}
-        />
-        <Route
-          path="/not-logged-in"
-          element={<NotLoggedIn />}
-        />
-        <Route
-          path="/register"
-          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />}
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Dashboard />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/calendar"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Calendar />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tasks"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Tasks />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/resources"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Resources />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/analytics"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Analytics />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/fog-computing"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <FogComputing />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Profile />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/devices"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Devices />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/experiments"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Experiments />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/ml-models"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <MlMonitoring />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/reports"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Reports />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/chaos-console"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <ChaosConsole />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/algorithm-details/:strategyId"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <AlgorithmDetails />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/roles"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Roles />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/permissions"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Permissions />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/faq"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <FAQ />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/users"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <UserList />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/users/:id"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <UserView />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/chat"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Chat />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/email"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Email />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/kanban"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Kanban />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+          {/* Public landing page — always visible at root */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} />
+          <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />} />
+          <Route path="/not-logged-in" element={<NotLoggedIn />} />
+          
+          {/* Protected Routes wrapped in nested layout */}
+          <Route element={<ProtectedLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/resources" element={<Resources />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/fog-computing" element={<FogComputing />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/devices" element={<Devices />} />
+            <Route path="/experiments" element={<Experiments />} />
+            <Route path="/ml-models" element={<MlMonitoring />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/chaos-console" element={<ChaosConsole />} />
+            <Route path="/algorithm-details/:strategyId" element={<AlgorithmDetails />} />
+            <Route path="/roles" element={<Roles />} />
+            <Route path="/permissions" element={<Permissions />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/users" element={<UserList />} />
+            <Route path="/users/:id" element={<UserView />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/email" element={<Email />} />
+            <Route path="/kanban" element={<Kanban />} />
+          </Route>
+
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </Suspense>
       {isAuthenticated && <NovaFloatingAssistant />}
     </>

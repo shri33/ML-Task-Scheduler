@@ -1,18 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useStore } from '../store';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  IconSearch, 
-  IconPaperclip, 
-  IconSend,
-  IconMoodSmile,
-  IconPhone,
-  IconVideo,
-  IconCircleFilled,
-  IconInfoCircle,
-  IconRobot,
-  IconUserPlus
-} from '@tabler/icons-react';
+import { Search, Paperclip, Send, Smile, Phone, Video, Circle, Info, Bot, UserPlus } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export default function Chat() {
@@ -80,14 +69,14 @@ export default function Chat() {
       <div className="w-80 border-r border-gray-100 dark:border-gray-800 flex flex-col">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Messages</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">MessageSquare</h1>
             <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500 transition-colors">
-              <IconUserPlus className="w-5 h-5" />
+              <UserPlus className="w-5 h-5" />
             </button>
           </div>
           
           <div className="relative">
-            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input 
               type="text" 
               placeholder="Search conversations..." 
@@ -109,7 +98,7 @@ export default function Chat() {
           >
             <div className="relative">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-primary-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-primary-500/20">
-                <IconRobot className="w-6 h-6" />
+                <Bot className="w-6 h-6" />
               </div>
               <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-[#1a2234] rounded-full" />
             </div>
@@ -169,7 +158,7 @@ export default function Chat() {
             <div className="h-20 px-8 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-primary-500">
-                  {activeRoomId === 'nova' ? <IconRobot className="w-6 h-6" /> : <IconCircleFilled className="w-3 h-3 text-emerald-500" />}
+                  {activeRoomId === 'nova' ? <Bot className="w-6 h-6" /> : <Circle className="w-3 h-3 text-emerald-500" />}
                 </div>
                 <div>
                   <h2 className="font-bold text-gray-900 dark:text-white">
@@ -184,18 +173,18 @@ export default function Chat() {
 
               <div className="flex items-center gap-2">
                 <button className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500 transition-colors">
-                  <IconPhone className="w-5 h-5" />
+                  <Phone className="w-5 h-5" />
                 </button>
                 <button className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500 transition-colors">
-                  <IconVideo className="w-5 h-5" />
+                  <Video className="w-5 h-5" />
                 </button>
                 <button className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500 transition-colors">
-                  <IconInfoCircle className="w-5 h-5" />
+                  <Info className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            {/* Messages Area */}
+            {/* MessageSquare Area */}
             <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar" ref={scrollRef}>
               {[...chatMessages].reverse().map((msg) => {
                 const isMe = msg.senderId === currentUser?.id;
@@ -224,7 +213,7 @@ export default function Chat() {
             <div className="p-6 border-t border-gray-100 dark:border-gray-800">
               <div className="flex items-end gap-3 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-700">
                 <button className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-xl text-gray-400 transition-colors">
-                  <IconPaperclip className="w-5 h-5" />
+                  <Paperclip className="w-5 h-5" />
                 </button>
                 <textarea 
                   value={message}
@@ -235,7 +224,7 @@ export default function Chat() {
                 />
                 <div className="flex items-center gap-1">
                   <button className="p-2 hover:bg-white dark:hover:bg-gray-700 rounded-xl text-gray-400 transition-colors">
-                    <IconMoodSmile className="w-5 h-5" />
+                    <Smile className="w-5 h-5" />
                   </button>
                   <button 
                     onClick={handleSendMessage}
@@ -247,7 +236,7 @@ export default function Chat() {
                         : "bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed"
                     )}
                   >
-                    <IconSend className="w-5 h-5" />
+                    <Send className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -256,7 +245,7 @@ export default function Chat() {
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
             <div className="w-24 h-24 bg-primary-50 dark:bg-primary-500/10 rounded-full flex items-center justify-center text-primary-500 mb-6">
-              <IconMoodSmile className="w-12 h-12" />
+              <Smile className="w-12 h-12" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-white">Select a conversation</h3>
             <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-xs">

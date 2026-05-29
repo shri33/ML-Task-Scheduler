@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { IconArrowRight, IconHome, IconShieldFilled } from '@tabler/icons-react';
+import { ArrowRight, Home, Shield } from 'lucide-react';
 
 export default function NotLoggedIn() {
   const navigate = useNavigate();
@@ -13,7 +13,7 @@ export default function NotLoggedIn() {
 
       <div className="relative z-10 max-w-2xl w-full text-center">
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full border border-primary-200 dark:border-primary-800 bg-primary-100/50 dark:bg-primary-900/30 mb-6 shadow-sm">
-          <IconShieldFilled className="h-10 w-10 text-primary-600 dark:text-primary-400" />
+          <Shield className="h-10 w-10 text-primary-600 dark:text-primary-400" />
         </div>
 
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-4 text-gray-900 dark:text-white">
@@ -29,14 +29,14 @@ export default function NotLoggedIn() {
             className="btn btn-primary text-base px-8 py-3.5 gap-2 shadow-lg shadow-primary-500/25 w-full sm:w-auto"
           >
             Sign In
-            <IconArrowRight className="h-5 w-5" />
+            <ArrowRight className="h-5 w-5" />
           </button>
 
           <button
             onClick={() => navigate('/')}
             className="btn btn-secondary text-base px-8 py-3.5 gap-2 w-full sm:w-auto"
           >
-            <IconHome className="h-5 w-5" />
+            <Home className="h-5 w-5" />
             Go Home
           </button>
         </div>

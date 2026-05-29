@@ -1,17 +1,5 @@
 import { useState } from 'react';
-import { 
-  IconUsers, 
-  IconUserShield, 
-  IconEdit, 
-  IconTrash, 
-  IconPlus,
-  IconSearch,
-  IconCopy,
-  IconDotsVertical,
-  IconBrain,
-  IconServer,
-  IconShieldLock
-} from '@tabler/icons-react';
+import { Users, Shield, Edit, Trash2, Plus, Search, Copy, MoreVertical, Brain, Server } from 'lucide-react';
 import { clsx } from 'clsx';
 import DemoModeBanner from '../components/DemoModeBanner';
 
@@ -51,7 +39,11 @@ export default function Roles() {
               <span className="text-sm font-bold text-gray-500">Total {role.totalUsers} researchers</span>
               <div className="flex -space-x-3 overflow-hidden">
                 {role.avatars.map((avatar, idx) => (
-                  <img key={idx} className="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-gray-800" src={avatar} alt="" />
+                  <img key={idx} className="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-gray-800" src={avatar} alt="" onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    target.onerror = null;
+                    target.src = `https://ui-avatars.com/api/?name=User+${idx}&background=0D8ABC&color=ffffff&size=32`;
+                  }} />
                 ))}
                 {role.totalUsers > role.avatars.length && (
                   <div className="flex h-8 w-8 rounded-full ring-2 ring-white dark:ring-gray-800 bg-gray-100 dark:bg-gray-700 items-center justify-center text-[10px] font-bold text-gray-500">
@@ -67,7 +59,7 @@ export default function Roles() {
                 <button className="text-sm font-bold text-primary-600 hover:underline">Edit Role</button>
               </div>
               <button className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-xl transition-all">
-                <IconCopy className="w-5 h-5" />
+                <Copy className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -76,7 +68,7 @@ export default function Roles() {
         {/* ADD ROLE CARD */}
         <div className="bg-white dark:bg-[#1a2234] rounded-2xl p-6 border-2 border-dashed border-gray-200 dark:border-gray-800 flex flex-col items-center justify-center text-center group cursor-pointer hover:border-primary-500/50 transition-all">
            <div className="w-16 h-16 rounded-2xl bg-primary-50 dark:bg-primary-900/20 text-primary-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <IconPlus className="w-8 h-8" />
+              <Plus className="w-8 h-8" />
            </div>
            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Add New Research Role</h3>
            <p className="text-sm text-gray-500">Add role, if it does not exist.</p>
@@ -89,7 +81,7 @@ export default function Roles() {
            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Research Team Members</h3>
            <div className="flex items-center gap-3">
               <div className="relative">
-                 <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                  <input 
                     type="text" 
                     placeholder="Search Researcher" 
@@ -99,7 +91,7 @@ export default function Roles() {
                  />
               </div>
               <button className="btn btn-primary px-5 py-2.5 flex items-center gap-2">
-                 <IconPlus className="w-4 h-4" /> Add Researcher
+                 <Plus className="w-4 h-4" /> Add Researcher
               </button>
            </div>
         </div>
@@ -119,7 +111,11 @@ export default function Roles() {
                 <tr key={user.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <img className="h-10 w-10 rounded-full" src={user.avatar} alt="" />
+                      <img className="h-10 w-10 rounded-full" src={user.avatar} alt="" onError={(e) => {
+                        const target = e.currentTarget as HTMLImageElement;
+                        target.onerror = null;
+                        target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user)}&background=0D8ABC&color=ffffff&size=40`;
+                      }} />
                       <div>
                         <div className="text-sm font-bold text-gray-900 dark:text-white">{user.user}</div>
                         <div className="text-xs text-gray-500">{user.email}</div>
@@ -143,9 +139,9 @@ export default function Roles() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                       <button className="p-2 text-gray-400 hover:text-primary-600 transition-colors"><IconEdit className="w-4 h-4" /></button>
-                       <button className="p-2 text-gray-400 hover:text-red-500 transition-colors"><IconTrash className="w-4 h-4" /></button>
-                       <button className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><IconDotsVertical className="w-4 h-4" /></button>
+                       <button className="p-2 text-gray-400 hover:text-primary-600 transition-colors"><Edit className="w-4 h-4" /></button>
+                       <button className="p-2 text-gray-400 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                       <button className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><MoreVertical className="w-4 h-4" /></button>
                     </div>
                   </td>
                 </tr>
@@ -159,10 +155,10 @@ export default function Roles() {
 }
 
 function RoleIcon({ role }: { role: string }) {
-  if (role === 'Lead Researcher') return <IconUserShield className="w-4 h-4 text-primary-600" />;
-  if (role === 'Full-Stack Developer') return <IconEdit className="w-4 h-4 text-emerald-600" />;
-  if (role === 'ML Engineer') return <IconBrain className="w-4 h-4 text-amber-600" />;
-  if (role === 'Node Maintainer') return <IconServer className="w-4 h-4 text-purple-600" />;
-  if (role === 'Security Auditor') return <IconShieldLock className="w-4 h-4 text-rose-600" />;
-  return <IconUsers className="w-4 h-4 text-gray-600" />;
+  if (role === 'Lead Researcher') return <Shield className="w-4 h-4 text-primary-600" />;
+  if (role === 'Full-Stack Developer') return <Edit className="w-4 h-4 text-emerald-600" />;
+  if (role === 'ML Engineer') return <Brain className="w-4 h-4 text-amber-600" />;
+  if (role === 'Node Maintainer') return <Server className="w-4 h-4 text-purple-600" />;
+  if (role === 'Security Auditor') return <Shield className="w-4 h-4 text-rose-600" />;
+  return <Users className="w-4 h-4 text-gray-600" />;
 }

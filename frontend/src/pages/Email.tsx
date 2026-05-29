@@ -1,17 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useStore } from '../store';
-import { 
-  IconMail, 
-  IconStar, 
-  IconSend, 
-  IconPencil, 
-  IconTrash, 
-  IconSearch,
-  IconDotsVertical,
-  IconPlus,
-  IconPaperclip,
-  IconArchive
-} from '@tabler/icons-react';
+import { Mail, Star, Send, Pencil, Trash2, Search, MoreVertical, Plus, Paperclip, Archive } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useToast } from '../contexts/ToastContext';
 
@@ -55,11 +44,11 @@ export default function Email() {
   };
 
   const FOLDERS = [
-    { id: 'inbox', name: 'Inbox', icon: IconMail, count: filteredMails.filter(m => !m.isRead).length, color: 'text-primary-600' },
-    { id: 'sent', name: 'Sent', icon: IconSend, count: 0, color: 'text-gray-500' },
-    { id: 'drafts', name: 'Drafts', icon: IconPencil, count: 0, color: 'text-amber-500' },
-    { id: 'starred', name: 'Starred', icon: IconStar, count: 0, color: 'text-yellow-500' },
-    { id: 'trash', name: 'Trash', icon: IconTrash, count: 0, color: 'text-gray-500' },
+    { id: 'inbox', name: 'Inbox', icon: Mail, count: filteredMails.filter(m => !m.isRead).length, color: 'text-primary-600' },
+    { id: 'sent', name: 'Sent', icon: Send, count: 0, color: 'text-gray-500' },
+    { id: 'drafts', name: 'Drafts', icon: Pencil, count: 0, color: 'text-amber-500' },
+    { id: 'starred', name: 'Starred', icon: Star, count: 0, color: 'text-yellow-500' },
+    { id: 'trash', name: 'Trash', icon: Trash2, count: 0, color: 'text-gray-500' },
   ];
 
   return (
@@ -72,7 +61,7 @@ export default function Email() {
              onClick={() => setIsComposeOpen(true)}
              className="w-full bg-primary-600 text-white py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary-500/20 hover:scale-[1.02] active:scale-95 transition-all"
            >
-              <IconPlus className="w-5 h-5" /> 
+              <Plus className="w-5 h-5" /> 
               <span>Compose</span>
            </button>
         </div>
@@ -107,7 +96,7 @@ export default function Email() {
       <div className={clsx("border-r border-gray-100 dark:border-gray-800 flex flex-col min-w-0 transition-all duration-300", selectedMailId ? "w-96" : "flex-1")}>
          <header className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-4">
             <div className="relative flex-1">
-               <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                <input 
                   type="text" 
                   placeholder="Search mail..." 
@@ -142,7 +131,7 @@ export default function Email() {
             ))}
             {filteredMails.length === 0 && (
               <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                <IconMail className="w-12 h-12 mb-4 opacity-10" />
+                <Mail className="w-12 h-12 mb-4 opacity-10" />
                 <p className="text-sm font-medium">No messages found</p>
               </div>
             )}
@@ -158,13 +147,13 @@ export default function Email() {
           <>
             <header className="h-20 px-8 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-white dark:bg-[#1a2234]">
               <div className="flex items-center gap-4">
-                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500"><IconArchive className="w-5 h-5" /></button>
-                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500"><IconTrash className="w-5 h-5" /></button>
+                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500"><Archive className="w-5 h-5" /></button>
+                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500"><Trash2 className="w-5 h-5" /></button>
                 <div className="w-px h-6 bg-gray-100 dark:bg-gray-800 mx-1" />
-                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500"><IconStar className="w-5 h-5" /></button>
+                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500"><Star className="w-5 h-5" /></button>
               </div>
               <div className="flex items-center gap-2">
-                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500"><IconDotsVertical className="w-5 h-5" /></button>
+                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-500"><MoreVertical className="w-5 h-5" /></button>
               </div>
             </header>
             <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
@@ -193,7 +182,7 @@ export default function Email() {
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-3xl flex items-center justify-center mb-6">
-                <IconMail className="w-10 h-10 opacity-20" />
+                <Mail className="w-10 h-10 opacity-20" />
              </div>
              <p className="text-sm font-bold">Select a message to read</p>
           </div>
@@ -232,7 +221,7 @@ export default function Email() {
               />
             </div>
             <div className="p-6 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/30">
-              <button className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-500"><IconPaperclip className="w-5 h-5" /></button>
+              <button className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-gray-500"><Paperclip className="w-5 h-5" /></button>
               <div className="flex gap-3">
                 <button onClick={() => setIsComposeOpen(false)} className="px-6 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">Cancel</button>
                 <button 

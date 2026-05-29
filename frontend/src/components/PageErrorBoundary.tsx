@@ -1,5 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
-import { IconAlertTriangle, IconRefresh } from '@tabler/icons-react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
@@ -43,7 +43,7 @@ export default class PageErrorBoundary extends Component<Props, State> {
         <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 animate-fade-in">
           <div className="max-w-md w-full text-center">
             <div className="mx-auto h-16 w-16 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mb-6">
-              <IconAlertTriangle className="h-8 w-8 text-red-500" />
+              <AlertTriangle className="h-8 w-8 text-red-500" />
             </div>
             
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
@@ -66,7 +66,7 @@ export default class PageErrorBoundary extends Component<Props, State> {
               onClick={this.handleRetry}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white text-sm font-bold rounded-xl hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/20"
             >
-              <IconRefresh className="h-4 w-4" />
+              <RefreshCw className="h-4 w-4" />
               Try Again
             </button>
           </div>

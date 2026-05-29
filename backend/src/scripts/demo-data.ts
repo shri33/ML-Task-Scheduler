@@ -14,6 +14,7 @@ import {
   Task,
   FogNode,
   TerminalDevice,
+  calculateTotalDelay,
 } from '../services/fogComputing.service';
 
 // ==================== DEMO SCENARIOS ====================
@@ -218,12 +219,12 @@ function runDemo(scenario: DemoScenario) {
 
   // Print task allocations for HH
   console.log('\n📊 HH Task Allocations:');
-  const detailedResults = hhScheduler.getDetailedResults(hhResult);
-  detailedResults.forEach(result => {
-    const task = scenario.tasks.find(t => t.id === result.taskId);
-    const fogNode = scenario.fogNodes.find(f => f.id === result.fogNodeId);
+  hhResult.allocations.forEach((fogNodeId, taskId) => {
+    const task = scenario.tasks.find(t => t.id === taskId);
+    const fogNode = scenario.fogNodes.find(f => f.id === fogNodeId);
     if (task && fogNode) {
-      console.log(`   ${task.name.padEnd(30)} → ${fogNode.name.padEnd(25)} (${result.totalDelay.toFixed(3)}s)`);
+      const delay = calculateTotalDelay(task, fogNode);
+      console.log(`   ${task.name.padEnd(30)} → ${fogNode.name.padEnd(25)} (${delay.toFixed(3)}s)`);
     }
   });
 

@@ -1,33 +1,6 @@
 import { ReactNode, useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import {
-  IconDashboard,
-  IconListCheck,
-  IconServer,
-  IconChartBar,
-  IconWifiOff,
-  IconCloud,
-  IconMoon,
-  IconSun,
-  IconLogout,
-  IconUser,
-  IconSettings,
-  IconCpu,
-  IconFlask,
-  IconSearch,
-  IconMenu2,
-  IconCircleDot,
-  IconCalendar,
-  IconUserShield,
-  IconShieldCheck,
-  IconHelpCircle,
-  IconMail,
-  IconMessages,
-  IconColumns,
-  IconUsers,
-  IconBrain,
-  IconFlame
-} from "@tabler/icons-react";
+import { LayoutDashboard, ListChecks, Server, BarChart2, WifiOff, Cloud, Moon, Sun, LogOut, User, Settings, Cpu, Beaker, Search, Menu, CircleDot, Calendar, Shield, ShieldCheck, HelpCircle, Mail, MessageSquare, Columns, Users, Brain, Flame } from 'lucide-react';
 import { clsx } from "clsx";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -42,49 +15,49 @@ const navigationGroups = [
   {
     title: "Main",
     items: [
-      { name: "Dashboard", href: "/dashboard", icon: IconDashboard },
-      { name: "Calendar", href: "/calendar", icon: IconCalendar },
-      { name: "Tasks", href: "/tasks", icon: IconListCheck },
+      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Calendar", href: "/calendar", icon: Calendar },
+      { name: "Tasks", href: "/tasks", icon: ListChecks },
     ]
   },
   {
     title: "Apps",
     items: [
-      { name: "Email", href: "/email", icon: IconMail },
-      { name: "Chat", href: "/chat", icon: IconMessages },
-      { name: "Kanban", href: "/kanban", icon: IconColumns },
+      { name: "Email", href: "/email", icon: Mail },
+      { name: "Chat", href: "/chat", icon: MessageSquare },
+      { name: "Kanban", href: "/kanban", icon: Columns },
     ]
   },
   {
     title: "Systems",
     items: [
-      { name: "Resources", href: "/resources", icon: IconServer },
-      { name: "Devices", href: "/devices", icon: IconCpu },
-      { name: "Fog Computing", href: "/fog-computing", icon: IconCloud },
-      { name: "Chaos Console", href: "/chaos-console", icon: IconFlame },
+      { name: "Resources", href: "/resources", icon: Server },
+      { name: "Devices", href: "/devices", icon: Cpu },
+      { name: "Fog Computing", href: "/fog-computing", icon: Cloud },
+      { name: "Chaos Console", href: "/chaos-console", icon: Flame },
     ]
   },
   {
     title: "Intelligence",
     items: [
-      { name: "Analytics", href: "/analytics", icon: IconChartBar },
-      { name: "Experiments", href: "/experiments", icon: IconFlask },
-      { name: "ML Models", href: "/ml-models", icon: IconBrain },
+      { name: "Analytics", href: "/analytics", icon: BarChart2 },
+      { name: "Experiments", href: "/experiments", icon: Beaker },
+      { name: "ML Models", href: "/ml-models", icon: Brain },
     ]
   },
   {
     title: "Access Control",
     items: [
-      { name: "Users", href: "/users", icon: IconUsers },
-      { name: "Roles", href: "/roles", icon: IconUserShield },
-      { name: "Permissions", href: "/permissions", icon: IconShieldCheck },
+      { name: "Users", href: "/users", icon: Users },
+      { name: "Roles", href: "/roles", icon: Shield },
+      { name: "Permissions", href: "/permissions", icon: ShieldCheck },
     ]
   },
   {
     title: "Pages",
     items: [
-      { name: "User Profile", href: "/profile", icon: IconUser },
-      { name: "FAQ", href: "/faq", icon: IconHelpCircle },
+      { name: "User Profile", href: "/profile", icon: User },
+      { name: "FAQ", href: "/faq", icon: HelpCircle },
     ]
   }
 ];
@@ -170,7 +143,7 @@ export default function Layout({ children }: LayoutProps) {
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors shrink-0"
           >
-            {sidebarOpen ? <IconCircleDot className="w-5 h-5" /> : <IconMenu2 className="w-5 h-5" />}
+            {sidebarOpen ? <CircleDot className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
 
@@ -201,7 +174,7 @@ export default function Layout({ children }: LayoutProps) {
                     <item.icon className={clsx(
                       "w-5 h-5 shrink-0 transition-all duration-300",
                       isActive ? "text-white" : "group-hover:scale-110"
-                    )} stroke={1.5} />
+                    )} strokeWidth={1.5} />
                     
                     <span className={clsx(
                       "whitespace-nowrap transition-all duration-300 text-sm",
@@ -237,7 +210,7 @@ export default function Layout({ children }: LayoutProps) {
               !sidebarOpen && "justify-center px-0"
             )}
           >
-            <IconSettings className="w-5 h-5 shrink-0" stroke={1.5} />
+            <Settings className="w-5 h-5 shrink-0" strokeWidth={1.5} />
             {sidebarOpen && <span className="whitespace-nowrap">Settings</span>}
           </Link>
           <button
@@ -247,7 +220,7 @@ export default function Layout({ children }: LayoutProps) {
               !sidebarOpen && "justify-center px-0"
             )}
           >
-            <IconLogout className="w-5 h-5 shrink-0" stroke={1.5} />
+            <LogOut className="w-5 h-5 shrink-0" strokeWidth={1.5} />
             {sidebarOpen && <span className="whitespace-nowrap">Sign Out</span>}
           </button>
         </div>
@@ -264,11 +237,11 @@ export default function Layout({ children }: LayoutProps) {
             <div className="flex items-center flex-1">
               {!sidebarOpen && (
                  <button onClick={() => setSidebarOpen(true)} className="mr-4 lg:hidden text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-                    <IconMenu2 className="w-5 h-5" />
+                    <Menu className="w-5 h-5" />
                  </button>
               )}
               <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 w-full max-w-md group cursor-text">
-                <IconSearch className="w-5 h-5 group-hover:text-primary-500 transition-colors" stroke={1.5} />
+                <Search className="w-5 h-5 group-hover:text-primary-500 transition-colors" strokeWidth={1.5} />
                 <span className="text-sm group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors hidden sm:block">Search (Ctrl+/)</span>
               </div>
             </div>
@@ -294,7 +267,7 @@ export default function Layout({ children }: LayoutProps) {
                   </>
                 ) : (
                   <>
-                    <IconWifiOff className="h-3 w-3" />
+                    <WifiOff className="h-3 w-3" />
                     Offline
                   </>
                 )}
@@ -305,7 +278,7 @@ export default function Layout({ children }: LayoutProps) {
                 onClick={toggleTheme}
                 className="w-9 h-9 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
-                {theme === "light" ? <IconMoon className="w-5 h-5" stroke={1.5} /> : <IconSun className="w-5 h-5" stroke={1.5} />}
+                {theme === "light" ? <Moon className="w-5 h-5" strokeWidth={1.5} /> : <Sun className="w-5 h-5" strokeWidth={1.5} />}
               </button>
 
               {/* Notifications */}
@@ -342,13 +315,13 @@ export default function Layout({ children }: LayoutProps) {
                     </div>
                     
                     <button onClick={handleOpenProfile} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                      <IconSettings className="w-4 h-4" stroke={1.5} /> Settings
+                      <Settings className="w-4 h-4" strokeWidth={1.5} /> Settings
                     </button>
                     
                     <div className="h-px bg-gray-100 dark:bg-gray-800 my-1" />
                     
                     <button onClick={() => { logout(); setUserMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
-                      <IconLogout className="w-4 h-4" stroke={1.5} /> Logout
+                      <LogOut className="w-4 h-4" strokeWidth={1.5} /> Logout
                     </button>
                   </div>
                 )}

@@ -102,39 +102,52 @@ export const errorHandler = (
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({
       success: false,
-      error: err.message,
-      code: err.code,
+      error: {
+        code: err.code || 'APP_ERROR',
+        message: err.message
+      },
       requestId
     });
   }
 
   // 2. Zod Validation Errors
   if (err instanceof ZodError) {
+    const details = err.errors.map(e => ({
+      path: e.path.join('.'),
+      message: e.message
+    }));
     return res.status(400).json({
       success: false,
-      error: 'Validation failed',
-      details: err.errors.map(e => ({ path: e.path, message: e.message })),
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Request validation failed',
+        details
+      },
       requestId
     });
   }
 
   // 3. Prisma Database Errors
   if (err.name?.startsWith('Prisma') || err.code?.startsWith('P')) {
-    // Unique constraint violation
     if (err.code === 'P2002') {
       return res.status(409).json({
         success: false,
-        error: 'A resource with this value already exists',
-        details: err.meta,
+        error: {
+          code: 'CONFLICT_ERROR',
+          message: 'A resource with this value already exists',
+          details: err.meta
+        },
         requestId
       });
     }
 
-    // Other Prisma errors (usually connection/infra)
     const message = isProduction ? 'Database service error' : err.message;
     return res.status(503).json({
       success: false,
-      error: message,
+      error: {
+        code: 'DATABASE_ERROR',
+        message
+      },
       requestId
     });
   }
@@ -145,9 +158,11 @@ export const errorHandler = (
 
   return res.status(status).json({
     success: false,
-    error: message,
+    error: {
+      code: err.code || 'INTERNAL_ERROR',
+      message
+    },
     requestId,
-    // Include stack only in development for easier debugging
-    stack: isProduction ? undefined : err.stack
+    ...(isProduction ? {} : { stack: err.stack })
   });
 };

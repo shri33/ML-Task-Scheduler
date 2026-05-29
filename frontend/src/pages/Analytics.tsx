@@ -14,14 +14,7 @@ import {
   Bar,
   Legend,
 } from 'recharts';
-import { 
-  IconBrain, 
-  IconTrendingUp, 
-  IconClock, 
-  IconTarget, 
-  IconCalendar,
-  IconDotsVertical
-} from '@tabler/icons-react';
+import { Brain, TrendingUp, Clock, Target, Calendar, MoreVertical } from 'lucide-react';
 import { clsx } from 'clsx';
 import {
   TaskStatusChart,
@@ -291,7 +284,7 @@ export default function Analytics() {
         
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 w-full sm:w-auto">
           <div className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 shadow-sm w-full sm:w-auto">
-            <IconCalendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
             <select 
               value={dateRange}
               onChange={(e: ChangeEvent<HTMLSelectElement>) => setDateRange(e.target.value)}
@@ -322,7 +315,7 @@ export default function Analytics() {
           subtitle="Speed improvement"
           trend={`${improvement > 0 ? '↑' : '↓'} ${Math.abs(improvement)}%`}
           trendColor={improvement > 0 ? 'text-green-500' : 'text-red-500'}
-          icon={IconBrain} 
+          icon={Brain} 
           iconBg="bg-purple-100 dark:bg-purple-900/30" 
           iconColor="text-purple-600 dark:text-purple-400" 
         />
@@ -332,7 +325,7 @@ export default function Analytics() {
           subtitle="Avg confidence level"
           trend="Stable"
           trendColor="text-blue-500"
-          icon={IconTarget} 
+          icon={Target} 
           iconBg="bg-blue-100 dark:bg-blue-900/30" 
           iconColor="text-blue-600 dark:text-blue-400" 
         />
@@ -342,7 +335,7 @@ export default function Analytics() {
           subtitle="Tasks processed"
           trend="+12% vs last period"
           trendColor="text-green-500"
-          icon={IconTrendingUp} 
+          icon={TrendingUp} 
           iconBg="bg-emerald-100 dark:bg-emerald-900/30" 
           iconColor="text-emerald-600 dark:text-emerald-400" 
         />
@@ -352,7 +345,7 @@ export default function Analytics() {
           subtitle="Execution speed"
           trend="-0.4s improvement"
           trendColor="text-green-500"
-          icon={IconClock} 
+          icon={Clock} 
           iconBg="bg-amber-100 dark:bg-amber-900/30" 
           iconColor="text-amber-600 dark:text-amber-400" 
         />
@@ -399,7 +392,7 @@ export default function Analytics() {
               <p className="text-sm text-gray-500">Tasks scheduled vs ML Accuracy</p>
             </div>
             <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-              <IconDotsVertical className="w-5 h-5" />
+              <MoreVertical className="w-5 h-5" />
             </button>
           </div>
           <ResponsiveContainer width="100%" height={350}>
@@ -557,7 +550,7 @@ interface StatCardProps {
   subtitle: string;
   trend: string;
   trendColor: string;
-  icon: ComponentType<{ className?: string; stroke?: number }>;
+  icon: ComponentType<any>;
   iconBg: string;
   iconColor: string;
 }
@@ -567,7 +560,7 @@ function StatCard({ title, value, subtitle, trend, trendColor, icon: Icon, iconB
     <div className="bg-white dark:bg-[#1a2234] rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all group">
       <div className="flex justify-between items-start mb-4">
         <div className={clsx("p-3 rounded-xl transition-transform group-hover:scale-110", iconBg)}>
-          <Icon className={clsx("w-6 h-6", iconColor)} stroke={1.5} />
+          <Icon className={clsx("w-6 h-6", iconColor)} strokeWidth={1.5} />
         </div>
         <span className={clsx("text-xs font-bold px-2 py-1 rounded-lg bg-opacity-10", trendColor.replace('text-', 'bg-'), trendColor)}>
           {trend}

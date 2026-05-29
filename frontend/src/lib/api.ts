@@ -104,6 +104,19 @@ let failedQueue: Array<{
   reject: (error: Error) => void;
 }> = [];
 
+// Client-side logout callback registry
+let logoutCallback: (() => void) | null = null;
+
+export const registerLogoutCallback = (cb: () => void) => {
+  logoutCallback = cb;
+};
+
+export const triggerLogout = () => {
+  if (logoutCallback) {
+    logoutCallback();
+  }
+};
+
 const processQueue = (error: Error | null, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
@@ -161,6 +174,10 @@ api.interceptors.response.use(
       } catch (refreshError) {
         refreshFailedAt = Date.now();
         processQueue(refreshError as Error, null);
+        
+        // Trigger client-side logout to clear AuthContext state and navigate
+        triggerLogout();
+        
         const isAuthPage = window.location.pathname.startsWith('/login') || window.location.pathname.startsWith('/not-logged-in') || window.location.pathname.startsWith('/register');
         if (!hasAuthRedirected && !isAuthPage && window.location.pathname !== '/') {
           hasAuthRedirected = true;

@@ -1,6 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { chaosService, FailureType } from '../services/chaos.service';
 import { authenticate, adminOnly } from '../middleware/auth.middleware';
+import { validateRequest } from '../middleware/validate';
+import { startChaosSchema, stopChaosSchema } from '../validators/chaos.validator';
+import { successResponse } from '../lib/http/response';
 
 const router = Router();
 
@@ -19,8 +22,12 @@ router.use(authenticate, adminOnly);
  *       200:
  *         description: Active experiments
  */
-router.get('/experiments', (req: Request, res: Response) => {
-  res.json({ success: true, data: chaosService.getExperiments() });
+router.get('/experiments', (req: Request, res: Response, next: NextFunction) => {
+  try {
+    successResponse(res, chaosService.getExperiments());
+  } catch (error) {
+    next(error);
+  }
 });
 
 /**
@@ -49,22 +56,22 @@ router.get('/experiments', (req: Request, res: Response) => {
  *       200:
  *         description: Experiment initiated
  */
-router.post('/start', (req: Request, res: Response) => {
-  const { service, type, value } = req.body;
-  
-  if (!service || !type) {
-    return res.status(400).json({ success: false, error: 'Service and type are required' });
+router.post('/start', validateRequest({ body: startChaosSchema }), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { service, type, value } = req.body;
+
+    chaosService.startExperiment({
+      service,
+      type: type as FailureType,
+      value: value || 0,
+      active: true,
+      startTime: new Date()
+    });
+
+    successResponse(res, { message: 'Chaos experiment initiated' });
+  } catch (error) {
+    next(error);
   }
-
-  chaosService.startExperiment({
-    service,
-    type: type as FailureType,
-    value: value || 0,
-    active: true,
-    startTime: new Date()
-  });
-
-  res.json({ success: true, message: 'Chaos experiment initiated' });
 });
 
 /**
@@ -91,24 +98,28 @@ router.post('/start', (req: Request, res: Response) => {
  *       200:
  *         description: Experiment stopped
  */
-router.post('/stop', (req: Request, res: Response) => {
-  const { service, type } = req.body;
-  
-  if (!service || !type) {
-    return res.status(400).json({ success: false, error: 'Service and type are required' });
-  }
+router.post('/stop', validateRequest({ body: stopChaosSchema }), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { service, type } = req.body;
 
-  chaosService.stopExperiment(service, type as FailureType);
-  res.json({ success: true, message: 'Chaos experiment stopped' });
+    chaosService.stopExperiment(service, type as FailureType);
+    successResponse(res, { message: 'Chaos experiment stopped' });
+  } catch (error) {
+    next(error);
+  }
 });
 
 /**
  * POST /api/v1/chaos/stop-all
  * Stop all experiments
  */
-router.post('/stop-all', (req: Request, res: Response) => {
-  chaosService.stopAll();
-  res.json({ success: true, message: 'All chaos experiments stopped' });
+router.post('/stop-all', (req: Request, res: Response, next: NextFunction) => {
+  try {
+    chaosService.stopAll();
+    successResponse(res, { message: 'All chaos experiments stopped' });
+  } catch (error) {
+    next(error);
+  }
 });
 
 export default router;

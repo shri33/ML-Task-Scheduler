@@ -1,4 +1,4 @@
-import { IconFileText, IconDownload, IconChartBar, IconClock } from '@tabler/icons-react';
+import { FileText, Download, BarChart2, Clock } from 'lucide-react';
 
 export default function Reports() {
   const reports = [
@@ -12,7 +12,7 @@ export default function Reports() {
     <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          <IconFileText className="text-primary-500" />
+          <FileText className="text-primary-500" />
           System Reports
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
@@ -21,10 +21,10 @@ export default function Reports() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <ReportStat title="Total Reports" value="128" icon={IconFileText} color="blue" />
-        <ReportStat title="Downloads" value="1,024" icon={IconDownload} color="emerald" />
-        <ReportStat title="Storage Used" value="482 MB" icon={IconChartBar} color="purple" />
-        <ReportStat title="Last Sync" value="2m ago" icon={IconClock} color="amber" />
+        <ReportStat title="Total Reports" value="128" icon={FileText} color="blue" />
+        <ReportStat title="Downloads" value="1,024" icon={Download} color="emerald" />
+        <ReportStat title="Storage Used" value="482 MB" icon={BarChart2} color="purple" />
+        <ReportStat title="Last Sync" value="2m ago" icon={Clock} color="amber" />
       </div>
 
       <div className="bg-white dark:bg-[#1a2234] border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm">
@@ -44,7 +44,7 @@ export default function Reports() {
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
-                      <IconFileText className="w-5 h-5" />
+                      <FileText className="w-5 h-5" />
                     </div>
                     <span className="text-sm font-semibold text-gray-900 dark:text-white">{report.name}</span>
                   </div>
@@ -58,7 +58,7 @@ export default function Reports() {
                 <td className="px-6 py-4 text-sm text-gray-500">{report.size}</td>
                 <td className="px-6 py-4 text-right">
                   <button className="p-2 text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-500/10 rounded-lg transition-colors">
-                    <IconDownload className="w-5 h-5" />
+                    <Download className="w-5 h-5" />
                   </button>
                 </td>
               </tr>

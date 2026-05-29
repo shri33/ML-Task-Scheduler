@@ -1,25 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  IconBrain,
-  IconBolt,
-  IconCloud,
-  IconChartBar,
-  IconShield,
-  IconWifi,
-  IconArrowRight,
-  IconBrandGithub,
-  IconCircleCheck,
-  IconChevronRight,
-  IconMoon,
-  IconSun,
-  IconBrandReact,
-  IconBrandTypescript,
-  IconBrandNodejs,
-  IconBrandPython,
-  IconBrandDocker,
-  IconDatabase
-} from '@tabler/icons-react';
+import { Brain, Zap, Cloud, BarChart2, Shield, Wifi, ArrowRight, CheckCircle, ChevronRight, Moon, Sun, Database } from 'lucide-react';
+import { IconBrandGithub, IconBrandReact, IconBrandTypescript, IconBrandNodejs, IconBrandPython, IconBrandDocker } from '../components/shared/BrandIcons';
 import { clsx } from 'clsx';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -74,7 +56,7 @@ const MAX_DELAY = 2400;
 /* ── Feature data ──────────────────────────── */
 const FEATURES = [
   {
-    icon: IconBrain,
+    icon: Brain,
     title: 'Bio-Inspired Scheduling',
     desc: '6 algorithms — IPSO, IACO, Hybrid HH, FCFS, Round-Robin, Min-Min — delivering up to 31% energy reduction over baseline.',
     accent: 'text-primary-600 dark:text-primary-400',
@@ -82,7 +64,7 @@ const FEATURES = [
     span: 'md:col-span-2',
   },
   {
-    icon: IconBolt,
+    icon: Zap,
     title: 'ML Prediction Engine',
     desc: 'Random Forest, XGBoost & Gradient Boosting with SHAP explainability, Optuna tuning, and conformal prediction.',
     accent: 'text-violet-600 dark:text-violet-400',
@@ -90,7 +72,7 @@ const FEATURES = [
     span: '',
   },
   {
-    icon: IconCloud,
+    icon: Cloud,
     title: '3-Layer Fog Architecture',
     desc: 'Terminal devices → fog nodes → cloud — with fault tolerance analysis and real-time load balancing.',
     accent: 'text-sky-600 dark:text-sky-400',
@@ -98,7 +80,7 @@ const FEATURES = [
     span: '',
   },
   {
-    icon: IconChartBar,
+    icon: BarChart2,
     title: 'Live Telemetry',
     desc: 'Prometheus + Grafana pipeline with WebSocket live updates, PDF/CSV export, and historical analytics.',
     accent: 'text-emerald-600 dark:text-emerald-400',
@@ -106,7 +88,7 @@ const FEATURES = [
     span: '',
   },
   {
-    icon: IconShield,
+    icon: Shield,
     title: 'Production Security',
     desc: 'JWT httpOnly cookies, CSRF double-submit, bcrypt, RBAC, circuit breaker, and Zod schema validation.',
     accent: 'text-amber-600 dark:text-amber-400',
@@ -114,7 +96,7 @@ const FEATURES = [
     span: '',
   },
   {
-    icon: IconWifi,
+    icon: Wifi,
     title: 'Real-Time Updates',
     desc: 'Socket.IO WebSocket events keep every client in sync — no manual refresh needed.',
     accent: 'text-rose-600 dark:text-rose-400',
@@ -201,7 +183,7 @@ export default function LandingPage() {
                 className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
               >
-                {theme === 'light' ? <IconMoon className="h-5 w-5" stroke={1.5} /> : <IconSun className="h-5 w-5" stroke={1.5} />}
+                {theme === 'light' ? <Moon className="h-5 w-5" strokeWidth={1.5} /> : <Sun className="h-5 w-5" strokeWidth={1.5} />}
               </button>
               <button
                 id="lp-nav-login"
@@ -216,7 +198,7 @@ export default function LandingPage() {
                 className="btn btn-primary text-sm py-2 px-4 flex items-center gap-1.5"
               >
                 Launch App
-                <IconArrowRight className="h-4 w-4" stroke={1.5} />
+                <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
               </button>
             </div>
           </div>
@@ -275,11 +257,11 @@ export default function LandingPage() {
                        { name: 'React 18', icon: <IconBrandReact className="w-5 h-5 text-sky-500" /> },
                        { name: 'TypeScript', icon: <IconBrandTypescript className="w-5 h-5 text-blue-600" /> },
                        { name: 'Node.js', icon: <IconBrandNodejs className="w-5 h-5 text-emerald-500" /> },
-                       { name: 'Python Flask', icon: <IconBrandPython className="w-5 h-5 text-yellow-500" /> },
-                       { name: 'PostgreSQL', icon: <IconDatabase className="w-5 h-5 text-blue-400" /> },
-                       { name: 'Redis', icon: <IconBolt className="w-5 h-5 text-rose-500" /> },
+                       { name: 'Python Beaker', icon: <IconBrandPython className="w-5 h-5 text-yellow-500" /> },
+                       { name: 'PostgreSQL', icon: <Database className="w-5 h-5 text-blue-400" /> },
+                       { name: 'Redis', icon: <Zap className="w-5 h-5 text-rose-500" /> },
                        { name: 'Docker', icon: <IconBrandDocker className="w-5 h-5 text-blue-500" /> },
-                       { name: 'scikit-learn', icon: <IconBrain className="w-5 h-5 text-orange-500" /> },
+                       { name: 'scikit-learn', icon: <Brain className="w-5 h-5 text-orange-500" /> },
                      ].map((tech, i) => (
                         <div key={i} className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all grayscale hover:grayscale-0">
                            {tech.icon}
@@ -291,11 +273,11 @@ export default function LandingPage() {
                        { name: 'React 18', icon: <IconBrandReact className="w-5 h-5 text-sky-500" /> },
                        { name: 'TypeScript', icon: <IconBrandTypescript className="w-5 h-5 text-blue-600" /> },
                        { name: 'Node.js', icon: <IconBrandNodejs className="w-5 h-5 text-emerald-500" /> },
-                       { name: 'Python Flask', icon: <IconBrandPython className="w-5 h-5 text-yellow-500" /> },
-                       { name: 'PostgreSQL', icon: <IconDatabase className="w-5 h-5 text-blue-400" /> },
-                       { name: 'Redis', icon: <IconBolt className="w-5 h-5 text-rose-500" /> },
+                       { name: 'Python Beaker', icon: <IconBrandPython className="w-5 h-5 text-yellow-500" /> },
+                       { name: 'PostgreSQL', icon: <Database className="w-5 h-5 text-blue-400" /> },
+                       { name: 'Redis', icon: <Zap className="w-5 h-5 text-rose-500" /> },
                        { name: 'Docker', icon: <IconBrandDocker className="w-5 h-5 text-blue-500" /> },
-                       { name: 'scikit-learn', icon: <IconBrain className="w-5 h-5 text-orange-500" /> },
+                       { name: 'scikit-learn', icon: <Brain className="w-5 h-5 text-orange-500" /> },
                      ].map((tech, i) => (
                         <div key={'d-'+i} className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all grayscale hover:grayscale-0">
                            {tech.icon}
@@ -320,7 +302,7 @@ export default function LandingPage() {
                 className="w-full sm:w-auto"
               >
                 Enter the System
-                <IconArrowRight className="h-5 w-5 ml-2" stroke={1.5} />
+                <ArrowRight className="h-5 w-5 ml-2" strokeWidth={1.5} />
               </ShinyButton>
               <a
                 id="lp-hero-github"
@@ -329,7 +311,7 @@ export default function LandingPage() {
                 rel="noreferrer"
                 className="btn btn-secondary text-base px-8 py-3.5 gap-2 w-full sm:w-auto"
               >
-                <IconBrandGithub className="h-5 w-5" stroke={1.5} />
+                <IconBrandGithub className="h-5 w-5" strokeWidth={1.5} />
                 View on GitHub
               </a>
             </div>
@@ -354,7 +336,7 @@ export default function LandingPage() {
         <div className="border-y border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm py-5 px-4">
           <div className="max-w-5xl mx-auto flex items-center gap-8 flex-wrap justify-center">
             <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest shrink-0">Built with</p>
-            {['React 18', 'TypeScript', 'Node.js', 'Python Flask', 'PostgreSQL', 'Redis', 'Docker', 'scikit-learn'].map((t) => (
+            {['React 18', 'TypeScript', 'Node.js', 'Python Beaker', 'PostgreSQL', 'Redis', 'Docker', 'scikit-learn'].map((t) => (
               <span key={t} className="text-sm font-semibold text-gray-500 dark:text-gray-400">{t}</span>
             ))}
           </div>
@@ -570,34 +552,45 @@ export default function LandingPage() {
                   id: '2023ebcs593', 
                   role: 'Team Leader, Developer', 
                   img: 'https://media.licdn.com/dms/image/v2/D4D03AQEcj0OjaV1cTA/profile-displayphoto-scale_400_400/B4DZlmASTzJgAg-/0/1758352977139?e=1778716800&v=beta&t=BSLicgDEEWtzCFIlfgDH_f1ovuIxWYLyrYq9FEKfh88',
+                  linkedin: 'https://www.linkedin.com/in/shri-srivastava-ab04a5175/',
                 },
                 { 
                   name: 'Ichha Dwivedi',   
                   id: '2023ebcs125', 
                   role: 'Developer',       
                   img: 'https://media.licdn.com/dms/image/v2/D5635AQF4HfjRIXfDrg/profile-framedphoto-shrink_400_400/B56ZskJ.5VJ8Ac-/0/1765838155604?e=1777762800&v=beta&t=OaVHII6Mm1ZT1yogIY5awzOKQwoCrdLa1MzfEwpWW-U',
+                  linkedin: 'https://www.linkedin.com/in/ichha-dwivedi-55b246288/',
                 },
                 { 
                   name: 'Aditi Singh',     
                   id: '2023ebcs498', 
                   role: 'Developer',       
                   img: 'https://media.licdn.com/dms/image/v2/D4D03AQHbXw028qVAFA/profile-displayphoto-scale_400_400/B4DZi9lKpqH4Ao-/0/1755527296321?e=1778716800&v=beta&t=8l36p8D5Gf9VLS9UyXfv6PSh_6VQjQgt2MrQs6hXuOc',
+                  linkedin: 'https://www.linkedin.com/in/aditi-singh-041866306/',
                 },
               ].map((m) => (
                 <div key={m.name} className="bg-white dark:bg-gray-900 rounded-3xl p-8 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center group">
                   <div className="relative mb-6">
                     <div className="absolute inset-0 bg-primary-500 rounded-full blur-2xl opacity-0 group-hover:opacity-20 transition-opacity" />
-                    <img 
-                      src={m.img} 
-                      alt={m.name} 
-                      className="relative w-28 h-28 rounded-full object-cover border-4 border-white dark:border-gray-800 shadow-lg"
-                    />
+                    <a href={m.linkedin} target="_blank" rel="noopener noreferrer" className="block hover:opacity-80 transition-opacity">
+                      <img
+                        src={m.img}
+                        alt={m.name}
+                        onError={(e) => {
+                          const target = e.currentTarget as HTMLImageElement;
+                          target.onerror = null;
+                          target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=0D8ABC&color=ffffff&size=256`;
+                        }}
+                        className="relative w-28 h-28 rounded-full object-cover border-4 border-white dark:border-gray-800 shadow-lg"
+                      />
+                    </a>
                   </div>
                   <div className="font-bold text-gray-900 dark:text-white text-lg mb-1">{m.name}</div>
                   <div className="text-xs font-bold text-primary-600 dark:text-primary-400 mb-2 uppercase tracking-widest">{m.role}</div>
                   <div className="font-mono text-[10px] text-gray-400 dark:text-gray-500 mb-6">{m.id}</div>
-                  
-                  {/* LinkedIn links removed as requested */}
+                  <a href={m.linkedin} target="_blank" rel="noopener noreferrer" className="text-[11px] font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors">
+                    View LinkedIn Profile →
+                  </a>
                 </div>
               ))}
             </div>
@@ -626,7 +619,7 @@ export default function LandingPage() {
                 { t: 'Chaos Mesh', d: 'Chaos engineering for fault tolerance testing' },
               ].map((item) => (
                 <div key={item.t} className="flex items-start gap-3 p-4 rounded-xl bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/50 hover:border-primary-300 dark:hover:border-primary-700 transition-colors">
-                  <IconCircleCheck className="h-4 w-4 text-primary-500 dark:text-primary-400 mt-0.5 shrink-0" stroke={1.5} />
+                  <CheckCircle className="h-4 w-4 text-primary-500 dark:text-primary-400 mt-0.5 shrink-0" strokeWidth={1.5} />
                   <div>
                     <div className="font-semibold text-sm text-gray-900 dark:text-white">{item.t}</div>
                     <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{item.d}</div>
@@ -658,7 +651,7 @@ export default function LandingPage() {
                 className="btn btn-primary text-base px-10 py-3.5 gap-2 shadow-lg shadow-primary-500/25"
               >
                 Launch the App
-                <IconChevronRight className="h-5 w-5" stroke={1.5} />
+                <ChevronRight className="h-5 w-5" strokeWidth={1.5} />
               </button>
               <button
                 id="lp-cta-register"
@@ -741,7 +734,7 @@ export default function LandingPage() {
                 rel="noreferrer"
                 className="flex items-center gap-1.5 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
               >
-                <IconBrandGithub className="h-3.5 w-3.5" stroke={1.5} />
+                <IconBrandGithub className="h-3.5 w-3.5" strokeWidth={1.5} />
                 GitHub
               </a>
             </div>

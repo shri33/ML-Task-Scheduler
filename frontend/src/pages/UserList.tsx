@@ -1,19 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useStore } from '../store';
-import { 
-  IconPlus, 
-  IconSearch, 
-  IconDotsVertical, 
-  IconEdit, 
-  IconTrash,
-  IconFilter,
-  IconDownload,
-  IconUserShield,
-  IconServer,
-  IconShieldLock,
-  IconCode,
-  IconEye
-} from '@tabler/icons-react';
+import { Plus, Search, MoreVertical, Edit, Trash2, Filter, Download, Shield, Server, Code, Eye } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export default function UserList() {
@@ -32,10 +19,10 @@ export default function UserList() {
   }, [users, searchTerm]);
 
   const STATS = useMemo(() => [
-    { label: 'Total Members', value: users.length, change: '+0%', icon: IconUserShield, color: 'primary' },
-    { label: 'Active Admins', value: users.filter(u => u.role === 'ADMIN').length, change: '+0', icon: IconShieldLock, color: 'success' },
-    { label: 'Viewers', value: users.filter(u => u.role === 'VIEWER').length, change: '+0', icon: IconEye, color: 'info' },
-    { label: 'Registered', value: new Date().toLocaleDateString(), change: 'Today', icon: IconServer, color: 'warning' },
+    { label: 'Total Members', value: users.length, change: '+0%', icon: Shield, color: 'primary' },
+    { label: 'Active Admins', value: users.filter(u => u.role === 'ADMIN').length, change: '+0', icon: Shield, color: 'success' },
+    { label: 'Viewers', value: users.filter(u => u.role === 'VIEWER').length, change: '+0', icon: Eye, color: 'info' },
+    { label: 'Registered', value: new Date().toLocaleDateString(), change: 'Today', icon: Server, color: 'warning' },
   ], [users]);
 
   if (usersLoading && users.length === 0) {
@@ -77,10 +64,10 @@ export default function UserList() {
         <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
            <div className="flex items-center gap-4">
               <button className="btn btn-secondary px-4 py-2 text-sm flex items-center gap-2">
-                 <IconFilter className="w-4 h-4" /> Filters
+                 <Filter className="w-4 h-4" /> Filters
               </button>
               <div className="relative">
-                 <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                  <input 
                     type="text" 
                     placeholder="Search users..." 
@@ -92,10 +79,10 @@ export default function UserList() {
            </div>
            <div className="flex items-center gap-3">
               <button className="btn btn-secondary px-4 py-2 text-sm flex items-center gap-2">
-                 <IconDownload className="w-4 h-4" /> Export
+                 <Download className="w-4 h-4" /> Export
               </button>
               <button className="btn btn-primary px-5 py-2.5 flex items-center gap-2">
-                 <IconPlus className="w-4 h-4" /> Add User
+                 <Plus className="w-4 h-4" /> Add User
               </button>
            </div>
         </div>
@@ -144,9 +131,9 @@ export default function UserList() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                       <button className="p-2 text-gray-400 hover:text-primary-600 transition-colors"><IconEdit className="w-4 h-4" /></button>
-                       <button className="p-2 text-gray-400 hover:text-red-500 transition-colors"><IconTrash className="w-4 h-4" /></button>
-                       <button className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><IconDotsVertical className="w-4 h-4" /></button>
+                       <button className="p-2 text-gray-400 hover:text-primary-600 transition-colors"><Edit className="w-4 h-4" /></button>
+                       <button className="p-2 text-gray-400 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                       <button className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><MoreVertical className="w-4 h-4" /></button>
                     </div>
                   </td>
                 </tr>
@@ -160,8 +147,8 @@ export default function UserList() {
 }
 
 function RoleIcon({ role }: { role: string }) {
-  if (role === 'ADMIN') return <IconShieldLock className="w-4 h-4 text-rose-600" />;
-  if (role === 'USER') return <IconCode className="w-4 h-4 text-emerald-600" />;
-  if (role === 'VIEWER') return <IconEye className="w-4 h-4 text-sky-600" />;
-  return <IconUserShield className="w-4 h-4 text-gray-400" />;
+  if (role === 'ADMIN') return <Shield className="w-4 h-4 text-rose-600" />;
+  if (role === 'USER') return <Code className="w-4 h-4 text-emerald-600" />;
+  if (role === 'VIEWER') return <Eye className="w-4 h-4 text-sky-600" />;
+  return <Shield className="w-4 h-4 text-gray-400" />;
 }

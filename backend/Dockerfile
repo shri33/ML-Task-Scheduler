@@ -69,6 +69,10 @@ COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 # Copy generated Prisma client from deps
 COPY --from=deps --chown=nodejs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
+# Copy entrypoint script
+COPY --from=builder --chown=nodejs:nodejs /app/entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
 # Create logs and results directories writable by non-root user
 RUN mkdir -p /app/logs /app/results && chown -R nodejs:nodejs /app/logs /app/results
 
@@ -85,5 +89,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Sync Prisma schema before starting the API. This keeps fresh databases usable even when no migration history is present in the image.
-CMD ["sh", "-lc", "npx --no-install prisma db push --skip-generate && exec node dist/index.js"]
+CMD ["./entrypoint.sh"]

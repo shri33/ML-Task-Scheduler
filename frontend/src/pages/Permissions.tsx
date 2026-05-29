@@ -1,16 +1,5 @@
 import { useState } from 'react';
-import { 
-  IconPlus, 
-  IconSearch,
-  IconEdit,
-  IconTrash,
-  IconAlertCircle,
-  IconSettings,
-  IconDatabase,
-  IconChartBar,
-  IconCpu,
-  IconLock
-} from '@tabler/icons-react';
+import { Plus, Search, Edit, Trash2, AlertCircle, Settings, Database, BarChart2, Cpu, Lock } from 'lucide-react';
 import { clsx } from 'clsx';
 import DemoModeBanner from '../components/DemoModeBanner';
 
@@ -38,13 +27,13 @@ export default function Permissions() {
           <p className="text-gray-500 dark:text-gray-400 mt-1">Manage and assign granular permissions for the ML Task Scheduler research pipeline.</p>
         </div>
         <button className="btn btn-primary px-6 py-3 flex items-center gap-2 self-start md:self-auto">
-          <IconPlus className="w-5 h-5" /> Add Permission
+          <Plus className="w-5 h-5" /> Add Permission
         </button>
       </div>
 
       {/* ── INFO ALERT ── */}
       <div className="flex items-start gap-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-2xl">
-         <IconAlertCircle className="w-6 h-6 text-amber-600 mt-0.5 shrink-0" />
+         <AlertCircle className="w-6 h-6 text-amber-600 mt-0.5 shrink-0" />
          <div className="text-sm">
             <h4 className="font-bold text-amber-900 dark:text-amber-400 mb-1">Important Note!</h4>
             <p className="text-amber-700 dark:text-amber-500/80">Changing permission settings might break the automated benchmarking pipeline. Please ensure the lead researcher is notified before modifying core algorithm permissions.</p>
@@ -55,7 +44,7 @@ export default function Permissions() {
       <div className="bg-white dark:bg-[#1a2234] rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
            <div className="relative">
-              <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input 
                 type="text" 
                 placeholder="Search Permission" 
@@ -106,8 +95,8 @@ export default function Permissions() {
                   <td className="px-6 py-4 text-sm text-gray-500">{perm.createdDate}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                       <button className="p-2 text-gray-400 hover:text-primary-600 transition-colors"><IconEdit className="w-4 h-4" /></button>
-                       <button className="p-2 text-gray-400 hover:text-red-500 transition-colors"><IconTrash className="w-4 h-4" /></button>
+                       <button className="p-2 text-gray-400 hover:text-primary-600 transition-colors"><Edit className="w-4 h-4" /></button>
+                       <button className="p-2 text-gray-400 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
                 </tr>
@@ -121,10 +110,10 @@ export default function Permissions() {
 }
 
 function PermissionIcon({ name }: { name: string }) {
-  if (name.includes('Algorithm')) return <IconSettings className="w-5 h-5 text-primary-600" />;
-  if (name.includes('Benchmark')) return <IconCpu className="w-5 h-5 text-emerald-600" />;
-  if (name.includes('Telemetry')) return <IconChartBar className="w-5 h-5 text-sky-600" />;
-  if (name.includes('Dataset')) return <IconDatabase className="w-5 h-5 text-amber-600" />;
-  if (name.includes('Security')) return <IconLock className="w-5 h-5 text-rose-600" />;
-  return <IconAlertCircle className="w-5 h-5 text-gray-400" />;
+  if (name.includes('Algorithm')) return <Settings className="w-5 h-5 text-primary-600" />;
+  if (name.includes('Benchmark')) return <Cpu className="w-5 h-5 text-emerald-600" />;
+  if (name.includes('Telemetry')) return <BarChart2 className="w-5 h-5 text-sky-600" />;
+  if (name.includes('Dataset')) return <Database className="w-5 h-5 text-amber-600" />;
+  if (name.includes('Security')) return <Lock className="w-5 h-5 text-rose-600" />;
+  return <AlertCircle className="w-5 h-5 text-gray-400" />;
 }

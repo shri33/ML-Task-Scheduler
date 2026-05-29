@@ -85,3 +85,24 @@ temp/
 # Docker temp files
 query
 start
+
+# Zip archives (never commit large binaries)
+*.zip
+
+# Diff/temp files
+diff*.txt
+temp_diff*.txt
+
+# Cookie files
+cookies.txt
+
+# One-off fix scripts
+fix-*.js
+
+# Build error logs
+build_errors*.txt
+build_err*.txt
+tsc_errors*.log
+
+# Old/abandoned code
+old_*.ts

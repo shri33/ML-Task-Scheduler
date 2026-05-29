@@ -1,6 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { mailService } from '../services/mail.service';
 import { authenticate } from '../middleware/auth.middleware';
+import { validateRequest } from '../middleware/validate';
+import { sendMailSchema, markReadSchema } from '../validators/mail.validator';
+import { successResponse } from '../lib/http/response';
 
 const router = Router();
 
@@ -17,7 +20,7 @@ router.get('/inbox', async (req: Request, res: Response, next: NextFunction) => 
   try {
     const userId = (req as any).user.userId;
     const mails = await mailService.getInbox(userId);
-    res.json({ success: true, data: mails });
+    successResponse(res, mails);
   } catch (error) {
     next(error);
   }
@@ -34,7 +37,7 @@ router.get('/sent', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req as any).user.userId;
     const mails = await mailService.getSent(userId);
-    res.json({ success: true, data: mails });
+    successResponse(res, mails);
   } catch (error) {
     next(error);
   }
@@ -47,12 +50,12 @@ router.get('/sent', async (req: Request, res: Response, next: NextFunction) => {
  *     summary: Send a new mail
  *     tags: [Mail]
  */
-router.post('/send', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/send', validateRequest({ body: sendMailSchema }), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { recipients, subject, content } = req.body;
     const userId = (req as any).user.userId;
     const mail = await mailService.sendMail(userId, recipients, subject, content);
-    res.status(201).json({ success: true, data: mail });
+    successResponse(res, mail, 201);
   } catch (error) {
     next(error);
   }
@@ -65,12 +68,12 @@ router.post('/send', async (req: Request, res: Response, next: NextFunction) => 
  *     summary: Mark mail as read/unread
  *     tags: [Mail]
  */
-router.patch('/:id/read', async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id/read', validateRequest({ body: markReadSchema }), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { isRead } = req.body;
     const userId = (req as any).user.userId;
     await mailService.markRead(userId, req.params.id, isRead);
-    res.json({ success: true });
+    successResponse(res, { message: 'Mail status updated' });
   } catch (error) {
     next(error);
   }

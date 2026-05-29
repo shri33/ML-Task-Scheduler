@@ -1,34 +1,24 @@
 import { useEffect, useRef } from 'react';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  LineChart,
+  Line,
   Legend,
-  Filler,
-  RadialLinearScale,
-} from 'chart.js';
-import { Line, Bar, Doughnut, Radar, Pie } from 'react-chartjs-2';
-
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  RadialLinearScale,
-  Title,
   Tooltip,
-  Legend,
-  Filler
-);
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  ResponsiveContainer
+} from 'recharts';
 
 interface TaskStatusData {
   pending: number;
@@ -59,321 +49,150 @@ interface MLMetrics {
 
 // Task Status Doughnut Chart
 export function TaskStatusChart({ data }: { data: TaskStatusData }) {
-  const chartData = {
-    labels: ['Pending', 'Scheduled', 'Completed', 'Failed'],
-    datasets: [
-      {
-        data: [data.pending, data.scheduled, data.completed, data.failed],
-        backgroundColor: [
-          'rgba(251, 191, 36, 0.8)',  // amber
-          'rgba(59, 130, 246, 0.8)',  // blue
-          'rgba(16, 185, 129, 0.8)',  // green
-          'rgba(239, 68, 68, 0.8)',   // red
-        ],
-        borderColor: [
-          'rgba(251, 191, 36, 1)',
-          'rgba(59, 130, 246, 1)',
-          'rgba(16, 185, 129, 1)',
-          'rgba(239, 68, 68, 1)',
-        ],
-        borderWidth: 2,
-      },
-    ],
-  };
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'bottom' as const,
-        labels: {
-          padding: 20,
-          usePointStyle: true,
-          pointStyle: 'circle',
-          color: 'currentColor',
-          font: { size: 12 }
-        },
-      },
-      title: {
-        display: false
-      },
-    },
-    cutout: '75%',
-    elements: {
-      arc: {
-        borderWidth: 0
-      }
-    }
-  };
+  const chartData = [
+    { name: 'Pending', value: data.pending, color: '#fbbf24' },  // amber
+    { name: 'Scheduled', value: data.scheduled, color: '#3b82f6' },  // blue
+    { name: 'Completed', value: data.completed, color: '#10b981' },  // green
+    { name: 'Failed', value: data.failed, color: '#ef4444' },   // red
+  ];
 
   return (
-    <div className="h-80">
-      <Doughnut data={chartData} options={options} />
+    <div className="h-80 w-full flex flex-col justify-between">
+      <h4 className="text-center font-bold text-slate-700 dark:text-slate-300 text-sm">Task Status Distribution</h4>
+      <ResponsiveContainer width="100%" height="90%">
+        <PieChart>
+          <Pie
+            data={chartData}
+            cx="50%"
+            cy="50%"
+            innerRadius={65}
+            outerRadius={80}
+            paddingAngle={5}
+            dataKey="value"
+          >
+            {chartData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} />
+            ))}
+          </Pie>
+          <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#f8fafc' }} />
+          <Legend iconType="circle" layout="horizontal" verticalAlign="bottom" align="center" />
+        </PieChart>
+      </ResponsiveContainer>
     </div>
   );
 }
 
 // Resource Load Bar Chart
 export function ResourceLoadChart({ data }: { data: ResourceLoadData[] }) {
-  const chartData = {
-    labels: data.map((r) => r.name),
-    datasets: [
-      {
-        label: 'Current Load (%)',
-        data: data.map((r) => r.load),
-        backgroundColor: data.map((r) =>
-          r.load > 80
-            ? 'rgba(239, 68, 68, 0.8)'
-            : r.load > 60
-            ? 'rgba(251, 191, 36, 0.8)'
-            : 'rgba(16, 185, 129, 0.8)'
-        ),
-        borderColor: data.map((r) =>
-          r.load > 80
-            ? 'rgba(239, 68, 68, 1)'
-            : r.load > 60
-            ? 'rgba(251, 191, 36, 1)'
-            : 'rgba(16, 185, 129, 1)'
-        ),
-        borderWidth: 2,
-        borderRadius: 8,
-      },
-    ],
+  const getBarColor = (load: number) => {
+    if (load > 80) return '#ef4444';
+    if (load > 60) return '#fbbf24';
+    return '#10b981';
   };
 
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      title: {
-        display: false
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        max: 100,
-        grid: {
-          color: 'rgba(156, 163, 175, 0.1)',
-        },
-        ticks: {
-          color: '#9ca3af',
-          font: { size: 11 },
-          callback: (value: number | string) => `${value}%`,
-        },
-      },
-      x: {
-        grid: {
-          display: false,
-        },
-        ticks: {
-          color: '#9ca3af',
-          font: { size: 11 }
-        }
-      },
-    },
-  };
+  const chartData = data.map(r => ({
+    name: r.name,
+    load: r.load,
+    fill: getBarColor(r.load),
+  }));
 
   return (
-    <div className="h-80">
-      <Bar data={chartData} options={options} />
+    <div className="h-80 w-full flex flex-col justify-between">
+      <h4 className="text-center font-bold text-slate-700 dark:text-slate-300 text-sm">Resource Load Distribution</h4>
+      <ResponsiveContainer width="100%" height="90%">
+        <BarChart data={chartData} margin={{ top: 20, right: 10, left: -10, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.1)" />
+          <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} tickLine={false} axisLine={false} />
+          <YAxis domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 11 }} tickLine={false} axisLine={false} unit="%" />
+          <Tooltip 
+            contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#f8fafc' }}
+            cursor={{ fill: 'rgba(148, 163, 184, 0.05)' }}
+          />
+          <Bar dataKey="load" radius={[8, 8, 0, 0]}>
+            {chartData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.fill} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }
 
 // ML Performance Line Chart (Predicted vs Actual)
 export function MLPerformanceChart({ data }: { data: PerformanceData[] }) {
-  const chartData = {
-    labels: data.map((d) => d.date),
-    datasets: [
-      {
-        label: 'Predicted Time',
-        data: data.map((d) => d.predicted),
-        borderColor: 'rgba(59, 130, 246, 1)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-      },
-      {
-        label: 'Actual Time',
-        data: data.map((d) => d.actual),
-        borderColor: 'rgba(16, 185, 129, 1)',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-      },
-    ],
-  };
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-        labels: {
-          usePointStyle: true,
-          pointStyle: 'circle',
-        },
-      },
-      title: {
-        display: true,
-        text: 'ML Prediction Accuracy Over Time',
-        font: { size: 16, weight: 'bold' as const },
-        padding: { bottom: 20 },
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        grid: {
-          color: 'rgba(0, 0, 0, 0.05)',
-        },
-        title: {
-          display: true,
-          text: 'Execution Time (seconds)',
-        },
-      },
-      x: {
-        grid: {
-          display: false,
-        },
-      },
-    },
-    interaction: {
-      intersect: false,
-      mode: 'index' as const,
-    },
-  };
-
   return (
-    <div className="h-80">
-      <Line data={chartData} options={options} />
+    <div className="h-80 w-full flex flex-col justify-between">
+      <h4 className="text-center font-bold text-slate-700 dark:text-slate-300 text-sm">ML Prediction Accuracy Over Time</h4>
+      <ResponsiveContainer width="100%" height="90%">
+        <LineChart data={data} margin={{ top: 20, right: 15, left: -10, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.05)" vertical={false} />
+          <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+          <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} tickLine={false} axisLine={false} />
+          <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#f8fafc' }} />
+          <Legend verticalAlign="top" height={36} />
+          <Line type="monotone" dataKey="predicted" name="Predicted Time" stroke="#3b82f6" strokeWidth={2.5} activeDot={{ r: 8 }} dot={{ r: 4 }} />
+          <Line type="monotone" dataKey="actual" name="Actual Time" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4 }} />
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   );
 }
 
 // ML Metrics Radar Chart
 export function MLMetricsRadar({ data }: { data: MLMetrics }) {
-  const chartData = {
-    labels: ['Accuracy', 'Precision', 'Recall', 'F1 Score', 'Speed'],
-    datasets: [
-      {
-        label: 'ML Model Performance',
-        data: [
-          data.accuracy * 100,
-          data.precision * 100,
-          data.recall * 100,
-          data.f1Score * 100,
-          Math.max(0, 100 - data.latency * 10), // Convert latency to speed score
-        ],
-        backgroundColor: 'rgba(99, 102, 241, 0.2)',
-        borderColor: 'rgba(99, 102, 241, 1)',
-        borderWidth: 2,
-        pointBackgroundColor: 'rgba(99, 102, 241, 1)',
-        pointBorderColor: '#fff',
-        pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: 'rgba(99, 102, 241, 1)',
-      },
-    ],
-  };
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-      title: {
-        display: true,
-        text: 'ML Model Metrics',
-        font: { size: 16, weight: 'bold' as const },
-        padding: { bottom: 20 },
-      },
-    },
-    scales: {
-      r: {
-        beginAtZero: true,
-        max: 100,
-        ticks: {
-          stepSize: 20,
-          backdropColor: 'transparent',
-        },
-        grid: {
-          color: 'rgba(0, 0, 0, 0.1)',
-        },
-        angleLines: {
-          color: 'rgba(0, 0, 0, 0.1)',
-        },
-        pointLabels: {
-          font: { size: 12 },
-        },
-      },
-    },
-  };
+  const chartData = [
+    { subject: 'Accuracy', A: data.accuracy * 100 },
+    { subject: 'Precision', A: data.precision * 100 },
+    { subject: 'Recall', A: data.recall * 100 },
+    { subject: 'F1 Score', A: data.f1Score * 100 },
+    { subject: 'Speed', A: Math.max(0, 100 - data.latency * 10) },
+  ];
 
   return (
-    <div className="h-80">
-      <Radar data={chartData} options={options} />
+    <div className="h-80 w-full flex flex-col justify-between">
+      <h4 className="text-center font-bold text-slate-700 dark:text-slate-300 text-sm">ML Model Metrics</h4>
+      <ResponsiveContainer width="100%" height="90%">
+        <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData}>
+          <PolarGrid stroke="rgba(148, 163, 184, 0.1)" />
+          <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+          <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 9 }} />
+          <Radar name="ML Model Performance" dataKey="A" stroke="#6366f1" fill="#6366f1" fillOpacity={0.2} />
+        </RadarChart>
+      </ResponsiveContainer>
     </div>
   );
 }
 
 // Task Type Distribution Pie Chart
 export function TaskTypeChart({ data }: { data: { type: string; count: number }[] }) {
-  const colors = [
-    'rgba(59, 130, 246, 0.8)',   // blue
-    'rgba(16, 185, 129, 0.8)',   // green
-    'rgba(251, 191, 36, 0.8)',   // amber
-    'rgba(239, 68, 68, 0.8)',    // red
-    'rgba(139, 92, 246, 0.8)',   // purple
-  ];
-
-  const chartData = {
-    labels: data.map((d) => d.type),
-    datasets: [
-      {
-        data: data.map((d) => d.count),
-        backgroundColor: colors.slice(0, data.length),
-        borderColor: colors.slice(0, data.length).map((c) => c.replace('0.8', '1')),
-        borderWidth: 2,
-      },
-    ],
-  };
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'right' as const,
-        labels: {
-          padding: 15,
-          usePointStyle: true,
-          pointStyle: 'circle',
-        },
-      },
-      title: {
-        display: true,
-        text: 'Task Type Distribution',
-        font: { size: 16, weight: 'bold' as const },
-        padding: { bottom: 20 },
-      },
-    },
-  };
+  const colors = ['#3b82f6', '#10b981', '#fbbf24', '#ef4444', '#8b5cf6'];
+  const chartData = data.map((d, i) => ({
+    name: d.type,
+    value: d.count,
+    color: colors[i % colors.length],
+  }));
 
   return (
-    <div className="h-80">
-      <Pie data={chartData} options={options} />
+    <div className="h-80 w-full flex flex-col justify-between">
+      <h4 className="text-center font-bold text-slate-700 dark:text-slate-300 text-sm">Task Type Distribution</h4>
+      <ResponsiveContainer width="100%" height="90%">
+        <PieChart>
+          <Pie
+            data={chartData}
+            cx="50%"
+            cy="50%"
+            outerRadius={80}
+            dataKey="value"
+          >
+            {chartData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} />
+            ))}
+          </Pie>
+          <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#f8fafc' }} />
+          <Legend layout="horizontal" align="center" verticalAlign="bottom" />
+        </PieChart>
+      </ResponsiveContainer>
     </div>
   );
 }
@@ -384,74 +203,20 @@ export function ThroughputChart({
 }: {
   data: { time: string; tasksCompleted: number; tasksScheduled: number }[];
 }) {
-  const chartData = {
-    labels: data.map((d) => d.time),
-    datasets: [
-      {
-        label: 'Tasks Scheduled',
-        data: data.map((d) => d.tasksScheduled),
-        borderColor: 'rgba(59, 130, 246, 1)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        fill: false,
-        tension: 0.4,
-        pointRadius: 3,
-      },
-      {
-        label: 'Tasks Completed',
-        data: data.map((d) => d.tasksCompleted),
-        borderColor: 'rgba(16, 185, 129, 1)',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        fill: false,
-        tension: 0.4,
-        pointRadius: 3,
-      },
-    ],
-  };
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-        labels: {
-          usePointStyle: true,
-          pointStyle: 'circle',
-        },
-      },
-      title: {
-        display: true,
-        text: 'Task Throughput',
-        font: { size: 16, weight: 'bold' as const },
-        padding: { bottom: 20 },
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        grid: {
-          color: 'rgba(0, 0, 0, 0.05)',
-        },
-        title: {
-          display: true,
-          text: 'Number of Tasks',
-        },
-      },
-      x: {
-        grid: {
-          display: false,
-        },
-      },
-    },
-    interaction: {
-      intersect: false,
-      mode: 'index' as const,
-    },
-  };
-
   return (
-    <div className="h-80">
-      <Line data={chartData} options={options} />
+    <div className="h-80 w-full flex flex-col justify-between">
+      <h4 className="text-center font-bold text-slate-700 dark:text-slate-300 text-sm">Task Throughput</h4>
+      <ResponsiveContainer width="100%" height="90%">
+        <LineChart data={data} margin={{ top: 20, right: 15, left: -10, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.05)" vertical={false} />
+          <XAxis dataKey="time" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+          <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} tickLine={false} axisLine={false} />
+          <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#f8fafc' }} />
+          <Legend verticalAlign="top" height={36} />
+          <Line type="monotone" dataKey="tasksScheduled" name="Tasks Scheduled" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3 }} />
+          <Line type="monotone" dataKey="tasksCompleted" name="Tasks Completed" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} />
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   );
 }

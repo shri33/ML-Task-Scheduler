@@ -1,14 +1,5 @@
 import { useState } from 'react';
-import { 
-  IconUser, 
-  IconShieldLock, 
-  IconCreditCard, 
-  IconBell, 
-  IconLink,
-  IconCheck,
-  IconEdit,
-  IconSearch
-} from '@tabler/icons-react';
+import { User, Shield, CreditCard, Bell, Link, Check, Edit, Search } from 'lucide-react';
 import { clsx } from 'clsx';
 import ProgressBar from '../components/shared/ProgressBar';
 
@@ -56,7 +47,7 @@ export default function UserView() {
 
                <div className="mt-8 flex gap-3">
                   <button className="flex-1 btn btn-primary py-2.5 text-sm font-bold flex items-center justify-center gap-2">
-                     <IconEdit className="w-4 h-4" /> Edit
+                     <Edit className="w-4 h-4" /> Edit
                   </button>
                   <button className="flex-1 btn btn-secondary py-2.5 text-sm font-bold bg-red-50 text-red-600 border-none hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30">
                      Suspend
@@ -74,8 +65,8 @@ export default function UserView() {
                   </div>
                </div>
                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center gap-2 text-xs font-medium"><IconCheck className="w-4 h-4" /> 10 Team Members</li>
-                  <li className="flex items-center gap-2 text-xs font-medium"><IconCheck className="w-4 h-4" /> 500 GB Storage</li>
+                  <li className="flex items-center gap-2 text-xs font-medium"><Check className="w-4 h-4" /> 10 Team Members</li>
+                  <li className="flex items-center gap-2 text-xs font-medium"><Check className="w-4 h-4" /> 500 GB Storage</li>
                </ul>
                <button className="w-full py-2.5 bg-white text-primary-600 font-bold rounded-xl hover:bg-gray-50 transition-colors shadow-lg">Upgrade Plan</button>
             </div>
@@ -84,11 +75,11 @@ export default function UserView() {
          {/* ── RIGHT CONTENT (Tabs) ── */}
          <div className="col-span-12 lg:col-span-8 xl:col-span-9 space-y-6">
             <div className="flex flex-wrap gap-2 mb-2">
-               <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={IconUser} label="Overview" />
-               <TabButton active={activeTab === 'security'} onClick={() => setActiveTab('security')} icon={IconShieldLock} label="Security" />
-               <TabButton active={activeTab === 'billing'} onClick={() => setActiveTab('billing')} icon={IconCreditCard} label="Billing & Plan" />
-               <TabButton active={activeTab === 'notifications'} onClick={() => setActiveTab('notifications')} icon={IconBell} label="Notifications" />
-               <TabButton active={activeTab === 'connections'} onClick={() => setActiveTab('connections')} icon={IconLink} label="Connections" />
+               <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={User} label="Overview" />
+               <TabButton active={activeTab === 'security'} onClick={() => setActiveTab('security')} icon={Shield} label="Security" />
+               <TabButton active={activeTab === 'billing'} onClick={() => setActiveTab('billing')} icon={CreditCard} label="Billing & Plan" />
+               <TabButton active={activeTab === 'notifications'} onClick={() => setActiveTab('notifications')} icon={Bell} label="Notifications" />
+               <TabButton active={activeTab === 'connections'} onClick={() => setActiveTab('connections')} icon={Link} label="Connections" />
             </div>
 
             <div className="space-y-6">
@@ -97,7 +88,7 @@ export default function UserView() {
                   <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">Project List</h3>
                      <div className="relative">
-                        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input type="text" placeholder="Search Project" className="pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-sm outline-none w-64" />
                      </div>
                   </div>
@@ -161,7 +152,7 @@ function TabButton({ active, onClick, icon: Icon, label }: any) {
           : "text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-[#1a2234] hover:shadow-sm"
       )}
     >
-      <Icon className="w-4 h-4" stroke={1.5} />
+      <Icon className="w-4 h-4" strokeWidth={1.5} />
       {label}
     </button>
   );

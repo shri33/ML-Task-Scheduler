@@ -17,5 +17,16 @@ export const updateTaskSchema = z.object({
   dueDate: z.string().datetime().optional().nullable()
 });
 
+export const taskIdParamSchema = z.object({
+  id: z.string().uuid('Invalid task ID format. Expected UUID.')
+});
+
+export const taskQuerySchema = z.object({
+  status: z.enum(['PENDING', 'SCHEDULED', 'RUNNING', 'COMPLETED', 'FAILED']).optional(),
+  priority: z.string().optional().transform(val => val ? parseInt(val, 10) : undefined),
+  page: z.string().optional().transform(val => val ? parseInt(val, 10) : 1),
+  limit: z.string().optional().transform(val => val ? parseInt(val, 10) : 20)
+});
+
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
