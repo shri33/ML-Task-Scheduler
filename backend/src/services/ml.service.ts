@@ -353,7 +353,7 @@ export class MLService {
         taskId,
         predictedTime,
         confidence,
-        features: features as unknown as Prisma.InputJsonValue,
+        features: features as any,
         modelVersion
       }
     });

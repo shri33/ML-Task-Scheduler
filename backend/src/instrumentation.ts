@@ -63,7 +63,6 @@ const sdk = new NodeSDK({
       },
       // Configure HTTP instrumentation
       '@opentelemetry/instrumentation-http': {
-        ignoreIncomingPaths: ['/health', '/health/ready', '/health/live', '/metrics'],
         requestHook: (span, request) => {
           if ('headers' in request) {
             const requestId = (request as IncomingMessage).headers['x-request-id'];
@@ -83,7 +82,7 @@ const sdk = new NodeSDK({
         enhancedDatabaseReporting: true,
       },
       // Configure Redis instrumentation
-      '@opentelemetry/instrumentation-redis-4': {
+      '@opentelemetry/instrumentation-redis': {
         enabled: true,
       },
     }),

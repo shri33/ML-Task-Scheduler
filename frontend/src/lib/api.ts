@@ -57,20 +57,118 @@ export interface FogNode {
   currentLoadPercent: string;
 }
 
+export interface FogAlgorithmMetrics {
+  hh: number;
+  ipso: number;
+  iaco: number;
+  fcfs: number;
+  rr: number;
+  minMin: number;
+}
+
 export interface FogMetrics {
   taskCount: number;
-  completionTime: { hh: number; ipso: number; iaco: number; rr: number; minMin: number; cuopt: number };
-  energyConsumption: { hh: number; ipso: number; iaco: number; rr: number; minMin: number; cuopt: number };
-  reliability: { hh: number; ipso: number; iaco: number; rr: number; minMin: number; cuopt: number };
+  completionTime: FogAlgorithmMetrics;
+  energyConsumption: FogAlgorithmMetrics;
+  reliability: FogAlgorithmMetrics;
+}
+
+export interface AlgorithmResult {
+  totalDelay: number;
+  totalEnergy: number;
+  reliability: number;
+  executionTimeMs: number;
 }
 
 export interface AlgorithmComparison {
-  hybridHeuristic: { totalDelay: number; totalEnergy: number; reliability: number; executionTimeMs: number };
-  ipso: { totalDelay: number; totalEnergy: number; reliability: number; executionTimeMs: number };
-  iaco: { totalDelay: number; totalEnergy: number; reliability: number; executionTimeMs: number };
-  roundRobin: { totalDelay: number; totalEnergy: number; reliability: number; executionTimeMs: number };
-  minMin: { totalDelay: number; totalEnergy: number; reliability: number; executionTimeMs: number };
-  cuopt: { totalDelay: number; totalEnergy: number; reliability: number; executionTimeMs: number };
+  testParameters: {
+    taskCount: number;
+    fogNodeCount: number;
+    deviceCount: number;
+  };
+  results: {
+    hybridHeuristic: AlgorithmResult;
+    ipso: AlgorithmResult;
+    iaco: AlgorithmResult;
+    fcfs: AlgorithmResult;
+    roundRobin: AlgorithmResult;
+    minMin: AlgorithmResult;
+  };
+  improvements: {
+    hhVsRoundRobin: { delayReduction: string; energyReduction: string; reliabilityGain: string };
+    hhVsFCFS: { delayReduction: string; energyReduction: string; reliabilityGain: string };
+    hhVsMinMin: { delayReduction: string; energyReduction: string; reliabilityGain: string };
+    hhVsIPSO: { delayReduction: string; reliabilityGain: string };
+    hhVsIACO: { delayReduction: string; reliabilityGain: string };
+  };
+  totalComparisonTimeMs: number;
+}
+
+export interface FogInfo {
+  description: string;
+  algorithm: string;
+  reference: string;
+  capabilities: {
+    algorithms: string[];
+    metrics: string[];
+    features: string[];
+  };
+  currentState: {
+    fogNodes: number;
+    terminalDevices: number;
+    pendingTasks: number;
+  };
+}
+
+export interface FogTerminalDevice {
+  id: string;
+  name: string;
+  transmissionPower: number;
+  idlePower: number;
+  isMobile: boolean;
+  delayWeight: number;
+  energyWeight: number;
+  residualEnergy: number | null;
+}
+
+export interface FogTask {
+  id: string;
+  name: string;
+  dataSize: number;
+  dataSizeMb?: string;
+  computationIntensity: number;
+  maxToleranceTime: number;
+  maxToleranceTimeSec?: string;
+  terminalDeviceId: string;
+  priority: number;
+}
+
+export interface ToleranceReliabilityMetric {
+  maxToleranceTime: number;
+  reliability: {
+    hh: number;
+    ipso: number;
+    iaco: number;
+    rr: number;
+  };
+}
+
+export interface FogScheduleResult {
+  algorithm: string;
+  executionTimeMs: number;
+  metrics: {
+    totalDelay: number;
+    totalEnergy: number;
+    fitness: number;
+    reliability: number;
+  };
+  allocations: Record<string, string>;
+  summary: {
+    tasksScheduled: number;
+    fogNodesUsed: number;
+    avgDelayPerTask: number;
+    avgEnergyPerTask: number;
+  };
 }
 
 // In dev mode (Vite dev server), API runs on port 3001
@@ -364,52 +462,58 @@ export const deviceApi = {
   }
 };
 
+const FOG_LONG_TIMEOUT = 120_000;
+
 export const fogApi = {
-  getInfo: async (): Promise<unknown> => {
-    const response = await api.get<ApiResponse<unknown>>('/v1/fog/info');
+  getInfo: async (): Promise<FogInfo> => {
+    const response = await api.get<ApiResponse<FogInfo>>('/v1/fog/info');
     return response.data.data;
   },
   getNodes: async (): Promise<FogNode[]> => {
     const response = await api.get<ApiResponse<FogNode[]>>('/v1/fog/nodes');
     return response.data.data;
   },
-  getTasks: async (): Promise<unknown[]> => {
-    const response = await api.get<ApiResponse<unknown[]>>('/v1/fog/tasks');
+  getDevices: async (): Promise<FogTerminalDevice[]> => {
+    const response = await api.get<ApiResponse<FogTerminalDevice[]>>('/v1/fog/devices');
     return response.data.data;
   },
-  createTask: async (data: unknown): Promise<unknown> => {
-    const response = await api.post<ApiResponse<unknown>>('/v1/fog/tasks', data);
+  getTasks: async (): Promise<FogTask[]> => {
+    const response = await api.get<ApiResponse<FogTask[]>>('/v1/fog/tasks');
     return response.data.data;
   },
-  addBulkTasks: async (tasks: any[]): Promise<unknown> => {
+  createTask: async (data: Partial<FogTask>): Promise<FogTask> => {
+    const response = await api.post<ApiResponse<FogTask>>('/v1/fog/tasks', data);
+    return response.data.data;
+  },
+  addBulkTasks: async (tasks: Partial<FogTask>[]): Promise<unknown> => {
     const response = await api.post<ApiResponse<unknown>>('/v1/fog/tasks/bulk', { tasks });
     return response.data.data;
   },
-  schedule: async (algorithm?: string): Promise<unknown> => {
-    const response = await api.post<ApiResponse<unknown>>('/v1/fog/schedule', { algorithm });
+  schedule: async (algorithm?: string): Promise<FogScheduleResult> => {
+    const response = await api.post<ApiResponse<FogScheduleResult>>('/v1/fog/schedule', { algorithm }, { timeout: FOG_LONG_TIMEOUT });
     return response.data.data;
   },
   compare: async (taskCount: number): Promise<AlgorithmComparison> => {
-    const response = await api.post<ApiResponse<AlgorithmComparison>>('/v1/fog/compare', { taskCount });
+    const response = await api.post<ApiResponse<AlgorithmComparison>>('/v1/fog/compare', { taskCount }, { timeout: FOG_LONG_TIMEOUT });
     return response.data.data;
   },
-  getMetrics: async (): Promise<{ metrics: FogMetrics[] }> => {
-    const response = await api.get<ApiResponse<{ metrics: FogMetrics[] }>>('/v1/fog/metrics');
+  getMetrics: async (): Promise<{ metrics: FogMetrics[]; chartData?: Record<string, unknown[]> }> => {
+    const response = await api.get<ApiResponse<{ metrics: FogMetrics[]; chartData?: Record<string, unknown[]> }>>('/v1/fog/metrics', { timeout: FOG_LONG_TIMEOUT });
     return response.data.data;
   },
-  getToleranceReliability: async (): Promise<{ metrics: unknown[] }> => {
-    const response = await api.get<ApiResponse<{ metrics: unknown[] }>>('/v1/fog/tolerance-reliability');
+  getToleranceReliability: async (): Promise<{ metrics: ToleranceReliabilityMetric[]; chartData?: unknown[] }> => {
+    const response = await api.get<ApiResponse<{ metrics: ToleranceReliabilityMetric[]; chartData?: unknown[] }>>('/v1/fog/tolerance-reliability', { timeout: FOG_LONG_TIMEOUT });
     return response.data.data;
   },
   reset: async (taskCount?: number): Promise<void> => {
     await api.post('/v1/fog/reset', { taskCount });
   },
   exportCsv: async (): Promise<Blob> => {
-    const response = await api.get('/v1/fog/export/csv', { responseType: 'blob' });
+    const response = await api.get('/v1/fog/export/csv', { responseType: 'blob', timeout: FOG_LONG_TIMEOUT });
     return response.data;
   },
-  exportJson: async (): Promise<Blob> => {
-    const response = await api.get('/v1/fog/export/json', { responseType: 'blob' });
+  exportJson: async (): Promise<Record<string, unknown>> => {
+    const response = await api.get<Record<string, unknown>>('/v1/fog/export/json', { timeout: FOG_LONG_TIMEOUT });
     return response.data;
   },
 };
