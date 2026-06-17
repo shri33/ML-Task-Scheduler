@@ -25,7 +25,8 @@ jest.mock('../lib/prisma', () => ({
 }));
 
 import prisma from '../lib/prisma';
-import { authenticate, authorize, adminOnly, AuthRequest, JwtPayload } from '../middleware/auth.middleware';
+import { authenticate, authorize, adminOnly, AuthRequest } from '../middleware/auth.middleware';
+import { JwtPayload } from '../utils/token.utils';
 import { csrfProtection, setCsrfCookie } from '../middleware/csrf.middleware';
 
 // Helper: create mock Express req/res/next

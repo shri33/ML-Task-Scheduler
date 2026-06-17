@@ -556,14 +556,7 @@ export default function Login() {
               transition: 'transform 0.1s ease-out',
             }}
           >
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: 'linear-gradient(135deg,#34d399,#6366f1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 24px rgba(52,211,153,0.30)',
-            }}>
-              <IconBrain size={18} color="#fff" strokeWidth={1.5} />
-            </div>
+          
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, color: theme.text, letterSpacing: '-0.01em', transition: 'color 0.35s' }}>
                 ML Task Scheduler
@@ -605,16 +598,6 @@ export default function Login() {
                   }}
                 >
                   <IconBrain size={24} color="#fff" strokeWidth={1.5} />
-                </div>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {[0, 1, 2].map(i => (
-                    <div key={i} style={{
-                      width: 6, height: 6, borderRadius: '50%',
-                      background: '#34d399', opacity: 0.6,
-                      animation: `floatAnim ${1 + i * 0.2}s ease-in-out infinite`,
-                      animationDelay: `${i * 0.15}s`,
-                    }} />
-                  ))}
                 </div>
                 <p style={{ fontSize: 12, color: 'rgba(52,211,153,0.6)', letterSpacing: '0.1em' }}>
                   LOADING …
