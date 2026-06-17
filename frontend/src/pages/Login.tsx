@@ -1,36 +1,11 @@
-import { useEffect, useRef, useState, useCallback, type ReactNode } from 'react';
-import { Component, type ErrorInfo } from 'react';
-import Spline from '@splinetool/react-spline';
-import {
-  IconBrain,
-  IconMail,
-  IconLock,
-  IconUser,
-  IconEye,
-  IconEyeOff,
-  IconLoader2,
-  IconArrowLeft,
-  IconCircleCheck,
-  IconBrandGoogle,
-  IconArrowRight,
-  IconSun,
-  IconMoon,
-} from '@tabler/icons-react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { Brain, Mail, Lock, User, Eye, EyeOff, Loader2, ArrowLeft, CheckCircle, ArrowRight, Sun, Moon } from 'lucide-react';
+import { IconBrandGoogle } from '../components/shared/BrandIcons';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 
-class SplineErrorBoundary extends Component<{ children?: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-  componentDidCatch(err: Error, _errorInfo: ErrorInfo) {
-    console.warn('Spline failed to load:', err);
-    this.setState({ failed: true });
-  }
-  render() {
-    if (this.state.failed) return null; // silently hide, rest of page works
-    return this.props.children;
-  }
-}
+
 
 type ViewMode = 'login' | 'register' | 'forgot-password' | 'reset-password';
 
@@ -180,10 +155,8 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [resetToken, setResetToken] = useState('');
   const [resetEmailSent, setResetEmailSent] = useState(false);
-  const [splineLoaded, setSplineLoaded] = useState(false);
   const [isLight, setIsLight] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const splineRef = useRef<any>(null);
   const leftPanelRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState({
     email: '',
@@ -306,8 +279,8 @@ export default function Login() {
       }}
     >
       {showPassword
-        ? <IconEyeOff size={15} strokeWidth={1.5} />
-        : <IconEye    size={15} strokeWidth={1.5} />}
+        ? <EyeOff size={15} strokeWidth={1.5} />
+        : <Eye    size={15} strokeWidth={1.5} />}
     </button>
   );
 
@@ -379,6 +352,21 @@ export default function Login() {
           50%      { transform: translateY(-8px); }
         }
         .float-anim { animation: floatAnim 3.5s ease-in-out infinite; }
+
+        @keyframes morphing {
+          0% {
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            transform: translate(0px, 0px) scale(1);
+          }
+          50% {
+            border-radius: 60% 40% 50% 50% / 50% 60% 40% 60%;
+            transform: translate(30px, -40px) scale(1.1);
+          }
+          100% {
+            border-radius: 50% 50% 30% 70% / 60% 40% 60% 40%;
+            transform: translate(-20px, 20px) scale(0.95);
+          }
+        }
 
         .ring {
           position: absolute; border-radius: 50%;
@@ -500,8 +488,8 @@ export default function Login() {
           }}
         >
           {isLight
-            ? <IconMoon size={13} strokeWidth={1.5} />
-            : <IconSun  size={13} strokeWidth={1.5} />}
+            ? <Moon size={13} strokeWidth={1.5} />
+            : <Sun  size={13} strokeWidth={1.5} />}
           <div
             className="toggle-track"
             style={{ background: isLight ? theme.accent : theme.border }}
@@ -556,7 +544,14 @@ export default function Login() {
               transition: 'transform 0.1s ease-out',
             }}
           >
-          
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: 'linear-gradient(135deg,#34d399,#6366f1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 0 24px rgba(52,211,153,0.30)',
+            }}>
+              <Brain size={18} color="#fff" strokeWidth={1.5} />
+            </div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 600, color: theme.text, letterSpacing: '-0.01em', transition: 'color 0.35s' }}>
                 ML Task Scheduler
@@ -567,43 +562,46 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Spline 3D scene */}
-          <div style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
-            <SplineErrorBoundary>
-            <Spline
-              scene="https://prod.spline.design/jpIU5vC4VhqeXNkc/scene.splinecode"
-              onLoad={(spline) => {
-                splineRef.current = spline;
-                setSplineLoaded(true);
+          {/* Abstract Animated CSS Background */}
+          <div 
+            style={{ 
+              position: 'absolute', 
+              inset: 0, 
+              zIndex: 1,
+              overflow: 'hidden',
+              background: isLight 
+                ? 'radial-gradient(circle at 30% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%), radial-gradient(circle at 70% 60%, rgba(52, 211, 153, 0.08) 0%, transparent 45%)'
+                : 'radial-gradient(circle at 30% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%), radial-gradient(circle at 70% 60%, rgba(52, 211, 153, 0.15) 0%, transparent 45%)'
+            }}
+          >
+            <div 
+              style={{
+                position: 'absolute',
+                top: '20%',
+                left: '20%',
+                width: '350px',
+                height: '350px',
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(52, 211, 153, 0.22) 100%)',
+                borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%',
+                filter: 'blur(50px)',
+                animation: 'morphing 15s ease-in-out infinite alternate',
+                pointerEvents: 'none',
               }}
-              style={{ position: 'absolute', inset: 0, width: '90%', height: '90%',left:'20%',top:'8%' }}
             />
-            </SplineErrorBoundary>
-            {/* Loading shimmer */}
-            {!splineLoaded && (
-              <div style={{
-                position: 'absolute', inset: 0,
-                background: theme.bg,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexDirection: 'column', gap: 16,
-                transition: 'background 0.35s',
-              }}>
-                <div
-                  className="float-anim"
-                  style={{
-                    width: 52, height: 52, borderRadius: 14,
-                    background: 'linear-gradient(135deg,#34d399,#6366f1)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 0 40px rgba(52,211,153,0.28)',
-                  }}
-                >
-                  <IconBrain size={24} color="#fff" strokeWidth={1.5} />
-                </div>
-                <p style={{ fontSize: 12, color: 'rgba(52,211,153,0.6)', letterSpacing: '0.1em' }}>
-                  LOADING …
-                </p>
-              </div>
-            )}
+            <div 
+              style={{
+                position: 'absolute',
+                bottom: '15%',
+                right: '15%',
+                width: '300px',
+                height: '300px',
+                background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.18) 0%, rgba(99, 102, 241, 0.18) 100%)',
+                borderRadius: '50% 40% 30% 60% / 50% 60% 40% 50%',
+                filter: 'blur(45px)',
+                animation: 'morphing 12s ease-in-out infinite alternate-reverse',
+                pointerEvents: 'none',
+              }}
+            />
           </div>
 
           {/* Bottom overlay — text + stats */}
@@ -662,7 +660,7 @@ export default function Login() {
                   setResetToken('');
                 }}
               >
-                <IconArrowLeft size={12} strokeWidth={1.5} />
+                <ArrowLeft size={12} strokeWidth={1.5} />
                 Back to sign in
               </button>
             )}
@@ -748,7 +746,7 @@ export default function Login() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   margin: '0 auto 18px',
                 }}>
-                  <IconCircleCheck size={26} color={theme.accent} strokeWidth={1.5} />
+                  <CheckCircle size={26} color={theme.accent} strokeWidth={1.5} />
                 </div>
                 <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 300, color: theme.text, marginBottom: 8 }}>
                   Check your inbox
@@ -809,7 +807,7 @@ export default function Login() {
                         setViewMode('login');
                       }}
                     >
-                      <IconCircleCheck size={14} strokeWidth={1.5} />
+                      <CheckCircle size={14} strokeWidth={1.5} />
                       Use Demo Account
                     </button>
                     <div className="divider-row" style={{ color: theme.muted }}>
@@ -823,7 +821,7 @@ export default function Login() {
                 {/* Name — register */}
                 {isRegister && (
                   <Field
-                    label="Full name" icon={IconUser}
+                    label="Full name" icon={User}
                     placeholder="Your full name"
                     value={formData.name}
                     onChange={(v) => setFormData({ ...formData, name: v })}
@@ -835,7 +833,7 @@ export default function Login() {
                 {/* Email */}
                 {(isLogin || isRegister || isForgotPassword) && (
                   <Field
-                    label="Email address" icon={IconMail}
+                    label="Email address" icon={Mail}
                     type="email" placeholder="you@example.com"
                     value={formData.email}
                     onChange={(v) => setFormData({ ...formData, email: v })}
@@ -847,7 +845,7 @@ export default function Login() {
                 {/* Password */}
                 {(isLogin || isRegister) && (
                   <Field
-                    label="Password" icon={IconLock}
+                    label="Password" icon={Lock}
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={formData.password}
@@ -879,7 +877,7 @@ export default function Login() {
                 {isResetPassword && (
                   <>
                     <Field
-                      label="New password" icon={IconLock}
+                      label="New password" icon={Lock}
                       type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••"
                       value={formData.newPassword}
@@ -888,7 +886,7 @@ export default function Login() {
                       isLight={isLight}
                     />
                     <Field
-                      label="Confirm password" icon={IconLock}
+                      label="Confirm password" icon={Lock}
                       type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••"
                       value={formData.confirmPassword}
@@ -903,13 +901,13 @@ export default function Login() {
                 <button type="submit" className="primary-btn" disabled={isLoading} style={{ marginTop: 2 }}>
                   {isLoading ? (
                     <>
-                      <IconLoader2 size={15} strokeWidth={1.5} className="animate-spin" />
+                      <Loader2 size={15} strokeWidth={1.5} className="animate-spin" />
                       {isLogin ? 'Signing in…' : isRegister ? 'Creating account…' : isForgotPassword ? 'Sending…' : 'Resetting…'}
                     </>
                   ) : (
                     <>
                       {isLogin ? 'Sign In' : isRegister ? 'Create Account' : isForgotPassword ? 'Send Reset Link' : 'Reset Password'}
-                      <IconArrowRight size={14} strokeWidth={1.5} />
+                      <ArrowRight size={14} strokeWidth={1.5} />
                     </>
                   )}
                 </button>

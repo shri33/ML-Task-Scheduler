@@ -1,15 +1,5 @@
 import { useState, useEffect } from 'react';
-import { 
-  IconX, 
-  IconChevronRight, 
-  IconChevronLeft, 
-  IconFlask, 
-  IconBrain, 
-  IconServer, 
-  IconRocket,
-  IconCheck,
-  IconInfoCircle
-} from '@tabler/icons-react';
+import { X, ChevronRight, ChevronLeft, Beaker, Brain, Server, Rocket, Check, Info } from 'lucide-react';
 import { clsx } from 'clsx';
 import { GaugeChart } from './charts/ChartAnalytics';
 
@@ -19,9 +9,9 @@ interface ExperimentWizardProps {
 }
 
 const ALGORITHMS = [
-  { id: 'iaco', name: 'Improved ACO', desc: 'Optimized ant colony for fog networks.', icon: <IconBrain className="w-6 h-6" />, complexity: 'High' },
-  { id: 'ipso', name: 'Improved PSO', desc: 'Particle swarm with inertia weighting.', icon: <IconRocket className="w-6 h-6" />, complexity: 'Medium' },
-  { id: 'heuristic', name: 'Round Robin', desc: 'Traditional static load balancing.', icon: <IconServer className="w-6 h-6" />, complexity: 'Low' },
+  { id: 'iaco', name: 'Improved ACO', desc: 'Optimized ant colony for fog networks.', icon: <Brain className="w-6 h-6" />, complexity: 'High' },
+  { id: 'ipso', name: 'Improved PSO', desc: 'Particle swarm with inertia weighting.', icon: <Rocket className="w-6 h-6" />, complexity: 'Medium' },
+  { id: 'heuristic', name: 'Round Robin', desc: 'Traditional static load balancing.', icon: <Server className="w-6 h-6" />, complexity: 'Low' },
 ];
 
 const RESOURCES = [
@@ -70,7 +60,7 @@ export default function ExperimentWizard({ isOpen, onClose }: ExperimentWizardPr
         <div className="w-full md:w-64 bg-gray-50 dark:bg-gray-900/50 p-8 border-b md:border-b-0 md:border-r border-gray-100 dark:border-gray-800 shrink-0">
           <div className="flex items-center gap-3 mb-10">
             <div className="w-10 h-10 bg-primary-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary-500/20">
-              <IconFlask className="w-6 h-6" />
+              <Beaker className="w-6 h-6" />
             </div>
             <h2 className="text-lg font-black dark:text-white uppercase tracking-tight">Experiment Wizard</h2>
           </div>
@@ -85,7 +75,7 @@ export default function ExperimentWizard({ isOpen, onClose }: ExperimentWizardPr
           <div className="mt-20 pt-8 border-t border-gray-100 dark:border-gray-800 hidden md:block">
              <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-2xl border border-primary-100 dark:border-primary-800/50">
                 <div className="flex items-center gap-2 mb-2">
-                   <IconInfoCircle className="w-4 h-4 text-primary-500" />
+                   <Info className="w-4 h-4 text-primary-500" />
                    <span className="text-[10px] font-black uppercase tracking-widest text-primary-600 dark:text-primary-400">Insight</span>
                 </div>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
@@ -189,7 +179,7 @@ export default function ExperimentWizard({ isOpen, onClose }: ExperimentWizardPr
                        )}
                      >
                        <div className={clsx("w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors", config.resources.includes(res.id) ? "bg-primary-600 border-primary-600 text-white" : "border-gray-300 dark:border-gray-700")}>
-                         {config.resources.includes(res.id) && <IconCheck className="w-3.5 h-3.5" stroke={4} />}
+                         {config.resources.includes(res.id) && <Check className="w-3.5 h-3.5" strokeWidth={4} />}
                        </div>
                        <div className="flex-1 text-left">
                           <h4 className="text-sm font-bold text-gray-900 dark:text-white">{res.name}</h4>
@@ -244,7 +234,7 @@ export default function ExperimentWizard({ isOpen, onClose }: ExperimentWizardPr
                     onClick={prevStep}
                     className="flex items-center gap-2 px-6 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800 transition-all"
                  >
-                    <IconChevronLeft className="w-4 h-4" /> Back
+                    <ChevronLeft className="w-4 h-4" /> Back
                  </button>
                )}
                {step < 4 ? (
@@ -253,14 +243,14 @@ export default function ExperimentWizard({ isOpen, onClose }: ExperimentWizardPr
                     disabled={step === 1 && !config.algo}
                     className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-sm font-bold shadow-lg shadow-primary-500/25 transition-all"
                  >
-                    Continue <IconChevronRight className="w-4 h-4" />
+                    Continue <ChevronRight className="w-4 h-4" />
                  </button>
                ) : (
                  <button 
                     onClick={onClose}
                     className="flex items-center gap-2 px-10 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-lg shadow-emerald-500/25 transition-all"
                  >
-                    <IconRocket className="w-4 h-4" /> Launch Experiment
+                    <Rocket className="w-4 h-4" /> Launch Experiment
                  </button>
                )}
             </div>
@@ -272,7 +262,7 @@ export default function ExperimentWizard({ isOpen, onClose }: ExperimentWizardPr
           onClick={onClose}
           className="absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors z-[110]"
         >
-          <IconX className="w-6 h-6" />
+          <X className="w-6 h-6" />
         </button>
 
       </div>
@@ -289,7 +279,7 @@ function ProgressStep({ num, label, active, done }: { num: number; label: string
         done ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" :
         "bg-gray-100 dark:bg-gray-800 text-gray-400"
       )}>
-        {done ? <IconCheck className="w-4 h-4" /> : num}
+        {done ? <Check className="w-4 h-4" /> : num}
       </div>
       <span className={clsx(
         "text-xs font-black uppercase tracking-widest",

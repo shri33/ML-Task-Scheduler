@@ -36,6 +36,7 @@ describe('Zustand Store', () => {
         actualTime: null,
         resourceId: null,
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         scheduledAt: null,
         completedAt: null,
       };
@@ -62,6 +63,7 @@ describe('Zustand Store', () => {
         actualTime: null,
         resourceId: null,
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         scheduledAt: null,
         completedAt: null,
       };
@@ -94,6 +96,7 @@ describe('Zustand Store', () => {
         actualTime: null,
         resourceId: null,
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         scheduledAt: null,
         completedAt: null,
       };
@@ -125,6 +128,7 @@ describe('Zustand Store', () => {
         capacity: 100,
         currentLoad: 50,
         status: 'AVAILABLE' as const,
+        layer: 'FOG' as const,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -145,6 +149,7 @@ describe('Zustand Store', () => {
         capacity: 100,
         currentLoad: 50,
         status: 'AVAILABLE' as const,
+        layer: 'FOG' as const,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -171,6 +176,7 @@ describe('Zustand Store', () => {
         capacity: 100,
         currentLoad: 50,
         status: 'AVAILABLE' as const,
+        layer: 'FOG' as const,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

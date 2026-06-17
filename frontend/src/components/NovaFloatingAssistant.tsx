@@ -1,12 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { aiApi, metricsApi } from '../lib/api';
-import { 
-  IconRobot, 
-  IconX, 
-  IconSend, 
-  IconMinus, 
-  IconAlertTriangle,
-} from '@tabler/icons-react';
+import { Bot, X, Send, Minus, AlertTriangle } from 'lucide-react';
 import { clsx } from 'clsx';
 
 interface Message {
@@ -97,14 +91,14 @@ export default function NovaFloatingAssistant() {
             "flex items-center gap-2.5 rounded-[6px] transition-all px-5 py-[0.625rem]",
             hasAnomaly ? "bg-red-600" : "bg-white/10 hover:bg-white/0"
           )}>
-            <IconRobot className="w-5 h-5 text-white" stroke={2} />
+            <Bot className="w-5 h-5 text-white" strokeWidth={2} />
             <span className="text-white text-[0.9375rem] font-bold tracking-[0.43px] uppercase">Ask Nova</span>
             
             {hasAnomaly && (
               <span className="absolute -top-1 -right-1 flex h-5 w-5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-5 w-5 bg-white items-center justify-center">
-                  <IconAlertTriangle className="w-3.5 h-3.5 text-red-600" />
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
                 </span>
               </span>
             )}
@@ -125,7 +119,7 @@ export default function NovaFloatingAssistant() {
       <div className="p-4 bg-gradient-to-r from-emerald-600 to-primary-600 flex items-center justify-between text-white shadow-lg shrink-0">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white/20 backdrop-blur-md rounded-xl border border-white/30">
-            <IconRobot className="w-5 h-5 text-white" />
+            <Bot className="w-5 h-5 text-white" />
           </div>
           <div>
             <h4 className="font-bold text-sm tracking-tight">Nova Orchestrator</h4>
@@ -137,17 +131,17 @@ export default function NovaFloatingAssistant() {
         </div>
         <div className="flex items-center gap-1">
           <button onClick={() => setIsMinimized(!isMinimized)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
-            <IconMinus className="w-4 h-4" />
+            <Minus className="w-4 h-4" />
           </button>
           <button onClick={() => setIsOpen(false)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
-            <IconX className="w-4 h-4" />
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {!isMinimized && (
         <>
-          {/* Messages */}
+          {/* MessageSquare */}
           <div 
             className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 dark:bg-gray-950/50 overscroll-contain"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -213,7 +207,7 @@ export default function NovaFloatingAssistant() {
                 disabled={!message.trim() || isLoading}
                 className="absolute right-2 top-2 p-1.5 bg-gradient-to-br from-emerald-500 to-primary-600 text-white rounded-xl hover:shadow-lg hover:shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
               >
-                <IconSend className="w-5 h-5" />
+                <Send className="w-5 h-5" />
               </button>
             </div>
             <div className="mt-3 flex items-center justify-center gap-2">

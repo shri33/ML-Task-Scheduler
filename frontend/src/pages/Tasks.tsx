@@ -4,24 +4,8 @@ import autoTable from 'jspdf-autotable';
 import { useStore } from '../store';
 import { taskApi } from '../lib/api';
 import { CreateTaskInput, Task } from '../types';
-import {
-  IconPlus,
-  IconTrash,
-  IconPlayerPlay,
-  IconCircleCheck,
-  IconX,
-  IconEdit,
-  IconSearch,
-  IconFilter,
-  IconDownload,
-  IconChevronLeft,
-  IconChevronRight,
-  IconClock,
-  IconDeviceLaptop,
-  IconCalendar,
-  IconBrandGoogle,
-  IconAlignLeft,
-} from '@tabler/icons-react';
+import { Plus, Trash2, Play, CheckCircle, X, Edit, Search, Filter, Download, ChevronLeft, ChevronRight, Clock, Laptop, Calendar, AlignLeft } from 'lucide-react';
+import { IconBrandGoogle } from '../components/shared/BrandIcons';
 import { clsx } from 'clsx';
 import { useToast } from '../contexts/ToastContext';
 import { TasksTableSkeleton } from '../components/Skeletons';
@@ -165,7 +149,7 @@ function TaskFormModal({ onClose, onSubmit }: TaskFormModalProps) {
             onClick={onClose}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
           >
-            <IconX className="w-5 h-5 text-gray-400" />
+            <X className="w-5 h-5 text-gray-400" />
           </button>
         </div>
 
@@ -188,7 +172,7 @@ function TaskFormModal({ onClose, onSubmit }: TaskFormModalProps) {
           {/* Description */}
           <div>
             <label className="flex items-center gap-1 text-xs font-bold text-gray-400 uppercase mb-1.5">
-              <IconAlignLeft className="w-3.5 h-3.5" /> Description
+              <AlignLeft className="w-3.5 h-3.5" /> Description
             </label>
             <textarea
               rows={2}
@@ -256,7 +240,7 @@ function TaskFormModal({ onClose, onSubmit }: TaskFormModalProps) {
           {/* Due Date */}
           <div>
             <label className="flex items-center gap-1 text-xs font-bold text-gray-400 uppercase mb-1.5">
-              <IconCalendar className="w-3.5 h-3.5" /> Due Date
+              <Calendar className="w-3.5 h-3.5" /> Due Date
             </label>
             <div className="flex gap-2">
               <input
@@ -306,7 +290,7 @@ function TaskFormModal({ onClose, onSubmit }: TaskFormModalProps) {
                     onClick={() => setShowGcalPicker(false)}
                     className="text-gray-400 hover:text-gray-600"
                   >
-                    <IconX className="w-4 h-4" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
                 {gcalEvents.length === 0 ? (
@@ -588,7 +572,7 @@ export default function Tasks() {
         </div>
         <div className="flex items-center gap-3">
           <button onClick={handleExportPDF} className="btn btn-secondary flex items-center gap-2 bg-white dark:bg-[#1a2234] border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-            <IconDownload className="w-4 h-4" />
+            <Download className="w-4 h-4" />
             Export ({filteredTasks.length})
           </button>
           <button
@@ -596,7 +580,7 @@ export default function Tasks() {
             className="btn btn-shiny group rounded-xl shadow-lg shadow-emerald-500/20"
           >
             <div className="btn-inner flex items-center gap-2 px-4">
-              <IconPlus className="w-4 h-4" />
+              <Plus className="w-4 h-4" />
               <span>Add New Task</span>
             </div>
           </button>
@@ -608,7 +592,7 @@ export default function Tasks() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Search */}
           <div className="relative">
-            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search Task..."
@@ -620,7 +604,7 @@ export default function Tasks() {
 
           {/* Status Filter */}
           <div className="relative">
-            <IconFilter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <select
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all appearance-none cursor-pointer"
               value={filter}
@@ -637,7 +621,7 @@ export default function Tasks() {
 
           {/* Type Filter */}
           <div className="relative">
-            <IconDeviceLaptop className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Laptop className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <select
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all appearance-none cursor-pointer"
               value={typeFilter}
@@ -680,7 +664,7 @@ export default function Tasks() {
           ) : filteredTasks.length === 0 ? (
             <div className="py-20 text-center">
               <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                <IconSearch className="w-10 h-10 text-gray-300 dark:text-gray-600" />
+                <Search className="w-10 h-10 text-gray-300 dark:text-gray-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 No Tasks Found
@@ -750,7 +734,7 @@ export default function Tasks() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                        <IconClock className="w-3.5 h-3.5" />
+                        <Clock className="w-3.5 h-3.5" />
                         {task.dueDate
                           ? new Date(task.dueDate).toLocaleDateString()
                           : 'No date'}
@@ -771,13 +755,13 @@ export default function Tasks() {
                           <>
                             <ActionButton
                               onClick={() => runScheduler([task.id])}
-                              icon={IconPlayerPlay}
+                              icon={Play}
                               color="text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30"
                               title="Run"
                             />
                             <ActionButton
                               onClick={() => setEditingTask(task)}
-                              icon={IconEdit}
+                              icon={Edit}
                               color="text-amber-600 bg-amber-50 dark:bg-amber-900/30"
                               title="Edit"
                             />
@@ -785,7 +769,7 @@ export default function Tasks() {
                               onClick={() =>
                                 setDeleteTarget({ id: task.id, name: task.name })
                               }
-                              icon={IconTrash}
+                              icon={Trash2}
                               color="text-red-600 bg-red-50 dark:bg-red-900/30"
                               title="Delete"
                             />
@@ -794,7 +778,7 @@ export default function Tasks() {
                         {task.status === 'RUNNING' && (
                           <ActionButton
                             onClick={() => setCompleteTarget(task)}
-                            icon={IconCircleCheck}
+                            icon={CheckCircle}
                             color="text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30"
                             title="Complete"
                           />
@@ -819,7 +803,7 @@ export default function Tasks() {
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 disabled:opacity-30"
               disabled={currentPage === 1 || totalEntries === 0}
             >
-              <IconChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
             {paginationPages.map((page) => (
               <button
@@ -840,7 +824,7 @@ export default function Tasks() {
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 disabled:opacity-30"
               disabled={currentPage === totalPages || totalEntries === 0}
             >
-              <IconChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -955,7 +939,7 @@ function ActionButton({
       title={title}
       className={clsx('p-2 rounded-lg transition-all hover:shadow-sm active:scale-95', color)}
     >
-      <Icon className="w-4 h-4" stroke={1.5} />
+      <Icon className="w-4 h-4" strokeWidth={1.5} />
     </button>
   );
 }

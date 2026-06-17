@@ -1,12 +1,5 @@
 import { useState } from 'react';
-import { 
-  IconBell, 
-  IconX, 
-  IconInfoCircle, 
-  IconFlask, 
-  IconMessages, 
-  IconDeviceImac 
-} from '@tabler/icons-react';
+import { Bell, X, Info, Beaker, MessageSquare, Monitor } from 'lucide-react';
 import { clsx } from 'clsx';
 
 interface Notification {
@@ -64,10 +57,10 @@ export default function NotificationCenter() {
 
   const getIcon = (category: string) => {
     switch (category) {
-      case 'experiment': return <IconFlask className="w-4 h-4" />;
-      case 'node': return <IconDeviceImac className="w-4 h-4" />;
-      case 'chat': return <IconMessages className="w-4 h-4" />;
-      default: return <IconInfoCircle className="w-4 h-4" />;
+      case 'experiment': return <Beaker className="w-4 h-4" />;
+      case 'node': return <Monitor className="w-4 h-4" />;
+      case 'chat': return <MessageSquare className="w-4 h-4" />;
+      default: return <Info className="w-4 h-4" />;
     }
   };
 
@@ -86,7 +79,7 @@ export default function NotificationCenter() {
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 text-gray-400 hover:text-primary-500 transition-colors relative"
       >
-        <IconBell className="w-6 h-6" stroke={1.5} />
+        <Bell className="w-6 h-6" strokeWidth={1.5} />
         {unreadCount > 0 && (
           <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-rose-500 text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white dark:border-gray-800">
             {unreadCount}
@@ -140,7 +133,7 @@ export default function NotificationCenter() {
                         }}
                         className="absolute top-2 right-2 p-1 text-gray-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <IconX className="w-3.5 h-3.5" />
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   ))}
@@ -148,7 +141,7 @@ export default function NotificationCenter() {
               ) : (
                 <div className="p-12 text-center">
                   <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <IconBell className="w-6 h-6 text-gray-300" />
+                    <Bell className="w-6 h-6 text-gray-300" />
                   </div>
                   <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">No new notifications</p>
                 </div>

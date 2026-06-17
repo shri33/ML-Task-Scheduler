@@ -12,5 +12,15 @@ export const updateResourceSchema = z.object({
   status: z.enum(['AVAILABLE', 'BUSY', 'OFFLINE']).optional()
 });
 
+export const resourceIdParamSchema = z.object({
+  id: z.string().uuid('Invalid resource ID format. Expected UUID.')
+});
+
+export const resourceQuerySchema = z.object({
+  status: z.enum(['AVAILABLE', 'BUSY', 'OFFLINE']).optional(),
+  page: z.string().optional().transform(val => val ? parseInt(val, 10) : 1),
+  limit: z.string().optional().transform(val => val ? parseInt(val, 10) : 20)
+});
+
 export type CreateResourceInput = z.infer<typeof createResourceSchema>;
 export type UpdateResourceInput = z.infer<typeof updateResourceSchema>;

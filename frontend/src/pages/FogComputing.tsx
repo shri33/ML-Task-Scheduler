@@ -18,20 +18,7 @@ import {
   Radar,
 } from 'recharts';
 import { fogApi, FogMetrics, FogNode, AlgorithmComparison } from '../lib/api';
-import { 
-  IconCloud, 
-  IconSettings, 
-  IconPlayerPlay, 
-  IconRefresh, 
-  IconChartBar, 
-  IconDownload,
-  IconCpu,
-  IconBolt,
-  IconShieldCheck,
-  IconClock,
-  IconChevronRight,
-  IconDotsVertical
-} from '@tabler/icons-react';
+import { Cloud, Settings, Play, RefreshCw, BarChart2, Download, Cpu, Zap, ShieldCheck, Clock, ChevronRight, MoreVertical } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useToast } from '../contexts/ToastContext';
 
@@ -245,14 +232,14 @@ export default function FogComputing() {
             onClick={() => handleExport('csv')}
             className="btn btn-secondary bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center gap-2 px-4 py-2"
           >
-            <IconDownload className="w-4 h-4 text-gray-400" /> Export CSV
+            <Download className="w-4 h-4 text-gray-400" /> Export CSV
           </button>
           <button 
             onClick={resetSimulation}
             disabled={loading}
             className="btn btn-secondary bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center gap-2 px-4 py-2"
           >
-            <IconRefresh className={clsx("w-4 h-4 text-gray-400", loading && "animate-spin")} /> Reset
+            <RefreshCw className={clsx("w-4 h-4 text-gray-400", loading && "animate-spin")} /> Reset
           </button>
         </div>
       </div>
@@ -263,7 +250,7 @@ export default function FogComputing() {
            <div className="md:col-span-1">
               <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 block">Task Batch Size</label>
               <div className="relative">
-                <IconDotsVertical className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <MoreVertical className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="number"
                   value={taskCount}
@@ -277,7 +264,7 @@ export default function FogComputing() {
            <div className="md:col-span-1">
               <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 block">Primary Algorithm</label>
               <div className="relative">
-                <IconSettings className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Settings className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <select
                   value={selectedAlgorithm}
                   onChange={(e) => setSelectedAlgorithm(e.target.value)}
@@ -298,14 +285,14 @@ export default function FogComputing() {
                 disabled={loading}
                 className="flex-1 btn btn-primary flex items-center justify-center gap-2 py-2.5 font-bold shadow-lg shadow-primary-500/20"
               >
-                <IconPlayerPlay className="w-4 h-4" /> Run Simulation
+                <Play className="w-4 h-4" /> Run Simulation
               </button>
               <button
                 onClick={runComparison}
                 disabled={loading}
                 className="flex-1 btn bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2 py-2.5 font-bold shadow-lg shadow-purple-500/20 border-none"
               >
-                <IconChartBar className="w-4 h-4" /> Compare All
+                <BarChart2 className="w-4 h-4" /> Compare All
               </button>
            </div>
         </div>
@@ -314,10 +301,10 @@ export default function FogComputing() {
       {/* ── LIVE RESULTS ── */}
       {scheduleResult && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in-up">
-           <ResultCard label="Total Delay" value={`${scheduleResult.metrics.totalDelay.toFixed(2)}s`} icon={IconClock} color="blue" />
-           <ResultCard label="Energy Used" value={`${scheduleResult.metrics.totalEnergy.toFixed(2)}J`} icon={IconBolt} color="amber" />
-           <ResultCard label="Reliability" value={`${scheduleResult.metrics.reliability}%`} icon={IconShieldCheck} color="green" />
-           <ResultCard label="Compute Time" value={`${scheduleResult.metrics.executionTimeMs}ms`} icon={IconBolt} color="purple" />
+           <ResultCard label="Total Delay" value={`${scheduleResult.metrics.totalDelay.toFixed(2)}s`} icon={Clock} color="blue" />
+           <ResultCard label="Energy Used" value={`${scheduleResult.metrics.totalEnergy.toFixed(2)}J`} icon={Zap} color="amber" />
+           <ResultCard label="Reliability" value={`${scheduleResult.metrics.reliability}%`} icon={ShieldCheck} color="green" />
+           <ResultCard label="Compute Time" value={`${scheduleResult.metrics.executionTimeMs}ms`} icon={Zap} color="purple" />
         </div>
       )}
 
@@ -343,7 +330,7 @@ export default function FogComputing() {
              </div>
            ) : (
              <div className="h-[350px] flex flex-col items-center justify-center text-gray-400 space-y-4">
-               <IconChartBar className="w-12 h-12 opacity-20" />
+               <BarChart2 className="w-12 h-12 opacity-20" />
                <p className="text-sm">Run "Compare All" to see spectrum analysis</p>
              </div>
            )}
@@ -434,7 +421,7 @@ export default function FogComputing() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                        <div className="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-                          <IconCloud className="w-4 h-4 text-primary-600" />
+                          <Cloud className="w-4 h-4 text-primary-600" />
                        </div>
                        <span className="text-sm font-bold text-gray-900 dark:text-white">{node.name}</span>
                     </div>
@@ -474,7 +461,7 @@ export default function FogComputing() {
           title="IPSO Strategy" 
           subtitle="Global Optimization" 
           description="Adaptive inertia weight with contraction factor for fast convergence. Ideal for broad exploration of the solution space."
-          icon={IconCpu}
+          icon={Cpu}
           color="indigo"
           id="ipso"
         />
@@ -482,7 +469,7 @@ export default function FogComputing() {
           title="IACO Strategy" 
           subtitle="Local Refinement" 
           description="Regulatory factor for path selection and pheromone updates. Provides high-precision local search for optimal allocation."
-          icon={IconSettings}
+          icon={Settings}
           color="cyan"
           id="iaco"
         />
@@ -490,7 +477,7 @@ export default function FogComputing() {
           title="Hybrid Advantage" 
           subtitle="Best of Both Worlds" 
           description="Combines IPSO's speed with IACO's precision to minimize delay/energy while maintaining reliability."
-          icon={IconBolt}
+          icon={Zap}
           color="purple"
           id="hybrid"
         />
@@ -512,7 +499,7 @@ function ResultCard({ label, value, icon: Icon, color }: any) {
     <div className={clsx("bg-white dark:bg-[#1a2234] p-5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm border-l-4", (colors as any)[color])}>
       <div className="flex justify-between items-center mb-3">
         <p className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">{label}</p>
-        <Icon className="w-5 h-5 opacity-50" stroke={1.5} />
+        <Icon className="w-5 h-5 opacity-50" strokeWidth={1.5} />
       </div>
       <p className="text-3xl font-black tracking-tight text-gray-900 dark:text-white font-mono">{value}</p>
     </div>
@@ -530,7 +517,7 @@ function InfoCard({ title, subtitle, description, icon: Icon, color, id }: any) 
     <div className="bg-white dark:bg-[#1a2234] p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
       <div className="flex items-center gap-4 mb-4">
         <div className={clsx("p-3 rounded-xl", (colors as any)[color])}>
-          <Icon className="w-6 h-6" stroke={1.5} />
+          <Icon className="w-6 h-6" strokeWidth={1.5} />
         </div>
         <div>
           <h4 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h4>
@@ -542,7 +529,7 @@ function InfoCard({ title, subtitle, description, icon: Icon, color, id }: any) 
         to={`/algorithm-details/${id}`}
         className="mt-4 flex items-center gap-1 text-xs font-bold text-primary-600 hover:text-primary-700 transition-colors uppercase tracking-widest"
       >
-        Read More <IconChevronRight className="w-3 h-3" />
+        Read More <ChevronRight className="w-3 h-3" />
       </Link>
     </div>
   );

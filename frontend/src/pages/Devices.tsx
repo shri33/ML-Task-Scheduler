@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
-import { IconCamera, IconSettings, IconWifi, IconPlus, IconRefresh, IconTrash, IconEdit, IconServer, IconCpu, IconActivity, IconX, IconRobot, IconSearch } from '@tabler/icons-react';
+import { Camera, Settings, Wifi, Plus, RefreshCw, Trash2, Edit, Server, Cpu, Activity, X, Bot, Search } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 import { clsx } from 'clsx';
 import { deviceApi, Device, DeviceStats } from '../lib/api';
 
 const deviceTypeIcons: Record<string, React.ReactNode> = {
-  CAMERA: <IconCamera className="h-7 w-7" />,
-  ROBOT_ARM: <IconRobot className="h-7 w-7" />,
-  IOT_SENSOR: <IconCpu className="h-7 w-7" />,
-  EDGE_SERVER: <IconServer className="h-7 w-7" />,
-  ACTUATOR: <IconActivity className="h-7 w-7" />,
+  CAMERA: <Camera className="h-7 w-7" />,
+  ROBOT_ARM: <Bot className="h-7 w-7" />,
+  IOT_SENSOR: <Cpu className="h-7 w-7" />,
+  EDGE_SERVER: <Server className="h-7 w-7" />,
+  ACTUATOR: <Activity className="h-7 w-7" />,
 };
 
 const deviceTypeLabels: Record<string, string> = {
@@ -195,14 +195,14 @@ export default function Devices() {
             onClick={() => { fetchDevices(); fetchStats(); }}
             className="btn btn-secondary flex items-center gap-2 px-4 h-11"
           >
-            <IconRefresh className={clsx("h-4 w-4", isLoading && "animate-spin")} />
+            <RefreshCw className={clsx("h-4 w-4", isLoading && "animate-spin")} />
             Sync Hardware
           </button>
           <button
             onClick={openCreateModal}
             className="btn btn-primary flex items-center gap-2 px-6 h-11 shadow-lg shadow-primary-500/20"
           >
-            <IconPlus className="h-4 w-4" />
+            <Plus className="h-4 w-4" />
             Provision Device
           </button>
         </div>
@@ -222,7 +222,7 @@ export default function Devices() {
       {/* Filter Toolbar */}
       <div className="bg-white dark:bg-[#1a2234] rounded-2xl p-4 border border-gray-100 dark:border-gray-800 shadow-sm flex flex-wrap items-center gap-4">
         <div className="flex-1 min-w-[240px] relative">
-          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             placeholder="Search terminal nodes by name, IP, or location..."
@@ -264,7 +264,7 @@ export default function Devices() {
       ) : devices.length === 0 ? (
         <div className="bg-white dark:bg-[#1a2234] rounded-3xl p-20 text-center border border-gray-100 dark:border-gray-800 shadow-sm">
           <div className="w-24 h-24 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-            <IconServer className="h-12 w-12 text-gray-300 dark:text-gray-600" />
+            <Server className="h-12 w-12 text-gray-300 dark:text-gray-600" />
           </div>
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Registry is Empty</h3>
           <p className="text-gray-500 max-w-sm mx-auto mb-8">No edge devices detected in the current sector. Provision a new terminal node to begin data ingestion.</p>
@@ -310,13 +310,13 @@ export default function Devices() {
               <div className="space-y-3 mb-6">
                 {device.ipAddress && (
                   <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-                    <IconWifi className="w-4 h-4 text-primary-500" />
+                    <Wifi className="w-4 h-4 text-primary-500" />
                     <span className="font-mono">{device.ipAddress}{device.port && `:${device.port}`}</span>
                   </div>
                 )}
                 {device.location && (
                   <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-                    <IconSettings className="w-4 h-4 text-violet-500" />
+                    <Settings className="w-4 h-4 text-violet-500" />
                     <span>{device.location}</span>
                   </div>
                 )}
@@ -332,14 +332,14 @@ export default function Devices() {
                   onClick={() => handleEdit(device)}
                   className="btn btn-secondary flex-1 text-xs py-2 h-9"
                 >
-                  <IconEdit className="h-3.5 w-3.5 mr-1.5" />
+                  <Edit className="h-3.5 w-3.5 mr-1.5" />
                   Configure
                 </button>
                 <button
                   onClick={() => handleDelete(device)}
                   className="btn btn-secondary flex-1 text-xs py-2 h-9 text-rose-600 hover:text-rose-700 border-rose-100 hover:border-rose-200"
                 >
-                  <IconTrash className="h-3.5 w-3.5 mr-1.5" />
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
                   Decommission
                 </button>
               </div>
@@ -357,7 +357,7 @@ export default function Devices() {
                 {editingDevice ? 'Modify Terminal Config' : 'Hardware Provisioning'}
               </h2>
               <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-                <IconX className="h-5 w-5 text-gray-400" />
+                <X className="h-5 w-5 text-gray-400" />
               </button>
             </div>
 

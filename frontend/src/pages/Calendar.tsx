@@ -1,14 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import {
-  IconChevronLeft,
-  IconChevronRight,
-  IconPlus,
-  IconMenu2,
-  IconRobot,
-  IconDotsVertical,
-  IconX,
-  IconCalendar
-} from '@tabler/icons-react';
+import { ChevronLeft, ChevronRight, Plus, Menu, Bot, MoreVertical, X, Calendar as LucideCalendar } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useStore } from '../store';
 import { Task } from '../types';
@@ -30,7 +21,7 @@ export default function Calendar() {
   const { tasks, fetchTasks, addTask } = useStore();
   const toast = useToast();
 
-  // Calendar creation modal state
+  // CalendarIcon creation modal state
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [newName, setNewName] = useState('');
   const [newType, setNewType] = useState<'CPU' | 'IO' | 'MIXED'>('MIXED');
@@ -56,7 +47,7 @@ export default function Calendar() {
       setNewName('');
       toast.success('Task created', `"${task.name}" has been created.`);
     } catch (err) {
-      console.error('Calendar task creation failed:', err);
+      console.error('CalendarIcon task creation failed:', err);
       const anyErr = err as any;
       const status = anyErr?.response?.status;
       if (status === 401 || !anyErr?.response) {
@@ -95,7 +86,7 @@ export default function Calendar() {
     }
   }, []);
 
-  // Calendar Logic
+  // CalendarIcon Logic
   const month = currentDate.getMonth();
   const year = currentDate.getFullYear();
 
@@ -264,7 +255,7 @@ export default function Calendar() {
       >
         <div className="p-6">
           <button onClick={() => setShowNewTaskModal(true)} className="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary-500/20 transition-all active:scale-95">
-            <IconPlus className="w-5 h-5" stroke={2.5} />
+            <Plus className="w-5 h-5" strokeWidth={2.5} />
             Add New Task
           </button>
         </div>
@@ -285,7 +276,7 @@ export default function Calendar() {
              <div className="bg-white dark:bg-gray-900/50 rounded-2xl p-4 border border-gray-100 dark:border-gray-800">
                 <div className="flex items-center gap-3 mb-3">
                    <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
-                      <IconRobot className="w-4 h-4 text-primary-600" />
+                      <Bot className="w-4 h-4 text-primary-600" />
                    </div>
                    <div>
                       <p className="text-xs text-gray-500">ML Confidence</p>
@@ -319,7 +310,7 @@ export default function Calendar() {
         <header className="h-20 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-6">
           <div className="flex items-center gap-6">
             <button className="lg:hidden p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" onClick={() => setSidebarOpen(true)}>
-              <IconMenu2 className="w-5 h-5" />
+              <Menu className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-4">
               <h2 className="text-2xl font-black text-gray-900 dark:text-white">
@@ -327,10 +318,10 @@ export default function Calendar() {
               </h2>
               <div className="flex items-center bg-gray-100 dark:bg-gray-800/50 p-1 rounded-xl">
                 <button onClick={() => navigatePeriod(-1)} className="p-1.5 rounded-lg text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm transition-all">
-                  <IconChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="w-5 h-5" />
                 </button>
                 <button onClick={() => navigatePeriod(1)} className="p-1.5 rounded-lg text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm transition-all">
-                  <IconChevronRight className="w-5 h-5" />
+                  <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
               <button onClick={setToday} className="px-4 py-2 text-sm font-bold text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-xl transition-all">
@@ -359,7 +350,7 @@ export default function Calendar() {
           </div>
         </header>
 
-        {/* Calendar Grid Container */}
+        {/* CalendarIcon Grid Container */}
         <div className="flex-1 overflow-auto flex flex-col p-6 custom-scrollbar">
           {viewMode === 'Month' && (
             <>
@@ -397,7 +388,7 @@ export default function Calendar() {
                         </span>
                         {dayTasks.length > 0 && cell.current && (
                           <span className="flex items-center gap-1 text-primary-600 dark:text-primary-400">
-                            <IconCalendar className="w-4 h-4" stroke={2} />
+                            <LucideCalendar className="w-4 h-4" strokeWidth={2} />
                             <span className={clsx('w-2 h-2 rounded-full animate-pulse', getCalendarDotColor(dayTasks))} />
                           </span>
                         )}
@@ -406,7 +397,7 @@ export default function Calendar() {
                       {/* Hover Actions */}
                       <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button className="p-1.5 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 text-gray-400 hover:text-primary-600">
-                          <IconDotsVertical className="w-4 h-4" />
+                          <MoreVertical className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -494,14 +485,14 @@ export default function Calendar() {
         </div>
       </main>
     </div>
-    {/* New Task Modal (Calendar) */}
+    {/* New Task Modal (CalendarIcon) */}
     {showNewTaskModal && (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowNewTaskModal(false)}>
         <div className="bg-white dark:bg-[#1a2234] rounded-xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
           <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Create Task</h3>
             <button onClick={() => setShowNewTaskModal(false)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
-              <IconX className="w-4 h-4 text-gray-400" />
+              <X className="w-4 h-4 text-gray-400" />
             </button>
           </div>
           <div className="p-5 space-y-4">

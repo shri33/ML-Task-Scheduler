@@ -51,9 +51,9 @@ export interface Task {
   expectedCompletionTime: number; // Ti,exp - expected completion time (s)
   terminalDeviceId: string;
   priority: number;
-  memoryRequirement?: number; // Mi - memory requirement (MB)
-  vramRequirement?: number;   // Vi - VRAM requirement (MB)
-  startupOverhead?: number;   // Si - startup overhead (s)
+  memoryRequirement: number; // Mi - memory requirement (MB)
+  vramRequirement: number;   // Vi - VRAM requirement (MB)
+  startupOverhead: number;   // Si - startup overhead (s)
 }
 
 export interface FogNode {
@@ -63,10 +63,10 @@ export interface FogNode {
   storageCapacity: number;    // Kj - storage capacity (GB)
   networkBandwidth: number;   // Bj - network bandwidth (Mbps)
   currentLoad: number;        // Current utilization (0-1)
-  totalMemory?: number;       // Total memory (MB)
-  totalVram?: number;         // Total VRAM (MB)
-  baseLatency?: number;       // Local network base latency (s)
-  egressCostPerMb?: number;   // Egress cost per Mb ($)
+  totalMemory: number;        // Total memory (MB)
+  totalVram: number;          // Total VRAM (MB)
+  baseLatency: number;        // Local network base latency (s)
+  egressCostPerMb: number;    // Egress cost per Mb ($)
 }
 
 // Cloud Layer - for offloading when fog capacity is exceeded
@@ -77,8 +77,8 @@ export interface CloudNode {
   networkBandwidth: number;   // WAN bandwidth (Mbps)
   latencyPenalty: number;     // Additional latency for cloud (ms)
   costPerUnit: number;        // Cost per computation unit
-  baseLatency?: number;       // Global network base latency (s)
-  egressCostPerMb?: number;   // Egress cost per Mb ($)
+  baseLatency: number;        // Global network base latency (s)
+  egressCostPerMb: number;    // Egress cost per Mb ($)
   available: boolean;
 }
 
@@ -130,7 +130,7 @@ export function calculateExecutionTime(task: Task, fogNode: FogNode): number {
  */
 export function calculateTransmissionTime(task: Task, fogNode: FogNode | CloudNode): number {
   // TRij = baseLatency + (Di / Bj)
-  return (fogNode.baseLatency ?? 0) + (task.dataSize / fogNode.networkBandwidth);
+  return fogNode.baseLatency + (task.dataSize / fogNode.networkBandwidth);
 }
 
 /**
@@ -140,7 +140,7 @@ export function calculateTransmissionTime(task: Task, fogNode: FogNode | CloudNo
 export function calculateTotalDelay(task: Task, fogNode: FogNode | CloudNode): number {
   // Tij = TRij + TEij + Si
   const baseDelay = calculateTransmissionTime(task, fogNode) + calculateExecutionTime(task, fogNode as FogNode);
-  return baseDelay + (task.startupOverhead ?? 0);
+  return baseDelay + task.startupOverhead;
 }
 
 /**
@@ -162,7 +162,7 @@ export function calculateEnergyConsumption(
  * Cost = Di * egressCostPerMb
  */
 export function calculateEgressCost(task: Task, fogNode: FogNode | CloudNode): number {
-  return task.dataSize * (fogNode.egressCostPerMb ?? 0);
+  return task.dataSize * fogNode.egressCostPerMb;
 }
 
 /**
@@ -196,16 +196,11 @@ export function calculateObjectiveFunction(
 
     // Hardware constraint penalty (Phase 7 Hardening)
     let hardwarePenalty = 0;
-    const memoryRequirement = task.memoryRequirement ?? 128;
-    const vramRequirement = task.vramRequirement ?? 0;
-    const totalMemory = fogNode.totalMemory ?? Number.POSITIVE_INFINITY;
-    const totalVram = fogNode.totalVram ?? Number.POSITIVE_INFINITY;
-
-    if (memoryRequirement > totalMemory) {
-      hardwarePenalty += 1000 * (memoryRequirement / totalMemory);
+    if (task.memoryRequirement > fogNode.totalMemory) {
+      hardwarePenalty += 1000 * (task.memoryRequirement / fogNode.totalMemory);
     }
-    if (vramRequirement > totalVram) {
-      hardwarePenalty += 1000 * (vramRequirement / totalVram);
+    if (task.vramRequirement > fogNode.totalVram) {
+      hardwarePenalty += 1000 * (task.vramRequirement / fogNode.totalVram);
     }
 
     totalDelay += device.delayWeight * delay;
@@ -705,8 +700,8 @@ export class HybridHeuristicScheduler {
       const energy = calculateEnergyConsumption(task, fogNode, device);
 
       const meetsHardwareRequirements = 
-        (fogNode.totalMemory ?? Number.POSITIVE_INFINITY) >= (task.memoryRequirement ?? 128) && 
-        (fogNode.totalVram ?? Number.POSITIVE_INFINITY) >= (task.vramRequirement ?? 0);
+        fogNode.totalMemory >= task.memoryRequirement && 
+        fogNode.totalVram >= task.vramRequirement;
 
       if (delay <= task.maxToleranceTime && energy <= device.residualEnergy && meetsHardwareRequirements) {
         successfulTasks++;

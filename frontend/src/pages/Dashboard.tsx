@@ -17,23 +17,7 @@ import {
   Pie,
   Cell
 } from "recharts";
-import { 
-  IconListCheck,
-  IconServer,
-  IconClock,
-  IconBrain,
-  IconRefresh,
-  IconPlus,
-  IconLoader2,
-  IconBolt,
-  IconCircleCheck,
-  IconDeviceDesktop,
-  IconCloud,
-  IconActivity,
-  IconTrophy,
-   IconArrowUpRight,
-   IconTrash
-} from "@tabler/icons-react";
+import { ListChecks, Server, Clock, Brain, RefreshCw, Plus, Loader2, Zap, CheckCircle, Monitor, Cloud, Activity, Trophy, ArrowUpRight, Trash2 } from 'lucide-react';
 
 const LOCAL_TASKS_KEY = 'ml-scheduler-local-tasks';
 
@@ -310,14 +294,14 @@ export default function Dashboard() {
              disabled={refreshing}
              className="w-12 h-12 flex items-center justify-center bg-white dark:bg-[#1a2234] border border-gray-200 dark:border-gray-800 rounded-2xl text-gray-500 hover:text-primary-600 hover:border-primary-200 transition-all shadow-sm hover:shadow-md"
            >
-              <IconRefresh className={clsx("w-5 h-5", refreshing && "animate-spin")} stroke={1.5} />
+              <RefreshCw className={clsx("w-5 h-5", refreshing && "animate-spin")} strokeWidth={1.5} />
            </button>
            <button 
              onClick={handleSchedule}
              disabled={scheduling || pendingTasks.length === 0}
              className="h-12 px-8 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white flex items-center gap-3 font-black text-sm uppercase tracking-widest rounded-2xl shadow-lg shadow-primary-500/25 transition-all active:scale-95"
            >
-              {scheduling ? <IconLoader2 className="w-5 h-5 animate-spin" /> : <IconBolt className="w-5 h-5 fill-white" />}
+              {scheduling ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 fill-white" />}
               {scheduling ? "Optimizing..." : "Execute Pulse"}
            </button>
         </div>
@@ -333,7 +317,7 @@ export default function Dashboard() {
                  <div>
                     <div className="flex items-center justify-between mb-6">
                        <div className="p-3 bg-white/20 backdrop-blur-xl rounded-2xl border border-white/30">
-                          <IconBrain className="w-8 h-8 text-white" stroke={1.5} />
+                          <Brain className="w-8 h-8 text-white" strokeWidth={1.5} />
                        </div>
                        <div className="px-3 py-1 bg-white/20 backdrop-blur-xl rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20">
                           Active
@@ -349,13 +333,13 @@ export default function Dashboard() {
                        {metrics?.performance?.mlAccuracy != null ? metrics.performance.mlAccuracy : '94'}<span className="text-2xl opacity-60">%</span>
                     </div>
                     <div className="text-[10px] font-bold opacity-80 uppercase tracking-widest flex items-center gap-2">
-                       <IconArrowUpRight className="w-4 h-4" />
+                       <ArrowUpRight className="w-4 h-4" />
                        Prediction Reliability
                     </div>
                  </div>
               </div>
               <div className="absolute -bottom-16 -right-16 opacity-10 group-hover:scale-110 group-hover:-rotate-12 transition-all duration-1000">
-                 <IconBrain className="w-80 h-80 text-white" />
+                 <Brain className="w-80 h-80 text-white" />
               </div>
            </div>
 
@@ -364,7 +348,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between mb-6">
                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Cluster Workload</h3>
                  <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg">
-                    <IconActivity className="w-5 h-5 text-emerald-500" />
+                    <Activity className="w-5 h-5 text-emerald-500" />
                  </div>
               </div>
               <div className="flex items-end justify-between">
@@ -397,7 +381,7 @@ export default function Dashboard() {
                                     title="Local Storage"
                                     aria-label="Local Storage"
                                  >
-                                    <IconDeviceDesktop className="w-4 h-4" stroke={2} />
+                                    <Monitor className="w-4 h-4" strokeWidth={2} />
                       </span>
                     )}
                  </div>
@@ -455,7 +439,7 @@ export default function Dashboard() {
         {/* ── BENTO ROW 2: METRICS GRID ── */}
         <div className="col-span-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
            <MetricCard 
-              icon={IconListCheck} 
+              icon={ListChecks} 
               label="Active Tasks" 
               value={metrics?.tasks?.total ?? 0} 
               subValue={`${pendingTasks.length} pending in queue`}
@@ -464,7 +448,7 @@ export default function Dashboard() {
               trend="+14%"
            />
            <MetricCard 
-              icon={IconServer} 
+              icon={Server} 
               label="System Nodes" 
               value={resources.length} 
               subValue={`${availableResources.length} nodes operational`}
@@ -473,7 +457,7 @@ export default function Dashboard() {
               trend="+2"
            />
            <MetricCard 
-              icon={IconBolt} 
+              icon={Zap} 
               label="Power Efficiency" 
               value={`${metrics?.resources?.avgLoad ?? 0}kW`} 
               subValue="Real-time power draw"
@@ -482,7 +466,7 @@ export default function Dashboard() {
               trend="-5%"
            />
            <MetricCard 
-              icon={IconClock} 
+              icon={Clock} 
               label="Neural Latency" 
               value={`${metrics?.performance?.avgExecutionTime ?? 0}ms`} 
               subValue="Average inference time"
@@ -562,7 +546,7 @@ export default function Dashboard() {
                              ? "bg-amber-50 dark:bg-amber-500/10 text-amber-600"
                              : "bg-primary-50 dark:bg-primary-500/10 text-primary-600"
                        )}>
-                          {task.status === 'RUNNING' ? <IconActivity className="w-6 h-6" /> : <IconCircleCheck className="w-6 h-6" />}
+                          {task.status === 'RUNNING' ? <Activity className="w-6 h-6" /> : <CheckCircle className="w-6 h-6" />}
                        </div>
                        <div>
                           <div className="text-sm font-black text-gray-900 dark:text-white truncate max-w-[140px] group-hover:text-primary-600 transition-colors">{task.name}</div>
@@ -579,14 +563,14 @@ export default function Dashboard() {
                          className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-red-600 hover:border-red-300 transition-all flex items-center justify-center"
                          title="Delete pulse"
                        >
-                         <IconTrash className="w-4 h-4" />
+                         <Trash2 className="w-4 h-4" />
                        </button>
                     </div>
                  </div>
               ))}
               {pulseQueue.length === 0 && (
                  <div className="flex flex-col items-center justify-center py-20 opacity-30">
-                    <IconListCheck className="w-16 h-16 mb-4" />
+                    <ListChecks className="w-16 h-16 mb-4" />
                     <p className="text-sm font-bold">Neural queue empty</p>
                  </div>
               )}
@@ -601,7 +585,7 @@ export default function Dashboard() {
         {/* INGESTION */}
         <div className="col-span-12 lg:col-span-4 bg-white dark:bg-[#1a2234] rounded-[2.5rem] p-10 border border-gray-100 dark:border-gray-800 shadow-sm relative group overflow-hidden h-full min-h-[500px]">
            <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:opacity-10 transition-all pointer-events-none">
-              <IconActivity className="w-48 h-48" />
+              <Activity className="w-48 h-48" />
            </div>
            
            <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">Pulse Ingestion</h3>
@@ -654,14 +638,14 @@ export default function Dashboard() {
                    disabled={!newTaskTitle.trim() || isCreating}
                    className="w-full py-5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-black rounded-2xl shadow-xl hover:shadow-primary-500/10 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                  >
-                    {isCreating ? <IconLoader2 className="w-5 h-5 animate-spin" /> : <IconPlus className="w-5 h-5" stroke={3} />}
+                    {isCreating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" strokeWidth={3} />}
                     <span className="uppercase tracking-widest text-xs">Inject Pulse</span>
                  </button>
               </div>
               
               <div className="p-5 rounded-2xl bg-primary-500/5 border border-primary-500/10 mt-2">
                  <div className="flex items-start gap-4">
-                    <IconTrophy className="w-6 h-6 text-primary-600 mt-0.5" />
+                    <Trophy className="w-6 h-6 text-primary-600 mt-0.5" />
                     <div>
                        <div className="text-xs font-black text-primary-900 dark:text-primary-100 uppercase tracking-tight">System Tip</div>
                        <p className="text-[10px] font-bold text-primary-700/70 dark:text-primary-400/70 leading-relaxed mt-1">High priority signals are automatically routed to the Cloud layer for immediate processing if Fog nodes are saturated.</p>
@@ -706,7 +690,7 @@ export default function Dashboard() {
                        <td className="py-6">
                           <div className="flex items-center gap-4">
                              <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center group-hover:bg-white dark:group-hover:bg-gray-700 transition-colors shadow-sm">
-                                <IconDeviceDesktop className="w-5 h-5 text-gray-500" />
+                                <Monitor className="w-5 h-5 text-gray-500" />
                              </div>
                              <span className="text-sm font-black text-gray-900 dark:text-white truncate max-w-[160px]">{task.name}</span>
                           </div>
@@ -714,7 +698,7 @@ export default function Dashboard() {
                        <td className="py-6 text-xs font-bold text-gray-500 uppercase tracking-widest">{task.type}</td>
                        <td className="py-6">
                           <div className="flex items-center gap-2 text-xs font-black text-gray-600 dark:text-gray-400">
-                             <IconCloud className="w-4 h-4 text-primary-500" /> 
+                             <Cloud className="w-4 h-4 text-primary-500" /> 
                              {task.resource?.name || task.size}
                           </div>
                        </td>
@@ -734,7 +718,7 @@ export default function Dashboard() {
                             className="w-9 h-9 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-red-600 hover:border-red-300 transition-all inline-flex items-center justify-center"
                             title="Delete pulse"
                           >
-                            <IconTrash className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                        </td>
                     </tr>
@@ -763,14 +747,14 @@ function MetricCard({ icon: Icon, label, value, subValue, color, bg, trend }: an
        <div className="relative z-10">
           <div className="flex items-start justify-between mb-6">
              <div className={clsx("w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-500 group-hover:scale-110 shadow-sm group-hover:shadow-lg", bg, color)}>
-                <Icon className="w-7 h-7" stroke={1.5} />
+                <Icon className="w-7 h-7" strokeWidth={1.5} />
              </div>
              {trend && (
                 <div className={clsx(
                    "flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black",
                    trend.startsWith('+') ? "bg-emerald-500/10 text-emerald-600" : "bg-primary-500/10 text-primary-600"
                 )}>
-                   <IconArrowUpRight className={clsx("w-3 h-3", trend.startsWith('-') && "rotate-90")} />
+                   <ArrowUpRight className={clsx("w-3 h-3", trend.startsWith('-') && "rotate-90")} />
                    {trend}
                 </div>
              )}

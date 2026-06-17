@@ -1,13 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { 
-  IconArrowLeft, 
-  IconCpu, 
-  IconSettings, 
-  IconBolt, 
-  IconInfoCircle,
-  IconChartBar,
-  IconCode
-} from '@tabler/icons-react';
+import { ArrowLeft, Cpu, Settings, Zap, Info, BarChart2, Code } from 'lucide-react';
 
 const STRATEGIES = {
   ipso: {
@@ -27,7 +19,7 @@ const STRATEGIES = {
       v[i+1] = w * v[i] + c1 * r1 * (pBest[i] - x[i]) + c2 * r2 * (gBest - x[i])
     `,
     features: ['Fast convergence', 'Global search capability', 'Low computational overhead', 'Self-organizing behavior'],
-    icon: IconCpu,
+    icon: Cpu,
     color: 'indigo'
   },
   iaco: {
@@ -47,7 +39,7 @@ const STRATEGIES = {
       IACO is particularly effective at finding high-precision solutions in complex, multi-modal search spaces where standard heuristics fail.
     `,
     features: ['High precision', 'Robustness', 'Local optimization', 'Distributed search'],
-    icon: IconSettings,
+    icon: Settings,
     color: 'cyan'
   },
   hybrid: {
@@ -67,7 +59,7 @@ const STRATEGIES = {
       - **Energy Savings**: Optimized node selection reduces the overall power footprint of the fog network.
     `,
     features: ['Superior efficiency', 'Balanced exploration/exploitation', 'Adaptive resource scaling', 'Maximized throughput'],
-    icon: IconBolt,
+    icon: Zap,
     color: 'purple'
   }
 };
@@ -82,7 +74,7 @@ export default function AlgorithmDetails() {
     <div className="max-w-4xl mx-auto pb-12 animate-fade-in">
       
       <Link to="/fog-computing" className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-primary-600 mb-8 transition-colors">
-        <IconArrowLeft className="w-4 h-4" /> Back to Fog Computing
+        <ArrowLeft className="w-4 h-4" /> Back to Fog Computing
       </Link>
 
       <div className="bg-white dark:bg-[#1a2234] rounded-3xl border border-gray-200 dark:border-gray-800 shadow-xl overflow-hidden">
@@ -94,7 +86,7 @@ export default function AlgorithmDetails() {
         } text-white`}>
           <div className="flex flex-col md:flex-row md:items-center gap-8">
             <div className="p-5 bg-white/10 rounded-2xl backdrop-blur-md">
-              <Icon className="w-16 h-16" stroke={1.5} />
+              <Icon className="w-16 h-16" strokeWidth={1.5} />
             </div>
             <div>
               <span className="px-3 py-1 bg-white/20 rounded-full text-xs font-bold uppercase tracking-widest">{strategy.subtitle}</span>
@@ -113,7 +105,7 @@ export default function AlgorithmDetails() {
             <div className="lg:col-span-2 space-y-8">
               <div className="prose dark:prose-invert max-w-none">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                  <IconInfoCircle className="w-6 h-6 text-primary-500" /> Technical Overview
+                  <Info className="w-6 h-6 text-primary-500" /> Technical Overview
                 </h2>
                 <div className="text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line text-lg">
                   {strategy.fullContent}
@@ -122,7 +114,7 @@ export default function AlgorithmDetails() {
 
               <div className="bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-                   <IconCode className="w-5 h-5 text-gray-400" /> Pseudocode Logic
+                   <Code className="w-5 h-5 text-gray-400" /> Pseudocode Logic
                 </h3>
                 <div className="font-mono text-sm text-gray-500 dark:text-gray-400 space-y-2">
                   <p className="text-blue-500">// Step 1: Search solution space</p>
@@ -151,12 +143,12 @@ export default function AlgorithmDetails() {
 
               <div className="bg-primary-50 dark:bg-primary-900/10 rounded-2xl p-6 border border-primary-100 dark:border-primary-900/30">
                 <h3 className="text-lg font-bold text-primary-900 dark:text-primary-100 mb-4 flex items-center gap-3">
-                  <IconChartBar className="w-5 h-5" /> Highlights
+                  <BarChart2 className="w-5 h-5" /> Highlights
                 </h3>
                 <ul className="space-y-3">
                   {strategy.features.map((feature, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm text-primary-700 dark:text-primary-300">
-                       <IconBolt className="w-4 h-4 mt-0.5 shrink-0" />
+                       <Zap className="w-4 h-4 mt-0.5 shrink-0" />
                        {feature}
                     </li>
                   ))}

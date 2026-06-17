@@ -14,24 +14,7 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import { 
-  IconFlask, 
-  IconPlayerPlay, 
-  IconDownload, 
-  IconCircleCheck, 
-  IconCircleX, 
-  IconLoader2, 
-  IconBolt, 
-  IconShield, 
-  IconClock, 
-  IconFileTypeJs,
-  IconInfoCircle,
-  IconExternalLink,
-  IconChartBar,
-  IconDotsVertical,
-  IconSettings,
-  IconPlus
-} from '@tabler/icons-react';
+import { Beaker, Play, Download, CheckCircle, XCircle, Loader2, Zap, Shield, Clock, FileJson, Info, ExternalLink, BarChart2, MoreVertical, Settings, Plus } from 'lucide-react';
 import { clsx } from 'clsx';
 import ExperimentWizard from '../components/ExperimentWizard';
 
@@ -133,11 +116,11 @@ export default function Experiments() {
             onClick={() => setShowWizard(true)}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold transition-all shadow-lg shadow-primary-500/20 active:scale-95"
           >
-            <IconPlus className="w-4 h-4" />
+            <Plus className="w-4 h-4" />
             New Experiment
           </button>
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 shadow-sm flex items-center gap-2">
-            <IconInfoCircle className="w-4 h-4 text-primary-500" />
+            <Info className="w-4 h-4 text-primary-500" />
             <span className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Reference: Sensors 2019</span>
           </div>
           <a 
@@ -146,7 +129,7 @@ export default function Experiments() {
             rel="noopener noreferrer"
             className="p-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all flex items-center justify-center"
           >
-             <IconExternalLink className="w-5 h-5" />
+             <ExternalLink className="w-5 h-5" />
           </a>
         </div>
       </div>
@@ -156,7 +139,7 @@ export default function Experiments() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
            <div className="bg-white dark:bg-[#1a2234] rounded-3xl p-8 max-w-xl w-full border border-gray-200 dark:border-gray-800 shadow-2xl animate-scale-up">
               <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2 flex items-center gap-3">
-                 <IconPlus className="w-6 h-6 text-primary-500" />
+                 <Plus className="w-6 h-6 text-primary-500" />
                  AI Scenario Generator
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Describe a research scenario, and Nova will generate a specialized batch of synthetic tasks using SDG (Synthetic Data Generation).</p>
@@ -201,7 +184,7 @@ export default function Experiments() {
                       disabled={isGeneratingScenario || !scenarioDescription.trim()}
                       className="flex-[2] px-6 py-3 rounded-2xl bg-primary-600 text-white font-bold hover:bg-primary-700 shadow-lg shadow-primary-500/20 transition-all flex items-center justify-center gap-2"
                     >
-                      {isGeneratingScenario ? <IconLoader2 className="w-5 h-5 animate-spin" /> : <IconBolt className="w-5 h-5" />}
+                      {isGeneratingScenario ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
                       Generate Scenario
                     </button>
                  </div>
@@ -217,7 +200,7 @@ export default function Experiments() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3 bg-white dark:bg-[#1a2234] rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-             <IconFlask className="w-32 h-32" />
+             <Beaker className="w-32 h-32" />
           </div>
           
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Experiment Configurator</h3>
@@ -255,7 +238,7 @@ export default function Experiments() {
               disabled={loading}
               className="btn btn-primary w-full py-2.5 flex items-center justify-center gap-2 font-bold shadow-lg shadow-primary-500/20"
             >
-              {loading ? <IconLoader2 className="w-5 h-5 animate-spin" /> : <IconPlayerPlay className="w-5 h-5" />}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
               {loading ? 'Simulating...' : 'Execute Benchmark'}
             </button>
           </div>
@@ -286,7 +269,7 @@ export default function Experiments() {
       {result?.validation && (
         <div className="bg-white dark:bg-[#1a2234] rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
-              <IconShield className="w-5 h-5 text-emerald-500" />
+              <Shield className="w-5 h-5 text-emerald-500" />
               Scientific Validation Checklist
            </h3>
            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -298,7 +281,7 @@ export default function Experiments() {
                     passed ? "bg-emerald-50/50 border-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-400" : "bg-red-50 border-red-100 text-red-700"
                   )}
                 >
-                   {passed ? <IconCircleCheck className="w-5 h-5" /> : <IconCircleX className="w-5 h-5" />}
+                   {passed ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
                    <span className="text-xs font-bold uppercase tracking-wider">{key.replace(/_/g, ' ')}</span>
                 </div>
               ))}
@@ -312,7 +295,7 @@ export default function Experiments() {
            <ExperimentCard 
               title="Completion Time Bench (Fig. 5)" 
               subtitle="Total delay (s) for 10 fog nodes" 
-              icon={IconClock} 
+              icon={Clock} 
               iconColor="text-blue-500"
            >
               <ResponsiveContainer width="100%" height={350}>
@@ -332,7 +315,7 @@ export default function Experiments() {
            <ExperimentCard 
               title="Energy Consumption Bench (Fig. 6)" 
               subtitle="Total energy (Joules) per batch" 
-              icon={IconBolt} 
+              icon={Zap} 
               iconColor="text-amber-500"
            >
               <ResponsiveContainer width="100%" height={350}>
@@ -358,7 +341,7 @@ export default function Experiments() {
            <ExperimentCard 
               title="Reliability Bench (Fig. 7)" 
               subtitle="% tasks completed within max tolerance" 
-              icon={IconShield} 
+              icon={Shield} 
               iconColor="text-emerald-500"
            >
               <ResponsiveContainer width="100%" height={350}>
@@ -378,7 +361,7 @@ export default function Experiments() {
            <ExperimentCard 
               title="Tolerance Stress Test (Fig. 8)" 
               subtitle="Reliability vs Max Tolerance Time (s)" 
-              icon={IconSettings} 
+              icon={Settings} 
               iconColor="text-purple-500"
            >
               <ResponsiveContainer width="100%" height={350}>
@@ -401,14 +384,14 @@ export default function Experiments() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
          <div className="lg:col-span-1 bg-white dark:bg-[#1a2234] rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-               <IconFileTypeJs className="w-4 h-4 text-primary-600" />
+               <FileJson className="w-4 h-4 text-primary-600" />
                Generated Result Logs
             </h3>
             <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
                {savedFiles.map(f => (
                  <div key={f} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-transparent hover:border-primary-100 transition-all group">
                     <span className="text-xs font-mono text-gray-500 group-hover:text-primary-600 truncate">{f}</span>
-                    <IconDownload className="w-4 h-4 text-gray-300 group-hover:text-primary-500 cursor-pointer" />
+                    <Download className="w-4 h-4 text-gray-300 group-hover:text-primary-500 cursor-pointer" />
                  </div>
                ))}
                {savedFiles.length === 0 && <p className="text-xs text-gray-400 italic">No logs generated yet.</p>}
@@ -418,7 +401,7 @@ export default function Experiments() {
          <div className="lg:col-span-2 bg-white dark:bg-[#1a2234] rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-between">
             <div className="flex items-center gap-6">
                <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-2xl text-primary-600">
-                  <IconChartBar className="w-8 h-8" />
+                  <BarChart2 className="w-8 h-8" />
                </div>
                <div>
                   <h4 className="text-lg font-bold text-gray-900 dark:text-white">Batch Export Results</h4>
@@ -430,10 +413,10 @@ export default function Experiments() {
                  onClick={() => setShowScenarioGenerator(true)}
                  className="btn btn-secondary bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-900/30 text-emerald-600 px-6 font-bold flex items-center gap-2"
                >
-                  <IconFlask className="w-4 h-4" /> AI Scenario
+                  <Beaker className="w-4 h-4" /> AI Scenario
                </button>
                <button className="btn btn-secondary bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-6 font-bold flex items-center gap-2">
-                  <IconDownload className="w-4 h-4" /> Prepare Report
+                  <Download className="w-4 h-4" /> Prepare Report
                </button>
             </div>
          </div>
@@ -459,7 +442,7 @@ function ExperimentCard({ title, subtitle, icon: Icon, iconColor, children }: an
             <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
           </div>
           <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-             <IconDotsVertical className="w-5 h-5" />
+             <MoreVertical className="w-5 h-5" />
           </button>
        </div>
        {children}

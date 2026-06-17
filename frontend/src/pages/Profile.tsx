@@ -1,28 +1,6 @@
 import { useState } from 'react';
-import { 
-  IconUser, 
-  IconLock, 
-  IconBookmark, 
-  IconBell, 
-  IconLink,
-  IconUpload,
-  IconAlertTriangle,
-  IconCheck,
-  IconBrandGoogle,
-  IconBrandGithub,
-  IconBrandSlack,
-  IconTrash,
-  IconPlus,
-  IconCreditCard,
-  IconChevronRight,
-  IconShieldLock,
-  IconCode,
-  IconKey,
-  IconWebhook,
-  IconCopy,
-  IconEye,
-  IconDotsVertical
-} from '@tabler/icons-react';
+import { User, Lock, Bookmark, Bell, Link, Upload, AlertTriangle, Check, Trash2, Plus, CreditCard, ChevronRight, Shield, Code, Key, Webhook, Copy, Eye, MoreVertical } from 'lucide-react';
+import { IconBrandGoogle, IconBrandGithub, IconBrandSlack } from '../components/shared/BrandIcons';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { authApi } from '../lib/api';
@@ -91,12 +69,12 @@ export default function Profile() {
       
       {/* ── TABS ── */}
       <div className="flex flex-wrap gap-2 mb-6">
-        <TabButton active={activeTab === 'account'} onClick={() => setActiveTab('account')} icon={IconUser} label="Account" />
-        <TabButton active={activeTab === 'security'} onClick={() => setActiveTab('security')} icon={IconLock} label="Security" />
-        <TabButton active={activeTab === 'billing'} onClick={() => setActiveTab('billing')} icon={IconBookmark} label="Billing & Plans" />
-        <TabButton active={activeTab === 'notifications'} onClick={() => setActiveTab('notifications')} icon={IconBell} label="Notifications" />
-        <TabButton active={activeTab === 'connections'} onClick={() => setActiveTab('connections')} icon={IconLink} label="Connections" />
-        <TabButton active={activeTab === 'developer'} onClick={() => setActiveTab('developer')} icon={IconCode} label="Developer" />
+        <TabButton active={activeTab === 'account'} onClick={() => setActiveTab('account')} icon={User} label="Account" />
+        <TabButton active={activeTab === 'security'} onClick={() => setActiveTab('security')} icon={Lock} label="Security" />
+        <TabButton active={activeTab === 'billing'} onClick={() => setActiveTab('billing')} icon={Bookmark} label="Billing & Plans" />
+        <TabButton active={activeTab === 'notifications'} onClick={() => setActiveTab('notifications')} icon={Bell} label="Notifications" />
+        <TabButton active={activeTab === 'connections'} onClick={() => setActiveTab('connections')} icon={Link} label="Connections" />
+        <TabButton active={activeTab === 'developer'} onClick={() => setActiveTab('developer')} icon={Code} label="Developer" />
       </div>
 
       <div className="animate-fade-in-up">
@@ -121,7 +99,7 @@ export default function Profile() {
                   <div>
                     <div className="flex gap-3 mb-2">
                       <button className="btn btn-primary flex items-center gap-2 px-5 py-2.5">
-                        <IconUpload className="w-4 h-4" stroke={1.5} />
+                        <Upload className="w-4 h-4" strokeWidth={1.5} />
                         Upload new photo
                       </button>
                       <button className="btn btn-secondary px-5 py-2.5 text-gray-600 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border-none">
@@ -180,7 +158,7 @@ export default function Profile() {
               </div>
               <div className="p-6">
                 <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/30 rounded-lg p-4 mb-6 flex gap-3">
-                  <IconAlertTriangle className="w-5 h-5 text-orange-600 shrink-0" stroke={1.5} />
+                  <AlertTriangle className="w-5 h-5 text-orange-600 shrink-0" strokeWidth={1.5} />
                   <div>
                     <h4 className="text-orange-800 dark:text-orange-300 font-semibold mb-1 text-sm">Are you sure you want to delete your account?</h4>
                     <p className="text-orange-700 dark:text-orange-400 text-sm">Once you delete your account, there is no going back. Please be certain.</p>
@@ -230,7 +208,7 @@ export default function Profile() {
 
             <div className="bg-white dark:bg-[#1a2234] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden p-6 flex flex-col sm:flex-row items-center gap-6">
                <div className="w-20 h-20 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center shrink-0">
-                  <IconShieldLock className="w-10 h-10 text-primary-600" stroke={1.5} />
+                  <Shield className="w-10 h-10 text-primary-600" strokeWidth={1.5} />
                </div>
                <div className="flex-1 text-center sm:text-left">
                   <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Two-step verification</h3>
@@ -270,13 +248,13 @@ export default function Profile() {
                  <div className="bg-white dark:bg-[#1a2234] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
                     <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Payment Methods</h3>
-                       <button className="btn btn-primary btn-sm flex items-center gap-1"><IconPlus className="w-4 h-4" /> Add Card</button>
+                       <button className="btn btn-primary btn-sm flex items-center gap-1"><Plus className="w-4 h-4" /> Add Card</button>
                     </div>
                     <div className="p-6 space-y-4">
                        <div className="flex items-center justify-between p-4 border border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50/50 dark:bg-gray-800/30">
                           <div className="flex items-center gap-4">
                              <div className="w-12 h-8 bg-white dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 flex items-center justify-center">
-                                <IconCreditCard className="w-6 h-6 text-gray-400" />
+                                <CreditCard className="w-6 h-6 text-gray-400" />
                              </div>
                              <div>
                                 <p className="text-sm font-bold text-gray-900 dark:text-white">Visa •••• 4242</p>
@@ -298,9 +276,9 @@ export default function Profile() {
                        <span className="text-primary-200 text-sm">/month</span>
                     </div>
                     <ul className="space-y-3 text-sm mb-8">
-                       <li className="flex items-center gap-2"><IconCheck className="w-4 h-4" /> 10 Team Members</li>
-                       <li className="flex items-center gap-2"><IconCheck className="w-4 h-4" /> 500 GB Storage</li>
-                       <li className="flex items-center gap-2"><IconCheck className="w-4 h-4" /> Priority Support</li>
+                       <li className="flex items-center gap-2"><Check className="w-4 h-4" /> 10 Team Members</li>
+                       <li className="flex items-center gap-2"><Check className="w-4 h-4" /> 500 GB Storage</li>
+                       <li className="flex items-center gap-2"><Check className="w-4 h-4" /> Priority Support</li>
                     </ul>
                     <button className="w-full py-2.5 bg-white text-primary-600 font-bold rounded-lg hover:bg-gray-50 transition-colors">Upgrade Plan</button>
                  </div>
@@ -377,14 +355,14 @@ export default function Profile() {
                     <p className="text-sm text-gray-500">Manage your secret keys for API access.</p>
                   </div>
                   <button className="btn btn-primary flex items-center gap-2">
-                    <IconPlus className="w-4 h-4" /> Create New Key
+                    <Plus className="w-4 h-4" /> Create New Key
                   </button>
                </div>
                <div className="p-6 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-xl gap-4">
                      <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center text-primary-600">
-                           <IconKey className="w-5 h-5" />
+                           <Key className="w-5 h-5" />
                         </div>
                         <div>
                            <p className="text-sm font-bold text-gray-900 dark:text-white">Main Research Key</p>
@@ -392,9 +370,9 @@ export default function Profile() {
                         </div>
                      </div>
                      <div className="flex items-center gap-2">
-                        <button className="p-2 text-gray-400 hover:text-primary-500 transition-colors"><IconCopy className="w-4 h-4" /></button>
-                        <button className="p-2 text-gray-400 hover:text-primary-500 transition-colors"><IconEye className="w-4 h-4" /></button>
-                        <button className="p-2 text-gray-400 hover:text-red-500 transition-colors"><IconTrash className="w-4 h-4" /></button>
+                        <button className="p-2 text-gray-400 hover:text-primary-500 transition-colors"><Copy className="w-4 h-4" /></button>
+                        <button className="p-2 text-gray-400 hover:text-primary-500 transition-colors"><Eye className="w-4 h-4" /></button>
+                        <button className="p-2 text-gray-400 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
                      </div>
                   </div>
                </div>
@@ -405,13 +383,13 @@ export default function Profile() {
                <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                      <IconWebhook className="w-5 h-5 text-primary-600" />
+                      <Webhook className="w-5 h-5 text-primary-600" />
                       Webhooks
                     </h3>
                     <p className="text-sm text-gray-500">Receive real-time events on your server.</p>
                   </div>
                   <button className="btn btn-primary flex items-center gap-2">
-                    <IconPlus className="w-4 h-4" /> Add Endpoint
+                    <Plus className="w-4 h-4" /> Add Endpoint
                   </button>
                </div>
                <div className="p-6">
@@ -436,11 +414,11 @@ export default function Profile() {
                               </td>
                               <td className="px-6 py-4">
                                  <span className="flex items-center gap-1.5 text-emerald-500 font-bold text-xs uppercase tracking-widest">
-                                    <IconCheck className="w-3 h-3" /> Active
+                                    <Check className="w-3 h-3" /> Active
                                  </span>
                               </td>
                               <td className="px-6 py-4">
-                                 <button className="text-gray-400 hover:text-primary-500"><IconDotsVertical className="w-4 h-4" /></button>
+                                 <button className="text-gray-400 hover:text-primary-500"><MoreVertical className="w-4 h-4" /></button>
                               </td>
                            </tr>
                         </tbody>
@@ -466,7 +444,7 @@ function TabButton({ active, onClick, icon: Icon, label }: { active: boolean, on
           : "text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20"
       )}
     >
-      <Icon className="w-4 h-4" stroke={1.5} />
+      <Icon className="w-4 h-4" strokeWidth={1.5} />
       {label}
     </button>
   );
@@ -498,11 +476,11 @@ function ConnectionItem({ icon: Icon, name, category, connected = false }: { ico
       <div className="flex items-center">
         {connected ? (
           <button className="p-2 text-gray-400 hover:text-red-500 transition-colors">
-            <IconTrash className="w-5 h-5" />
+            <Trash2 className="w-5 h-5" />
           </button>
         ) : (
           <button className="p-2 text-gray-400 hover:text-primary-500 transition-colors">
-            <IconChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-5 h-5" />
           </button>
         )}
       </div>

@@ -167,13 +167,20 @@ app.use('/api/v1/reports', reportsRoutes);
 app.use('/api/v1/fog', fogRoutes);
 app.use('/api/v1/devices', deviceRoutes);
 app.use('/api/v1/experiments', experimentsRoutes);
-app.use('/api/v1/ai', aiRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/ml', mlRoutes);
-app.use('/api/v1/chaos', chaosRoutes);
-app.use('/api/v1/chat', chatRoutes);
-app.use('/api/v1/mail', mailRoutes);
-app.use('/api/v1/calendar', calendarRoutes);
+
+// Optional modules isolated behind a feature flag
+if (process.env.ENABLE_OPTIONAL_MODULES === 'true') {
+  app.use('/api/v1/ai', aiRoutes);
+  app.use('/api/v1/chaos', chaosRoutes);
+  app.use('/api/v1/chat', chatRoutes);
+  app.use('/api/v1/mail', mailRoutes);
+  app.use('/api/v1/calendar', calendarRoutes);
+  logger.info('Optional modules registered (Chat, Mail, Calendar, Chaos, AI)');
+} else {
+  logger.info('Optional modules disabled (Chat, Mail, Calendar, Chaos, AI)');
+}
 
 // Alias: /api/v1/scheduling/compare → fog compare endpoint
 app.use('/api/v1/scheduling', fogRoutes);

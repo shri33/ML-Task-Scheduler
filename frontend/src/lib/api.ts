@@ -97,12 +97,37 @@ const isDemoMode = () => !!localStorage.getItem(DEMO_MODE_KEY_V2) || !!localStor
 // Token management
 let isRefreshing = false;
 let refreshFailedAt = 0;
-let hasAuthRedirected = false;
 const REFRESH_RETRY_COOLDOWN_MS = 30_000;
 let failedQueue: Array<{
   resolve: (token: string) => void;
   reject: (error: Error) => void;
 }> = [];
+
+// Client-side logout and redirect callback registry
+let logoutCallback: (() => void) | null = null;
+let redirectCallback: ((path: string) => void) | null = null;
+
+export const registerLogoutCallback = (cb: () => void) => {
+  logoutCallback = cb;
+};
+
+export const registerRedirectCallback = (cb: (path: string) => void) => {
+  redirectCallback = cb;
+};
+
+export const triggerLogout = () => {
+  if (logoutCallback) {
+    logoutCallback();
+  }
+  if (redirectCallback) {
+    redirectCallback('/login');
+  } else {
+    const isAuthPage = window.location.pathname.startsWith('/login') || window.location.pathname.startsWith('/not-logged-in') || window.location.pathname.startsWith('/register');
+    if (!isAuthPage && window.location.pathname !== '/') {
+      window.location.href = '/login';
+    }
+  }
+};
 
 const processQueue = (error: Error | null, token: string | null = null) => {
   failedQueue.forEach((prom) => {
@@ -155,17 +180,15 @@ api.interceptors.response.use(
       try {
         await axios.post('/v1/auth/refresh', {}, { baseURL: api.defaults.baseURL, withCredentials: true, timeout: 5000 });
         refreshFailedAt = 0;
-        hasAuthRedirected = false;
         processQueue(null, '');
         return api(originalRequest);
       } catch (refreshError) {
         refreshFailedAt = Date.now();
         processQueue(refreshError as Error, null);
-        const isAuthPage = window.location.pathname.startsWith('/login') || window.location.pathname.startsWith('/not-logged-in') || window.location.pathname.startsWith('/register');
-        if (!hasAuthRedirected && !isAuthPage && window.location.pathname !== '/') {
-          hasAuthRedirected = true;
-          window.location.href = '/login';
-        }
+        
+        // Trigger client-side logout to clear AuthContext state and transition routes cleanly
+        triggerLogout();
+        
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -188,7 +211,7 @@ export const authApi = {
     await api.post('/v1/auth/logout');
   },
   getMe: async (): Promise<AuthUser> => {
-    const response = await api.get<ApiResponse<AuthUser>>('/v1/auth/me');
+    const response = await api.get<ApiResponse<AuthUser>>(`/v1/auth/me?t=${Date.now()}`);
     return (response.data.data as any)?.user ?? response.data.data;
   },
   updateProfile: async (data: Partial<AuthUser>): Promise<AuthUser> => {

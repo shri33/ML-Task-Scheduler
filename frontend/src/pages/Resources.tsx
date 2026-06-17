@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useStore } from '../store';
 import { resourceApi } from '../lib/api';
 import { CreateResourceInput, Resource } from '../types';
-import { IconPlus, IconRefresh, IconServer, IconX, IconDotsVertical } from '@tabler/icons-react';
+import { Plus, RefreshCw, Server, X, MoreVertical } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useToast } from '../contexts/ToastContext';
 import ResourceEditModal from '../components/ResourceEditModal';
@@ -138,14 +138,14 @@ export default function Resources() {
             disabled={refreshing}
             className="btn btn-secondary flex items-center gap-2 px-4 h-11"
           >
-            <IconRefresh className={clsx("h-4 w-4", refreshing && "animate-spin")} />
+            <RefreshCw className={clsx("h-4 w-4", refreshing && "animate-spin")} />
             Refresh Data
           </button>
           <button
             onClick={() => setShowForm(true)}
             className="btn btn-primary flex items-center gap-2 px-6 h-11 shadow-lg shadow-primary-500/20"
           >
-            <IconPlus className="h-4 w-4" />
+            <Plus className="h-4 w-4" />
             Add New Node
           </button>
         </div>
@@ -158,10 +158,10 @@ export default function Resources() {
           
           {/* Summary Stats Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <StatCard label="Total Nodes" value={totalResources} icon={IconServer} color="text-gray-600" />
-            <StatCard label="Available" value={availableCount} icon={IconServer} color="text-emerald-600" active />
-            <StatCard label="Busy" value={busyCount} icon={IconServer} color="text-amber-600" />
-            <StatCard label="Avg Load" value={`${avgLoad}%`} icon={IconServer} color="text-primary-600" />
+            <StatCard label="Total Nodes" value={totalResources} icon={Server} color="text-gray-600" />
+            <StatCard label="Available" value={availableCount} icon={Server} color="text-emerald-600" active />
+            <StatCard label="Busy" value={busyCount} icon={Server} color="text-amber-600" />
+            <StatCard label="Avg Load" value={`${avgLoad}%`} icon={Server} color="text-primary-600" />
           </div>
 
           {/* Resource Grid */}
@@ -187,7 +187,7 @@ export default function Resources() {
             ) : filteredResources.length === 0 ? (
               <div className="bg-white dark:bg-[#1a2234] rounded-3xl p-16 text-center border border-gray-100 dark:border-gray-800 shadow-sm">
                 <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <IconServer className="h-10 w-10 text-gray-300 dark:text-gray-600" />
+                  <Server className="h-10 w-10 text-gray-300 dark:text-gray-600" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No nodes matching your query</h3>
                 <p className="text-gray-500 max-w-xs mx-auto">Adjust your filters or add a new computing node to the cluster.</p>
@@ -211,7 +211,7 @@ export default function Resources() {
                           "w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300",
                           resource.status === 'AVAILABLE' ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600" : "bg-gray-50 dark:bg-gray-800 text-gray-500"
                         )}>
-                          <IconServer className="h-6 w-6" />
+                          <Server className="h-6 w-6" />
                         </div>
                         <div>
                           <h4 className="font-bold text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors">
@@ -224,7 +224,7 @@ export default function Resources() {
                         </div>
                       </div>
                       <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                        <IconDotsVertical className="h-5 w-5" />
+                        <MoreVertical className="h-5 w-5" />
                       </button>
                     </div>
 
@@ -409,7 +409,7 @@ function ResourceFormModal({
         <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add Resource</h3>
           <button onClick={onClose} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-            <IconX className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-4">

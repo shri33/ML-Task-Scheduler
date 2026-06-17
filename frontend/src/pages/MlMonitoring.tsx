@@ -1,18 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
-import { 
-  IconBrain, 
-  IconHistory, 
-  IconSettings, 
-  IconPlayerPlay, 
-  IconCheck, 
-  IconAlertCircle, 
-  IconLoader2,
-  IconChartLine,
-  IconDatabase,
-  IconActivity,
-  IconRefresh
-} from '@tabler/icons-react';
+import { Brain, History, Settings, Play, Check, AlertCircle, Loader2, TrendingUp, Database, Activity, RefreshCw } from 'lucide-react';
 import { 
   XAxis, 
   YAxis, 
@@ -99,7 +87,7 @@ export default function MlMonitoring() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <IconBrain className="text-primary-500" />
+            <Brain className="text-primary-500" />
             ML Model Governance
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
@@ -112,7 +100,7 @@ export default function MlMonitoring() {
             onClick={() => fetchMlData()}
             className="p-2.5 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
-            <IconRefresh className={clsx("w-5 h-5", mlDataLoading && "animate-spin")} />
+            <RefreshCw className={clsx("w-5 h-5", mlDataLoading && "animate-spin")} />
           </button>
           
           <button
@@ -125,7 +113,7 @@ export default function MlMonitoring() {
                 : "bg-primary-600 text-white hover:bg-primary-700 shadow-primary-500/20"
             )}
           >
-            {isRetraining ? <IconLoader2 className="w-5 h-5 animate-spin" /> : <IconPlayerPlay className="w-5 h-5" />}
+            {isRetraining ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
             Trigger Retrain
           </button>
         </div>
@@ -137,14 +125,14 @@ export default function MlMonitoring() {
           title="Active Model" 
           value={activeModel?.version?.substring(0, 12) || 'None'} 
           subtitle={activeModel?.modelType || 'XGBoost'}
-          icon={IconBrain}
+          icon={Brain}
           color="primary"
         />
         <StatCard 
           title="Model Accuracy" 
           value={`${((activeModel?.r2Score || 0) * 100).toFixed(1)}%`} 
           subtitle="R² Score"
-          icon={IconChartLine}
+          icon={TrendingUp}
           color="emerald"
           trend="+2.4%"
         />
@@ -152,7 +140,7 @@ export default function MlMonitoring() {
           title="Accumulated Data" 
           value={mlConfig?.dataPointsSinceRetrain || 0} 
           subtitle={`Next trigger at ${mlConfig?.minDataPointsThreshold || 100}`}
-          icon={IconDatabase}
+          icon={Database}
           color="amber"
           progress={(mlConfig?.dataPointsSinceRetrain / mlConfig?.minDataPointsThreshold) * 100}
         />
@@ -160,7 +148,7 @@ export default function MlMonitoring() {
           title="System Health" 
           value={mlAvailable ? "Online" : "Offline"} 
           subtitle="ML Service Status"
-          icon={IconActivity}
+          icon={Activity}
           color={mlAvailable ? "emerald" : "red"}
         />
       </div>
@@ -170,7 +158,7 @@ export default function MlMonitoring() {
         <div className="lg:col-span-2 bg-white dark:bg-[#1a2234] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <IconChartLine className="text-primary-500" />
+              <TrendingUp className="text-primary-500" />
               Performance Evolution
             </h2>
             <select className="bg-gray-50 dark:bg-gray-800 border-none rounded-lg text-sm font-medium px-3 py-1.5 focus:ring-2 ring-primary-500/20">
@@ -205,7 +193,7 @@ export default function MlMonitoring() {
         <div className="bg-white dark:bg-[#1a2234] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <IconSettings className="text-primary-500" />
+              <Settings className="text-primary-500" />
               Feedback Loop
             </h2>
           </div>
@@ -249,7 +237,7 @@ export default function MlMonitoring() {
             <div className="pt-2">
               <div className="p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl">
                 <div className="flex gap-3">
-                  <IconAlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
                   <p className="text-xs text-amber-700 dark:text-amber-400">
                     High retraining frequency may increase cloud costs. Thresholds are optimized for production stability.
                   </p>
@@ -265,7 +253,7 @@ export default function MlMonitoring() {
         <div className="bg-white dark:bg-[#1a2234] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <IconChartLine className="text-primary-500" />
+              <TrendingUp className="text-primary-500" />
               Global Feature Importance
             </h2>
             <span className="text-xs text-gray-500">SHAP values</span>
@@ -295,7 +283,7 @@ export default function MlMonitoring() {
         <div className="bg-white dark:bg-[#1a2234] border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm">
           <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <IconHistory className="text-primary-500" />
+              <History className="text-primary-500" />
               Version History
             </h2>
             <span className="text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10 px-2 py-1 rounded-md">
@@ -358,7 +346,7 @@ export default function MlMonitoring() {
       {/* Training Pipeline */}
       <div className="bg-white dark:bg-[#1a2234] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <IconLoader2 className="text-primary-500" />
+            <Loader2 className="text-primary-500" />
             Training Pipeline
           </h2>
           
@@ -372,9 +360,9 @@ export default function MlMonitoring() {
                     job.status === 'FAILED' ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" :
                     "bg-primary-500 shadow-[0_0_8px_rgba(99,102,241,0.5)] animate-pulse"
                   )}>
-                    {job.status === 'ACTIVE' ? <IconCheck className="w-3 h-3 text-white" /> :
-                     job.status === 'FAILED' ? <IconAlertCircle className="w-3 h-3 text-white" /> :
-                     <IconLoader2 className="w-3 h-3 text-white animate-spin" />}
+                    {job.status === 'ACTIVE' ? <Check className="w-3 h-3 text-white" /> :
+                     job.status === 'FAILED' ? <AlertCircle className="w-3 h-3 text-white" /> :
+                     <Loader2 className="w-3 h-3 text-white animate-spin" />}
                   </div>
                   
                   <div className="bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-xl p-4 transition-all hover:border-primary-500/30">
@@ -409,7 +397,7 @@ export default function MlMonitoring() {
               ))
             ) : (
               <div className="text-center py-12">
-                <IconBrain className="w-12 h-12 text-gray-200 dark:text-gray-800 mx-auto mb-4" />
+                <Brain className="w-12 h-12 text-gray-200 dark:text-gray-800 mx-auto mb-4" />
                 <p className="text-sm text-gray-500">No training jobs recorded yet.</p>
               </div>
             )}

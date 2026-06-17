@@ -1,32 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
-import { 
-  IconFlame, 
-  IconBolt, 
-  IconShield, 
-  IconActivity, 
-  IconAlertTriangle, 
-  IconRefresh,
-  IconPlayerStop,
-  IconPlayerPlay,
-  IconClock,
-  IconBug,
-  IconWifiOff
-} from '@tabler/icons-react';
+import { Flame, Zap, Shield, Activity, AlertTriangle, RefreshCw, Square, Play, Clock, Bug, WifiOff } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useToast } from '../contexts/ToastContext';
 
 const services = [
-  { id: 'database', name: 'PostgreSQL Database', icon: IconActivity, color: 'blue' },
-  { id: 'redis', name: 'Redis Cache', icon: IconBolt, color: 'red' },
-  { id: 'ml-service', name: 'AI Prediction Service', icon: IconActivity, color: 'purple' },
-  { id: 'email', name: 'SMTP Gateway', icon: IconActivity, color: 'amber' },
+  { id: 'database', name: 'PostgreSQL Database', icon: Activity, color: 'blue' },
+  { id: 'redis', name: 'Redis Cache', icon: Zap, color: 'red' },
+  { id: 'ml-service', name: 'AI Prediction Service', icon: Activity, color: 'purple' },
+  { id: 'email', name: 'SMTP Gateway', icon: Activity, color: 'amber' },
 ];
 
 const failureTypes = [
-  { id: 'latency', name: 'Latency Injection', icon: IconClock, description: 'Inject artificial delay into service calls', unit: 'ms', defaultValue: 500 },
-  { id: 'error', name: 'Fault Injection', icon: IconBug, description: 'Simulate random 500 errors', unit: '%', defaultValue: 10 },
-  { id: 'outage', name: 'Service Outage', icon: IconWifiOff, description: 'Complete service shutdown (trips circuit breaker)', unit: '', defaultValue: 1 },
+  { id: 'latency', name: 'Latency Injection', icon: Clock, description: 'Inject artificial delay into service calls', unit: 'ms', defaultValue: 500 },
+  { id: 'error', name: 'Fault Injection', icon: Bug, description: 'Simulate random 500 errors', unit: '%', defaultValue: 10 },
+  { id: 'outage', name: 'Service Outage', icon: WifiOff, description: 'Complete service shutdown (trips circuit breaker)', unit: '', defaultValue: 1 },
 ];
 
 export default function ChaosConsole() {
@@ -70,7 +58,7 @@ export default function ChaosConsole() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <IconFlame className="text-red-500 animate-pulse" />
+            <Flame className="text-red-500 animate-pulse" />
             Chaos Engineering Console
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
@@ -94,7 +82,7 @@ export default function ChaosConsole() {
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white dark:bg-[#1a2234] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-              <IconShield className="text-primary-500" />
+              <Shield className="text-primary-500" />
               Fault Injector
             </h2>
             
@@ -188,7 +176,7 @@ export default function ChaosConsole() {
                     : "bg-red-600 text-white hover:bg-red-700 shadow-red-500/20 active:scale-95"
                 )}
               >
-                <IconPlayerPlay className="w-5 h-5" />
+                <Play className="w-5 h-5" />
                 Inject Fault
               </button>
             </div>
@@ -201,11 +189,11 @@ export default function ChaosConsole() {
           <div className="bg-white dark:bg-[#1a2234] border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm">
             <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <IconAlertTriangle className="text-amber-500" />
+                <AlertTriangle className="text-amber-500" />
                 Active Experiments
               </h2>
               <button onClick={fetchChaosData} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                <IconRefresh className={clsx("w-4 h-4 text-gray-500", chaosLoading && "animate-spin")} />
+                <RefreshCw className={clsx("w-4 h-4 text-gray-500", chaosLoading && "animate-spin")} />
               </button>
             </div>
             
@@ -215,7 +203,7 @@ export default function ChaosConsole() {
                   <div key={`${exp.service}:${exp.type}`} className="p-6 flex items-center justify-between hover:bg-red-50/30 dark:hover:bg-red-500/5 transition-colors">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-red-100 dark:bg-red-500/20 rounded-2xl flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
-                        {exp.type === 'latency' ? <IconClock /> : exp.type === 'error' ? <IconBug /> : <IconWifiOff />}
+                        {exp.type === 'latency' ? <Clock /> : exp.type === 'error' ? <Bug /> : <WifiOff />}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
@@ -236,7 +224,7 @@ export default function ChaosConsole() {
                       onClick={() => handleStop(exp.service, exp.type)}
                       className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:border-red-500 hover:text-red-500 transition-all shadow-sm"
                     >
-                      <IconPlayerStop className="w-4 h-4" />
+                      <Square className="w-4 h-4" />
                       Abort
                     </button>
                   </div>
@@ -244,7 +232,7 @@ export default function ChaosConsole() {
               ) : (
                 <div className="py-20 text-center">
                   <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-500 mx-auto mb-4">
-                    <IconShield className="w-8 h-8" />
+                    <Shield className="w-8 h-8" />
                   </div>
                   <p className="text-gray-900 dark:text-white font-bold">System Integrity Secure</p>
                   <p className="text-sm text-gray-500 mt-1">No active chaos experiments detected.</p>
@@ -256,7 +244,7 @@ export default function ChaosConsole() {
           {/* Impact Timeline */}
           <div className="bg-white dark:bg-[#1a2234] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-              <IconActivity className="text-emerald-500" />
+              <Activity className="text-emerald-500" />
               Real-time Impact Assessment
             </h2>
             
@@ -269,7 +257,7 @@ export default function ChaosConsole() {
 
             <div className="mt-8 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
               <div className="flex gap-3">
-                <IconAlertTriangle className="w-5 h-5 text-gray-400 shrink-0" />
+                <AlertTriangle className="w-5 h-5 text-gray-400 shrink-0" />
                 <p className="text-[11px] text-gray-500 italic">
                   Note: Experiments are transient and will automatically clear on service restart. Use with caution in production-mirrored environments.
                 </p>

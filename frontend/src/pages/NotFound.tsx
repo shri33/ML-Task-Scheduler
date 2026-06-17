@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { IconHome, IconArrowLeft } from '@tabler/icons-react';
+import { Home, ArrowLeft } from 'lucide-react';
 
 export default function NotFound() {
   return (
@@ -23,7 +23,7 @@ export default function NotFound() {
             to="/"
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
           >
-            <IconHome className="h-5 w-5" />
+            <Home className="h-5 w-5" />
             Go to Dashboard
           </Link>
           
@@ -31,7 +31,7 @@ export default function NotFound() {
             onClick={() => window.history.back()}
             className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
-            <IconArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5" />
             Go Back
           </button>
         </div>

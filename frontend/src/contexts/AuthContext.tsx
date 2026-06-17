@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authApi, AuthUser } from '../lib/api';
+import { authApi, AuthUser, registerLogoutCallback } from '../lib/api';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -70,6 +70,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDemoMode, setIsDemoMode] = useState(false);
+
+  useEffect(() => {
+    const handleAxiosLogout = () => {
+      setUser(null);
+      setIsDemoMode(false);
+      localStorage.removeItem(DEMO_MODE_KEY);
+    };
+
+    registerLogoutCallback(handleAxiosLogout);
+
+    return () => {
+      registerLogoutCallback(() => {});
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
