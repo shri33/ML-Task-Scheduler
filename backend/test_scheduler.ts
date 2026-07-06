@@ -1,10 +1,15 @@
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { taskService } from './src/services/task.service';
 import { schedulerService } from './src/services/scheduler.service';
 import { gpuRegistryService } from './src/services/gpuRegistry.service';
 import redisService from './src/lib/redis';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({
+    connectionString: process.env.DATABASE_URL ?? '',
+  }),
+});
 
 async function runTest() {
   try {

@@ -63,11 +63,6 @@ const sdk = new NodeSDK({
       },
       // Configure HTTP instrumentation
       '@opentelemetry/instrumentation-http': {
-        ignoreIncomingRequestHook: (request) => {
-          const url = request.url || '';
-          return ['/health', '/health/ready', '/health/live', '/metrics']
-            .some((path) => url.startsWith(path));
-        },
         requestHook: (span, request) => {
           if ('headers' in request) {
             const requestId = (request as IncomingMessage).headers['x-request-id'];

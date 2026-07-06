@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import logger from './logger';
 
 const globalForPrisma = globalThis as unknown as {
@@ -8,6 +9,9 @@ const globalForPrisma = globalThis as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
+    adapter: new PrismaPg({
+      connectionString: process.env.DATABASE_URL ?? '',
+    }),
     log: [
       { emit: 'event', level: 'query' },
       { emit: 'stdout', level: 'error' },
