@@ -21,7 +21,7 @@ export const prisma =
   });
 
 // Log slow queries (>500ms)
-prisma.$on('query' as never, (e: Prisma.QueryEvent) => {
+prisma.$on('query' as never, (e: any) => {
   if (e.duration >= 500) {
     logger.warn(`Slow Query (${e.duration}ms): ${e.query}`);
   }

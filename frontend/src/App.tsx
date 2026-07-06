@@ -8,6 +8,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
+import { useFavicon } from './hooks/useFavicon';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
 import NovaFloatingAssistant from './components/NovaFloatingAssistant';
 import { registerRedirectCallback } from './lib/api';
@@ -126,8 +127,8 @@ function AppRoutes() {
     };
   }, [navigate]);
 
-  // Set document title based on current route
   useDocumentTitle();
+  useFavicon();
 
   return (
     <>
