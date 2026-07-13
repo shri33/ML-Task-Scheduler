@@ -12,6 +12,9 @@ WORKDIR /app
 # Install OpenSSL for Prisma compatibility
 RUN apk add --no-cache openssl libc6-compat
 
+# Prisma generate needs a datasource URL at build time; runtime env vars still override this.
+ENV DATABASE_URL=postgresql://postgres:password@localhost:5432/task_scheduler
+
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/

@@ -9,3 +9,9 @@ interface ImportMeta {
 }
 
 declare module '@tabler/icons-react';
+
+declare namespace JSX {
+  interface IntrinsicElements {
+    'spline-viewer': any;
+  }
+}

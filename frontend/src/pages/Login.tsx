@@ -1,39 +1,42 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Brain, Mail, Lock, User, Eye, EyeOff, Loader2, ArrowLeft, CheckCircle, ArrowRight, Sun, Moon } from 'lucide-react';
+import {
+  Mail,
+  Lock,
+  User,
+  Eye,
+  EyeOff,
+  Loader2,
+  ArrowLeft,
+  CheckCircle,
+  ArrowRight,
+  Sun,
+  Moon,
+} from 'lucide-react';
 import { IconBrandGoogle } from '../components/shared/BrandIcons';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-
-
 
 type ViewMode = 'login' | 'register' | 'forgot-password' | 'reset-password';
 
 // ── Stat pill ────────────────────────────────────────────────────────────────
 function StatPill({ value, label, isLight }: { value: string; label: string; isLight: boolean }) {
   return (
-    <div style={{ borderTop: '1px solid rgba(52,211,153,0.15)', paddingTop: 12 }}>
+    <div className="border-t pt-3" style={{ borderColor: 'rgba(52,211,153,0.15)' }}>
       <div
+        className="font-light leading-none mb-[3px] text-[22px]"
         style={{
           fontFamily: "'Fraunces', serif",
-          fontSize: 22,
-          fontWeight: 300,
           background: 'linear-gradient(135deg,#34d399,#6366f1)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
-          lineHeight: 1,
-          marginBottom: 3,
         }}
       >
         {value}
       </div>
       <div
-        style={{
-          fontSize: 10,
-          color: isLight ? 'rgba(17,24,39,0.40)' : 'rgba(247,244,239,0.35)',
-          letterSpacing: '0.09em',
-          textTransform: 'uppercase',
-        }}
+        className="text-[10px] tracking-[0.09em] uppercase"
+        style={{ color: isLight ? 'rgba(17,24,39,0.40)' : 'rgba(247,244,239,0.35)' }}
       >
         {label}
       </div>
@@ -72,34 +75,31 @@ function Field({
   return (
     <div>
       <label
+        className="block text-[10px] font-medium tracking-[0.14em] uppercase mb-[5px] transition-colors duration-150"
         style={{
-          display: 'block',
-          fontSize: 10,
-          fontWeight: 500,
-          letterSpacing: '0.14em',
-          textTransform: 'uppercase',
           color: focused
-            ? isLight ? '#059669' : '#34d399'
-            : isLight ? 'rgba(17,24,39,0.45)' : '#6b7280',
-          marginBottom: 5,
-          transition: 'color 0.15s',
+            ? isLight
+              ? '#059669'
+              : '#34d399'
+            : isLight
+              ? 'rgba(17,24,39,0.45)'
+              : '#6b7280',
         }}
       >
         {label}
       </label>
-      <div style={{ position: 'relative' }}>
+      <div className="relative">
         <Icon
           size={15}
+          className="absolute left-[13px] top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-150"
           style={{
-            position: 'absolute',
-            left: 13,
-            top: '50%',
-            transform: 'translateY(-50%)',
             color: focused
-              ? isLight ? '#059669' : '#34d399'
-              : isLight ? 'rgba(17,24,39,0.35)' : '#4b5563',
-            transition: 'color 0.15s',
-            pointerEvents: 'none',
+              ? isLight
+                ? '#059669'
+                : '#34d399'
+              : isLight
+                ? 'rgba(17,24,39,0.35)'
+                : '#4b5563',
           }}
           strokeWidth={1.5}
         />
@@ -113,33 +113,28 @@ function Field({
           autoFocus={autoFocus}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
+          className="w-full py-[11px] pl-10 rounded-[10px] text-[13px] outline-none font-sans transition-[border-color,box-shadow] duration-150 box-border"
           style={{
-            width: '100%',
-            padding: '11px 13px 11px 40px',
             paddingRight: rightSlot ? 42 : 13,
             background: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)',
             border: `1px solid ${
               focused
-                ? isLight ? 'rgba(5,150,105,0.5)' : 'rgba(52,211,153,0.5)'
-                : isLight ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.08)'
+                ? isLight
+                  ? 'rgba(5,150,105,0.5)'
+                  : 'rgba(52,211,153,0.5)'
+                : isLight
+                  ? 'rgba(0,0,0,0.10)'
+                  : 'rgba(255,255,255,0.08)'
             }`,
-            borderRadius: 10,
-            fontSize: 13,
             color: isLight ? '#111827' : '#f9fafb',
-            outline: 'none',
-            fontFamily: "'DM Sans', sans-serif",
-            transition: 'border-color 0.15s, box-shadow 0.15s',
-            boxSizing: 'border-box',
             boxShadow: focused
-              ? isLight ? '0 0 0 3px rgba(5,150,105,0.08)' : '0 0 0 3px rgba(52,211,153,0.08)'
+              ? isLight
+                ? '0 0 0 3px rgba(5,150,105,0.08)'
+                : '0 0 0 3px rgba(52,211,153,0.08)'
               : 'none',
           }}
         />
-        {rightSlot && (
-          <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }}>
-            {rightSlot}
-          </div>
-        )}
+        {rightSlot && <div className="absolute right-3 top-1/2 -translate-y-1/2">{rightSlot}</div>}
       </div>
     </div>
   );
@@ -171,13 +166,13 @@ export default function Login() {
 
   // ── Theme colors ──────────────────────────────────────────────────────────
   const theme = {
-    bg:       isLight ? '#f0fdf8'             : '#0a0a0f',
-    panel:    isLight ? '#ffffff'             : '#111118',
-    accent:   isLight ? '#059669'             : '#34d399',
-    text:     isLight ? '#111827'             : '#f9fafb',
-    muted:    isLight ? 'rgba(17,24,39,0.45)' : 'rgba(249,250,251,0.35)',
-    border:   isLight ? 'rgba(0,0,0,0.10)'   : 'rgba(255,255,255,0.08)',
-    inputBg:  isLight ? 'rgba(0,0,0,0.04)'   : 'rgba(255,255,255,0.04)',
+    bg: isLight ? '#f0fdf8' : '#0a0a0f',
+    panel: isLight ? '#ffffff' : '#111118',
+    accent: isLight ? '#059669' : '#34d399',
+    text: isLight ? '#111827' : '#f9fafb',
+    muted: isLight ? 'rgba(17,24,39,0.45)' : 'rgba(249,250,251,0.35)',
+    border: isLight ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.08)',
+    inputBg: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)',
     overlayGrad: isLight
       ? 'linear-gradient(to top, #f0fdf8 0%, rgba(240,253,248,0.8) 55%, transparent 100%)'
       : 'linear-gradient(to top, #0a0a0f 0%, rgba(10,10,15,0.75) 55%, transparent 100%)',
@@ -207,14 +202,14 @@ export default function Login() {
     const oauthError = params.get('error');
     if (!oauthError) return;
     const map: Record<string, string> = {
-      google_not_configured:       'Google login is not configured on server.',
-      invalid_oauth_state:         'Google login validation failed. Please try again.',
-      google_token_exchange_failed:'Could not complete Google token exchange.',
+      google_not_configured: 'Google login is not configured on server.',
+      invalid_oauth_state: 'Google login validation failed. Please try again.',
+      google_token_exchange_failed: 'Could not complete Google token exchange.',
       missing_google_access_token: 'Google did not return an access token.',
       google_profile_fetch_failed: 'Could not fetch your Google profile.',
-      google_email_not_verified:   'Your Google email must be verified to continue.',
-      account_deactivated:         'This account is deactivated. Contact support.',
-      google_auth_failed:          'Google login failed. Please try again.',
+      google_email_not_verified: 'Your Google email must be verified to continue.',
+      account_deactivated: 'This account is deactivated. Contact support.',
+      google_auth_failed: 'Google login failed. Please try again.',
     };
     toast.error('Google sign-in failed', map[oauthError] || 'Please try again.');
   }, [location.search, toast]);
@@ -249,22 +244,25 @@ export default function Login() {
       }
     } catch (error) {
       toast.error(
-        viewMode === 'login'           ? 'Login failed'
-          : viewMode === 'register'    ? 'Registration failed'
-          : viewMode === 'forgot-password' ? 'Reset request failed'
-          : 'Password reset failed',
-        error instanceof Error ? error.message : 'Please try again'
+        viewMode === 'login'
+          ? 'Login failed'
+          : viewMode === 'register'
+            ? 'Registration failed'
+            : viewMode === 'forgot-password'
+              ? 'Reset request failed'
+              : 'Password reset failed',
+        error instanceof Error ? error.message : 'Please try again',
       );
     } finally {
       setIsLoading(false);
     }
   };
 
-  const isLogin        = viewMode === 'login';
-  const isRegister     = viewMode === 'register';
+  const isLogin = viewMode === 'login';
+  const isRegister = viewMode === 'register';
   const isForgotPassword = viewMode === 'forgot-password';
-  const isResetPassword  = viewMode === 'reset-password';
-  const showSocialBlock  = isLogin || isRegister;
+  const isResetPassword = viewMode === 'reset-password';
+  const showSocialBlock = isLogin || isRegister;
 
   const px = (mousePos.x - 0.5) * 24;
   const py = (mousePos.y - 0.5) * 24;
@@ -273,14 +271,10 @@ export default function Login() {
     <button
       type="button"
       onClick={() => setShowPassword(!showPassword)}
-      style={{
-        background: 'none', border: 'none', cursor: 'pointer',
-        color: theme.muted, display: 'flex', padding: 0,
-      }}
+      className="bg-transparent border-none cursor-pointer flex p-0"
+      style={{ color: theme.muted }}
     >
-      {showPassword
-        ? <EyeOff size={15} strokeWidth={1.5} />
-        : <Eye    size={15} strokeWidth={1.5} />}
+      {showPassword ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
     </button>
   );
 
@@ -289,22 +283,10 @@ export default function Login() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400&family=DM+Sans:wght@300;400;500;600&display=swap');
 
-        .login-tab {
-          flex: 1; padding: 8px 0; border-radius: 8px; border: none;
-          background: transparent; font-size: 13px; font-weight: 500;
-          font-family: 'DM Sans', sans-serif; cursor: pointer;
-          transition: all 0.18s; letter-spacing: 0.02em;
-        }
         .primary-btn {
-          width: 100%; padding: 12px;
           background: linear-gradient(135deg, #34d399, #6366f1);
-          border: none; border-radius: 10px;
-          font-size: 13px; font-weight: 600; color: #fff;
-          cursor: pointer; font-family: 'DM Sans', sans-serif;
-          letter-spacing: 0.01em;
-          transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
-          display: flex; align-items: center; justify-content: center; gap: 7px;
           box-shadow: 0 4px 20px rgba(52,211,153,0.22);
+          transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
         }
         .primary-btn:hover:not(:disabled) {
           opacity: 0.9; transform: translateY(-1px);
@@ -312,46 +294,13 @@ export default function Login() {
         }
         .primary-btn:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
 
-        .ghost-btn {
-          width: 100%; padding: 11px;
-          border-radius: 10px; font-size: 13px; font-weight: 400;
-          cursor: pointer; font-family: 'DM Sans', sans-serif;
-          display: flex; align-items: center; justify-content: center; gap: 8px;
-          transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.1s;
-        }
         .ghost-btn:hover { transform: translateY(-1px); }
-
-        .back-btn {
-          display: inline-flex; align-items: center; gap: 5px;
-          font-size: 11px; background: none; border: none; cursor: pointer;
-          padding: 0; font-family: 'DM Sans', sans-serif;
-          letter-spacing: 0.04em; margin-bottom: 12px; transition: color 0.15s;
-        }
-
-        .divider-row {
-          display: flex; align-items: center; gap: 12px;
-          margin: 14px 0; font-size: 11px; letter-spacing: 0.08em;
-        }
-        .divider-row div { flex: 1; height: 1px; }
-
-        .forgot-link {
-          font-size: 11px; background: none; border: none;
-          cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0;
-          transition: opacity 0.15s; color: #34d399;
-        }
-        .forgot-link:hover { opacity: 0.75; }
 
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(18px); }
           to   { opacity: 1; transform: translateY(0); }
         }
         .fade-up { animation: fadeUp 0.5s cubic-bezier(.22,1,.36,1) both; }
-
-        @keyframes floatAnim {
-          0%,100% { transform: translateY(0px); }
-          50%      { transform: translateY(-8px); }
-        }
-        .float-anim { animation: floatAnim 3.5s ease-in-out infinite; }
 
         @keyframes morphing {
           0% {
@@ -368,134 +317,50 @@ export default function Login() {
           }
         }
 
-        .ring {
-          position: absolute; border-radius: 50%;
-          border: none;
-          pointer-events: none;
-        }
-
-        .cursor-glow {
-          position: absolute; width: 280px; height: 280px; border-radius: 50%;
-          background: radial-gradient(circle, rgba(52,211,153,0.06) 0%, transparent 70%);
-          pointer-events: none; z-index: 5;
-          transform: translate(-50%, -50%);
-        }
-
-        .toggle-btn {
-          position: absolute; top: 16px; right: 16px; z-index: 200;
-          display: flex; align-items: center; gap: 8px;
-          border-radius: 999px; padding: 7px 14px;
-          cursor: pointer; font-size: 12px;
-          font-family: 'DM Sans', sans-serif; font-weight: 500;
-          transition: all 0.2s; border: 1px solid;
-        }
-        .toggle-track {
-          width: 30px; height: 17px; border-radius: 999px;
-          position: relative; transition: background 0.25s;
-        }
-        .toggle-thumb {
-          position: absolute; top: 2px; left: 2px;
-          width: 13px; height: 13px; border-radius: 50%;
-          background: #fff; transition: transform 0.22s;
-        }
-
         .login-root {
-          min-height: 100vh;
-          display: grid;
-          grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-          font-family: 'DM Sans', sans-serif;
           background: ${theme.bg};
           color: ${theme.text};
           transition: background 0.35s, color 0.35s;
-          position: relative;
-          overflow: hidden;
         }
         .login-hero {
-          position: relative;
-          overflow: hidden;
           background: ${theme.bg};
           transition: background 0.35s;
-          cursor: none;
         }
         .login-form {
           background: ${theme.panel};
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          padding: 37px 60px 32px 1px;
-          min-height: 100vh;
-          overflow-y: hidden;
           transition: background 0.35s, border-color 0.35s;
-        }
-        .login-form-content {
-          width: 100%;
-          max-width: 340px;
         }
 
         @media (max-width: 1024px) {
-          .login-root {
-            grid-template-columns: 1fr;
-          }
-          .login-hero {
-            display: none;
-          }
-          .login-form {
-            padding: 28px 24px;
-            min-height: 100svh;
-          }
-          .login-form-content {
-            max-width: 420px;
-          }
+          .login-root { grid-template-columns: 1fr !important; height: auto !important; min-height: 100svh !important; }
+          .login-hero { display: none !important; }
+          .login-form { padding: 28px 24px !important; height: auto !important; min-height: 100svh !important; overflow: auto !important; }
+          .login-form-content { max-width: 420px !important; }
         }
 
         @media (max-width: 640px) {
-          .login-form {
-            padding: 20px 16px;
-          }
-          .login-form-content {
-            max-width: 100%;
-          }
-          .login-tab {
-            padding: 7px 0;
-            font-size: 12px;
-          }
-          .primary-btn,
-          .ghost-btn {
-            padding-top: 10px;
-            padding-bottom: 10px;
-            font-size: 12px;
-          }
+          .login-form { padding: 20px 16px !important; }
+          .login-form-content { max-width: 100% !important; }
+          .login-tab { padding: 7px 0 !important; font-size: 12px !important; }
+          .primary-btn, .ghost-btn { padding-top: 10px !important; padding-bottom: 10px !important; font-size: 12px !important; }
         }
-
-        .animate-spin { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
 
       {/* ── Root ── */}
-      <div
-        className="login-root"
-      >
-
+      <div className="login-root h-screen min-h-screen grid grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] font-sans relative overflow-hidden">
         {/* ── Theme toggle ── */}
         <button
-          className="toggle-btn"
           onClick={() => setIsLight(!isLight)}
-          style={{
-            background: theme.panel,
-            borderColor: theme.border,
-            color: theme.muted,
-          }}
+          className="absolute top-4 right-4 z-[200] flex items-center gap-2 rounded-full px-3.5 py-[7px] cursor-pointer text-xs font-medium font-sans transition-all duration-200 border"
+          style={{ background: theme.panel, borderColor: theme.border, color: theme.muted }}
         >
-          {isLight
-            ? <Moon size={13} strokeWidth={1.5} />
-            : <Sun  size={13} strokeWidth={1.5} />}
+          {isLight ? <Moon size={13} strokeWidth={1.5} /> : <Sun size={13} strokeWidth={1.5} />}
           <div
-            className="toggle-track"
+            className="w-[30px] h-[17px] rounded-full relative transition-colors duration-[250ms]"
             style={{ background: isLight ? theme.accent : theme.border }}
           >
             <div
-              className="toggle-thumb"
+              className="absolute top-0.5 left-0.5 w-[13px] h-[13px] rounded-full bg-white transition-transform duration-[220ms]"
               style={{ transform: isLight ? 'translateX(13px)' : 'translateX(0)' }}
             />
           </div>
@@ -505,134 +370,158 @@ export default function Login() {
             LEFT — Spline 3D scene
         ══════════════════════════════════════════════════ */}
         <div
-          className="login-hero"
+          className="login-hero relative overflow-hidden h-screen cursor-none"
           ref={leftPanelRef}
-          style={{}}
         >
           {/* Cursor glow */}
           <div
-            className="cursor-glow"
+            className="absolute w-[280px] h-[280px] rounded-full pointer-events-none z-[5] -translate-x-1/2 -translate-y-1/2"
             style={{
+              background: 'radial-gradient(circle, rgba(52,211,153,0.06) 0%, transparent 70%)',
               left: `${mousePos.x * 100}%`,
-              top:  `${mousePos.y * 100}%`,
+              top: `${mousePos.y * 100}%`,
             }}
           />
 
           {/* Decorative rings */}
-          <div className="ring" style={{
-            top: -100, right: -80, width: 420, height: 420,
-            transform: `translate(${px * 0.3}px, ${py * 0.3}px)`,
-            transition: 'transform 0.12s ease-out',
-          }} />
-          <div className="ring" style={{
-            top: 80, right: -180, width: 600, height: 600,
-            transform: `translate(${px * 0.15}px, ${py * 0.15}px)`,
-            transition: 'transform 0.18s ease-out',
-          }} />
-          <div className="ring" style={{
-            bottom: 60, left: -100, width: 360, height: 360,
-            transform: `translate(${-px * 0.2}px, ${-py * 0.2}px)`,
-            transition: 'transform 0.14s ease-out',
-          }} />
+          <div
+            className="absolute rounded-full pointer-events-none"
+            style={{
+              top: -100,
+              right: -80,
+              width: 420,
+              height: 420,
+              border: `1px solid ${isLight ? 'rgba(99,102,241,0.18)' : 'rgba(99,102,241,0.25)'}`,
+              transform: `translate(${px * 0.3}px, ${py * 0.3}px)`,
+              transition: 'transform 0.12s ease-out, border-color 0.35s',
+            }}
+          />
+          <div
+            className="absolute rounded-full pointer-events-none"
+            style={{
+              top: 80,
+              right: -180,
+              width: 600,
+              height: 600,
+              border: `1px solid ${isLight ? 'rgba(99,102,241,0.14)' : 'rgba(99,102,241,0.18)'}`,
+              transform: `translate(${px * 0.15}px, ${py * 0.15}px)`,
+              transition: 'transform 0.18s ease-out, border-color 0.35s',
+            }}
+          />
+          <div
+            className="absolute rounded-full pointer-events-none"
+            style={{
+              bottom: 60,
+              left: -100,
+              width: 360,
+              height: 360,
+              border: `1px solid ${isLight ? 'rgba(52,211,153,0.16)' : 'rgba(52,211,153,0.20)'}`,
+              transform: `translate(${-px * 0.2}px, ${-py * 0.2}px)`,
+              transition: 'transform 0.14s ease-out, border-color 0.35s',
+            }}
+          />
 
           {/* Logo top-left */}
           <div
+            className="absolute top-8 left-9 z-20 flex items-center gap-2.5"
             style={{
-              position: 'absolute', top: 32, left: 36, zIndex: 20,
-              display: 'flex', alignItems: 'center', gap: 10,
               transform: `translate(${px * 0.08}px, ${py * 0.08}px)`,
               transition: 'transform 0.1s ease-out',
             }}
           >
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: 'linear-gradient(135deg,#34d399,#6366f1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 24px rgba(52,211,153,0.30)',
-            }}>
-              <Brain size={18} color="#fff" strokeWidth={1.5} />
-            </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: theme.text, letterSpacing: '-0.01em', transition: 'color 0.35s' }}>
+              <div
+                className="text-sm font-semibold tracking-[-0.01em] transition-colors duration-[350ms]"
+                style={{ color: theme.text }}
+              >
                 ML Task Scheduler
               </div>
-              <div style={{ fontSize: 10, color: 'rgba(52,211,153,0.75)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <div
+                className="text-[10px] tracking-[0.08em] uppercase"
+                style={{ color: 'rgba(52,211,153,0.75)' }}
+              >
                 Fog Computing Platform
               </div>
             </div>
           </div>
 
-          {/* Abstract Animated CSS Background */}
-          <div 
-            style={{ 
-              position: 'absolute', 
-              inset: 0, 
-              zIndex: 1,
-              overflow: 'hidden',
-              background: isLight 
+          {/* Spline viewer background */}
+          <div
+            className="absolute inset-0 z-[2] overflow-hidden pointer-events-none"
+            style={{
+              background: isLight
                 ? 'radial-gradient(circle at 30% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%), radial-gradient(circle at 70% 60%, rgba(52, 211, 153, 0.08) 0%, transparent 45%)'
-                : 'radial-gradient(circle at 30% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%), radial-gradient(circle at 70% 60%, rgba(52, 211, 153, 0.15) 0%, transparent 45%)'
+                : 'radial-gradient(circle at 30% 20%, rgba(99, 102, 241, 0.16) 0%, transparent 40%), radial-gradient(circle at 70% 60%, rgba(52, 211, 153, 0.16) 0%, transparent 45%)',
             }}
           >
-            <div 
+            <div
+              className="absolute z-10 pointer-events-auto"
+              style={{ top: '18%', left: '18%', width: '430px', height: '430px' }}
+            >
+              <spline-viewer
+                url="https://prod.spline.design/f3-TNKs3z9ZsOMZq/scene.splinecode"
+                logo="no"
+                loading="eager"
+                style={{
+  width: "70vw",
+  height: "85vh",
+  display: "block",
+  transformOrigin: "center center",
+  position: "absolute",
+  left: "-30%",
+  top: "-17%",
+}}
+              />
+            </div>
+            <div
+              className="absolute z-0 pointer-events-none"
               style={{
-                position: 'absolute',
-                top: '20%',
-                left: '20%',
-                width: '350px',
-                height: '350px',
-                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(52, 211, 153, 0.22) 100%)',
-                borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%',
-                filter: 'blur(50px)',
-                animation: 'morphing 15s ease-in-out infinite alternate',
-                pointerEvents: 'none',
-              }}
-            />
-            <div 
-              style={{
-                position: 'absolute',
-                bottom: '15%',
-                right: '15%',
-                width: '300px',
-                height: '300px',
-                background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.18) 0%, rgba(99, 102, 241, 0.18) 100%)',
+                top: '7%',
+                left: '31%',
+                width: '78%',
+                height: '94%',
+                background:
+                  'linear-gradient(135deg, rgba(52, 211, 153, 0.18) 0%, rgba(99, 102, 241, 0.18) 100%)',
                 borderRadius: '50% 40% 30% 60% / 50% 60% 40% 50%',
                 filter: 'blur(45px)',
                 animation: 'morphing 12s ease-in-out infinite alternate-reverse',
-                pointerEvents: 'none',
               }}
             />
           </div>
 
           {/* Bottom overlay — text + stats */}
-          <div style={{
-            position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10,
-            padding: '28px 36px',
-            background: theme.overlayGrad,
-            transition: 'background 0.35s',
-          }}>
-            <div style={{
-              transform: `translate(${px * 0.05}px, ${py * 0.05}px)`,
-              transition: 'transform 0.15s ease-out',
-              marginBottom: 24,
-            }}>
-              
-              <h1 style={{
-                fontFamily: "'Fraunces', serif", fontWeight: 300,
-                fontSize: 32, lineHeight: 1.12, color: theme.text,
-                marginBottom: 16, letterSpacing: '-0.01em',
-                transition: 'color 0.35s',
-              }}>
-                Intelligent task<br />allocation for{' '}
-                <em style={{ fontStyle: 'italic', color: theme.accent, transition: 'color 0.35s' }}>fog.</em>
+          <div
+            className="absolute bottom-0 left-0 right-0 z-10 px-9 py-7"
+            style={{ background: theme.overlayGrad, transition: 'background 0.35s' }}
+          >
+            <div
+              style={{
+                transform: `translate(${px * 0.05}px, ${py * 0.05}px)`,
+                transition: 'transform 0.15s ease-out',
+                marginBottom: 24,
+              }}
+            >
+              <h1
+                className="font-light leading-[1.12] mb-4 tracking-[-0.01em] text-[32px] transition-colors duration-[350ms]"
+                style={{ fontFamily: "'Fraunces', serif", color: theme.text }}
+              >
+                Intelligent task
+                <br />
+                allocation for{' '}
+                <em
+                  className="italic transition-colors duration-[350ms]"
+                  style={{ color: theme.accent }}
+                >
+                  fog.
+                </em>
               </h1>
             </div>
 
             {/* Stats row */}
-            <div style={{ display: 'flex', gap: 22 }}>
-              <StatPill value="6"   label="Algorithms"   isLight={isLight} />
+            <div className="flex gap-[22px]">
+              <StatPill value="6" label="Algorithms" isLight={isLight} />
               <StatPill value="53+" label="API Endpoints" isLight={isLight} />
-              <StatPill value="31%" label="Energy Saved"  isLight={isLight} />
+              <StatPill value="31%" label="Energy Saved" isLight={isLight} />
               <StatPill value="103" label="Tests Passing" isLight={isLight} />
             </div>
           </div>
@@ -642,17 +531,14 @@ export default function Login() {
             RIGHT — form panel
         ══════════════════════════════════════════════════ */}
         <div
-          className="login-form"
-          style={{
-            background: theme.panel,
-          }}
+          className="login-form flex flex-col justify-center items-center px-14 h-screen min-h-screen overflow-hidden box-border"
+          style={{ background: theme.panel }}
         >
-          <div className="login-form-content fade-up">
-
+          <div className="login-form-content fade-up w-full max-w-[380px]">
             {/* Back button */}
             {(isForgotPassword || isResetPassword) && (
               <button
-                className="back-btn"
+                className="inline-flex items-center gap-[5px] text-[11px] bg-transparent border-none cursor-pointer p-0 font-sans tracking-[0.04em] mb-3 transition-colors duration-150"
                 style={{ color: theme.muted }}
                 onClick={() => {
                   setViewMode('login');
@@ -668,38 +554,33 @@ export default function Login() {
             {/* Header — login / register */}
             {showSocialBlock && (
               <>
-                <p style={{
-                  fontSize: 10, fontWeight: 500, letterSpacing: '0.18em',
-                  color: theme.accent, textTransform: 'uppercase', marginBottom: 10,
-                  transition: 'color 0.35s',
-                }}>
+                <p
+                  className="text-[10px] font-medium tracking-[0.18em] uppercase mb-2.5 transition-colors duration-[350ms]"
+                  style={{ color: theme.accent }}
+                >
                   {isLogin ? 'Welcome back' : 'Get started'}
                 </p>
-                <h2 style={{
-                  fontFamily: "'Fraunces', serif", fontSize: 26,
-                  fontWeight: 300, color: theme.text,
-                  marginBottom: 14, lineHeight: 1.2, transition: 'color 0.35s',
-                }}>
+                <h2
+                  className="font-light mb-3.5 leading-tight text-[26px] transition-colors duration-[350ms]"
+                  style={{ fontFamily: "'Fraunces', serif", color: theme.text }}
+                >
                   {isLogin ? 'Sign in to your account' : 'Create your account'}
                 </h2>
 
                 {/* Tabs */}
-                <div style={{
-                  display: 'flex', gap: 4,
-                  background: theme.inputBg,
-                  borderRadius: 10, padding: 4, marginBottom: 14,
-                  transition: 'background 0.35s',
-                }}>
+                <div
+                  className="flex gap-1 rounded-[10px] p-1 mb-3.5 transition-colors duration-[350ms]"
+                  style={{ background: theme.inputBg }}
+                >
                   {(['login', 'register'] as ViewMode[]).map((mode) => (
                     <button
                       key={mode}
-                      className="login-tab"
                       onClick={() => setViewMode(mode)}
+                      className="login-tab flex-1 py-2 rounded-lg border text-[13px] font-medium font-sans cursor-pointer transition-colors duration-[180ms] tracking-wide"
                       style={{
                         background: viewMode === mode ? 'rgba(52,211,153,0.12)' : 'transparent',
                         color: viewMode === mode ? theme.accent : theme.muted,
-                        border: viewMode === mode ? '1px solid rgba(52,211,153,0.22)' : '1px solid transparent',
-                        transition: 'color 0.35s',
+                        borderColor: viewMode === mode ? 'rgba(52,211,153,0.22)' : 'transparent',
                       }}
                     >
                       {mode === 'login' ? 'Sign In' : 'Sign Up'}
@@ -711,14 +592,20 @@ export default function Login() {
 
             {/* Forgot password header */}
             {isForgotPassword && !resetEmailSent && (
-              <div style={{ marginBottom: 16 }}>
-                <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.18em', color: theme.accent, textTransform: 'uppercase', marginBottom: 10 }}>
+              <div className="mb-4">
+                <p
+                  className="text-[10px] font-medium tracking-[0.18em] uppercase mb-2.5"
+                  style={{ color: theme.accent }}
+                >
                   Password recovery
                 </p>
-                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 300, color: theme.text, marginBottom: 8 }}>
+                <h2
+                  className="font-light text-[26px] mb-2"
+                  style={{ fontFamily: "'Fraunces', serif", color: theme.text }}
+                >
                   Forgot your password?
                 </h2>
-                <p style={{ fontSize: 12, color: theme.muted, lineHeight: 1.65 }}>
+                <p className="text-xs leading-[1.65]" style={{ color: theme.muted }}>
                   Enter your email and we'll send reset instructions.
                 </p>
               </div>
@@ -726,11 +613,17 @@ export default function Login() {
 
             {/* Reset password header */}
             {isResetPassword && (
-              <div style={{ marginBottom: 16 }}>
-                <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: '0.18em', color: theme.accent, textTransform: 'uppercase', marginBottom: 10 }}>
+              <div className="mb-4">
+                <p
+                  className="text-[10px] font-medium tracking-[0.18em] uppercase mb-2.5"
+                  style={{ color: theme.accent }}
+                >
                   Set new password
                 </p>
-                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 300, color: theme.text }}>
+                <h2
+                  className="font-light text-[26px]"
+                  style={{ fontFamily: "'Fraunces', serif", color: theme.text }}
+                >
                   Reset password
                 </h2>
               </div>
@@ -738,44 +631,48 @@ export default function Login() {
 
             {/* Email sent success */}
             {isForgotPassword && resetEmailSent ? (
-              <div style={{ textAlign: 'center', paddingTop: 8 }}>
-                <div style={{
-                  width: 60, height: 60, borderRadius: '50%',
-                  background: 'rgba(52,211,153,0.08)',
-                  border: '1px solid rgba(52,211,153,0.22)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  margin: '0 auto 18px',
-                }}>
+              <div className="text-center pt-2">
+                <div
+                  className="w-[60px] h-[60px] rounded-full border flex items-center justify-center mx-auto mb-[18px]"
+                  style={{
+                    background: 'rgba(52,211,153,0.08)',
+                    borderColor: 'rgba(52,211,153,0.22)',
+                  }}
+                >
                   <CheckCircle size={26} color={theme.accent} strokeWidth={1.5} />
                 </div>
-                <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 300, color: theme.text, marginBottom: 8 }}>
+                <h3
+                  className="font-light text-xl mb-2"
+                  style={{ fontFamily: "'Fraunces', serif", color: theme.text }}
+                >
                   Check your inbox
                 </h3>
-                <p style={{ fontSize: 12, color: theme.muted, lineHeight: 1.65 }}>
+                <p className="text-xs leading-[1.65]" style={{ color: theme.muted }}>
                   Reset instructions sent to{' '}
                   <span style={{ color: theme.accent }}>{formData.email}</span>
                 </p>
                 {resetToken && import.meta.env.DEV && (
-                  <div style={{
-                    marginTop: 18, padding: '12px 14px',
-                    background: theme.inputBg,
-                    border: `1px solid ${theme.border}`,
-                    borderRadius: 10, textAlign: 'left',
-                  }}>
-                    <p style={{ fontSize: 10, color: theme.muted, marginBottom: 6 }}>DEV MODE — reset token</p>
+                  <div
+                    className="mt-[18px] px-3.5 py-3 rounded-[10px] text-left border"
+                    style={{ background: theme.inputBg, borderColor: theme.border }}
+                  >
+                    <p className="text-[10px] mb-1.5" style={{ color: theme.muted }}>
+                      DEV MODE — reset token
+                    </p>
                     <input
-                      readOnly value={resetToken}
+                      readOnly
+                      value={resetToken}
+                      className="w-full px-2.5 py-[7px] rounded-lg text-[11px] outline-none font-mono mb-2 box-border border"
                       style={{
-                        width: '100%', padding: '7px 10px',
-                        background: theme.bg, border: `1px solid ${theme.border}`,
-                        borderRadius: 8, fontSize: 11, color: theme.accent,
-                        fontFamily: 'monospace', outline: 'none',
-                        marginBottom: 8, boxSizing: 'border-box',
+                        background: theme.bg,
+                        borderColor: theme.border,
+                        color: theme.accent,
                       }}
                     />
                     <button
                       onClick={() => setViewMode('reset-password')}
-                      style={{ fontSize: 12, color: theme.accent, background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", padding: 0 }}
+                      className="text-xs bg-transparent border-none cursor-pointer font-sans p-0"
+                      style={{ color: theme.accent }}
                     >
                       Continue to reset password →
                     </button>
@@ -784,36 +681,51 @@ export default function Login() {
               </div>
             ) : (
               /* ── Main form ── */
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-
+              <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
                 {/* Google + Demo — login/register only */}
                 {showSocialBlock && (
                   <>
                     <button
                       type="button"
-                      className="ghost-btn"
                       onClick={handleGoogleLogin}
-                      style={{ background: theme.inputBg, border: `1px solid ${theme.border}`, color: theme.muted }}
+                      className="ghost-btn p-[11px] rounded-[10px] text-[13px] font-normal cursor-pointer font-sans flex items-center justify-center gap-2 transition-[border-color,background,color,transform] duration-150 w-full border"
+                      style={{
+                        background: theme.inputBg,
+                        borderColor: theme.border,
+                        color: theme.muted,
+                      }}
                     >
                       <IconBrandGoogle size={15} strokeWidth={1.5} />
                       Continue with Google
                     </button>
                     <button
                       type="button"
-                      className="ghost-btn"
-                      style={{ background: theme.inputBg, border: '1px solid rgba(52,211,153,0.20)', color: theme.accent }}
+                      className="ghost-btn p-[11px] rounded-[10px] text-[13px] font-normal cursor-pointer font-sans flex items-center justify-center gap-2 transition-[border-color,background,color,transform] duration-150 border"
+                      style={{
+                        background: theme.inputBg,
+                        borderColor: 'rgba(52,211,153,0.20)',
+                        color: theme.accent,
+                      }}
                       onClick={() => {
-                        setFormData({ ...formData, email: 'demo@example.com', password: 'password123', name: '' });
+                        setFormData({
+                          ...formData,
+                          email: 'demo@example.com',
+                          password: 'password123',
+                          name: '',
+                        });
                         setViewMode('login');
                       }}
                     >
                       <CheckCircle size={14} strokeWidth={1.5} />
                       Use Demo Account
                     </button>
-                    <div className="divider-row" style={{ color: theme.muted }}>
-                      <div style={{ background: theme.border }} />
+                    <div
+                      className="flex items-center gap-3 my-3.5 text-[11px] tracking-[0.08em]"
+                      style={{ color: theme.muted }}
+                    >
+                      <div className="flex-1 h-px" style={{ background: theme.border }} />
                       or continue with email
-                      <div style={{ background: theme.border }} />
+                      <div className="flex-1 h-px" style={{ background: theme.border }} />
                     </div>
                   </>
                 )}
@@ -821,11 +733,13 @@ export default function Login() {
                 {/* Name — register */}
                 {isRegister && (
                   <Field
-                    label="Full name" icon={User}
+                    label="Full name"
+                    icon={User}
                     placeholder="Your full name"
                     value={formData.name}
                     onChange={(v) => setFormData({ ...formData, name: v })}
-                    required={isRegister} autoFocus={isRegister}
+                    required={isRegister}
+                    autoFocus={isRegister}
                     isLight={isLight}
                   />
                 )}
@@ -833,11 +747,14 @@ export default function Login() {
                 {/* Email */}
                 {(isLogin || isRegister || isForgotPassword) && (
                   <Field
-                    label="Email address" icon={Mail}
-                    type="email" placeholder="you@example.com"
+                    label="Email address"
+                    icon={Mail}
+                    type="email"
+                    placeholder="you@example.com"
                     value={formData.email}
                     onChange={(v) => setFormData({ ...formData, email: v })}
-                    required autoFocus={isLogin || isForgotPassword}
+                    required
+                    autoFocus={isLogin || isForgotPassword}
                     isLight={isLight}
                   />
                 )}
@@ -845,26 +762,36 @@ export default function Login() {
                 {/* Password */}
                 {(isLogin || isRegister) && (
                   <Field
-                    label="Password" icon={Lock}
+                    label="Password"
+                    icon={Lock}
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={(v) => setFormData({ ...formData, password: v })}
-                    required minLength={8} rightSlot={eyeToggle}
+                    required
+                    minLength={8}
+                    rightSlot={eyeToggle}
                     isLight={isLight}
                   />
                 )}
 
                 {/* Remember / forgot */}
                 {isLogin && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, color: theme.muted, cursor: 'pointer' }}>
-                      <input type="checkbox" style={{ accentColor: theme.accent, width: 13, height: 13 }} />
+                  <div className="flex items-center justify-between">
+                    <label
+                      className="flex items-center gap-[7px] text-[11px] cursor-pointer"
+                      style={{ color: theme.muted }}
+                    >
+                      <input
+                        type="checkbox"
+                        className="w-[13px] h-[13px]"
+                        style={{ accentColor: theme.accent }}
+                      />
                       Remember me
                     </label>
                     <button
                       type="button"
-                      className="forgot-link"
+                      className="text-[11px] bg-transparent border-none cursor-pointer font-sans p-0 transition-opacity duration-150 hover:opacity-75"
                       style={{ color: theme.accent }}
                       onClick={() => setViewMode('forgot-password')}
                     >
@@ -877,36 +804,58 @@ export default function Login() {
                 {isResetPassword && (
                   <>
                     <Field
-                      label="New password" icon={Lock}
+                      label="New password"
+                      icon={Lock}
                       type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••"
                       value={formData.newPassword}
                       onChange={(v) => setFormData({ ...formData, newPassword: v })}
-                      required minLength={8} rightSlot={eyeToggle} autoFocus
+                      required
+                      minLength={8}
+                      rightSlot={eyeToggle}
+                      autoFocus
                       isLight={isLight}
                     />
                     <Field
-                      label="Confirm password" icon={Lock}
+                      label="Confirm password"
+                      icon={Lock}
                       type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••"
                       value={formData.confirmPassword}
                       onChange={(v) => setFormData({ ...formData, confirmPassword: v })}
-                      required minLength={8}
+                      required
+                      minLength={8}
                       isLight={isLight}
                     />
                   </>
                 )}
 
                 {/* Submit */}
-                <button type="submit" className="primary-btn" disabled={isLoading} style={{ marginTop: 2 }}>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="primary-btn w-full p-3 rounded-[10px] border-none text-[13px] font-semibold text-white cursor-pointer font-sans tracking-wide flex items-center justify-center gap-[7px] mt-0.5"
+                >
                   {isLoading ? (
                     <>
                       <Loader2 size={15} strokeWidth={1.5} className="animate-spin" />
-                      {isLogin ? 'Signing in…' : isRegister ? 'Creating account…' : isForgotPassword ? 'Sending…' : 'Resetting…'}
+                      {isLogin
+                        ? 'Signing in…'
+                        : isRegister
+                          ? 'Creating account…'
+                          : isForgotPassword
+                            ? 'Sending…'
+                            : 'Resetting…'}
                     </>
                   ) : (
                     <>
-                      {isLogin ? 'Sign In' : isRegister ? 'Create Account' : isForgotPassword ? 'Send Reset Link' : 'Reset Password'}
+                      {isLogin
+                        ? 'Sign In'
+                        : isRegister
+                          ? 'Create Account'
+                          : isForgotPassword
+                            ? 'Send Reset Link'
+                            : 'Reset Password'}
                       <ArrowRight size={14} strokeWidth={1.5} />
                     </>
                   )}
@@ -916,16 +865,12 @@ export default function Login() {
 
             {/* Switch mode */}
             {showSocialBlock && (
-              <p style={{ textAlign: 'center', marginTop: 12, fontSize: 12, color: theme.muted }}>
+              <p className="text-center mt-3 text-xs" style={{ color: theme.muted }}>
                 {isLogin ? "Don't have an account? " : 'Already have an account? '}
                 <button
                   onClick={() => setViewMode(isLogin ? 'register' : 'login')}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: theme.accent, fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 12, padding: 0, fontWeight: 500,
-                    transition: 'color 0.35s',
-                  }}
+                  className="bg-transparent border-none cursor-pointer font-sans text-xs p-0 font-medium transition-colors duration-[350ms]"
+                  style={{ color: theme.accent }}
                 >
                   {isLogin ? 'Sign up' : 'Sign in'}
                 </button>
@@ -933,11 +878,10 @@ export default function Login() {
             )}
 
             {/* Footer */}
-            <p style={{
-              textAlign: 'center', marginTop: 14, fontSize: 10,
-              color: theme.muted, opacity: 0.3,
-              letterSpacing: '0.08em', textTransform: 'uppercase',
-            }}>
+            <p
+              className="text-center mt-3.5 text-[10px] opacity-30 tracking-[0.08em] uppercase"
+              style={{ color: theme.muted }}
+            >
               BITS Pilani Online · Team Byte_hogs · BSc CS
             </p>
           </div>

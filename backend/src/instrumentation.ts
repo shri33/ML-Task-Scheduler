@@ -1,7 +1,7 @@
 /**
  * OpenTelemetry Instrumentation for Node.js API
  * Add this to backend/src/instrumentation.ts
- * 
+ *
  * Install dependencies first:
  * npm install @opentelemetry/sdk-node @opentelemetry/auto-instrumentations-node \
  *   @opentelemetry/exporter-trace-otlp-grpc @opentelemetry/exporter-metrics-otlp-grpc \
@@ -14,7 +14,7 @@ import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentation
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
-import { Resource } from '@opentelemetry/resources';
+import { resourceFromAttributes } from '@opentelemetry/resources';
 import { SEMRESATTRS_SERVICE_NAME, SEMRESATTRS_SERVICE_VERSION, SEMRESATTRS_DEPLOYMENT_ENVIRONMENT } from '@opentelemetry/semantic-conventions';
 import { CompositePropagator, W3CTraceContextPropagator, W3CBaggagePropagator } from '@opentelemetry/core';
 import { B3Propagator, B3InjectEncoding } from '@opentelemetry/propagator-b3';
@@ -24,7 +24,7 @@ import type { IncomingMessage } from 'http';
 const OTEL_COLLECTOR_URL = process.env.OTEL_COLLECTOR_URL || 'http://otel-collector.observability:4317';
 
 // Resource attributes
-const resource = new Resource({
+const resource = resourceFromAttributes({
   [SEMRESATTRS_SERVICE_NAME]: 'ml-scheduler-api',
   [SEMRESATTRS_SERVICE_VERSION]: process.env.APP_VERSION || '1.0.0',
   [SEMRESATTRS_DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
